@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* Layout base: mantém o jogo quadrado e centralizado. */
+html,
+body,
+#app {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #030712;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-layout {
+  display: grid;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.game-screen {
+  width: 100vw;
+  height: 100vw;
+  max-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.game-screen canvas {
+  display: block;
+}
+
+.controls-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1rem;
+  padding: 1rem;
+  background: #111827;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+}
+
+.game-button {
+  min-width: 64px;
+  min-height: 52px;
+  padding: .75rem 1rem;
+  border: 1px solid rgb(255 255 255 / .12);
+  border-radius: .75rem;
+  background: rgb(255 255 255 / .08);
+  color: white;
+  font-weight: 700;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.game-button:active {
+  transform: scale(.96);
+  background: rgb(255 255 255 / .16);
+}
+
+@media (orientation: portrait) {
+  .game-layout {
+    grid-template-columns: 100vw;
+    grid-template-rows: min(100vw, 100dvh) 1fr;
+  }
+
+  .game-screen {
+    width: 100vw;
+    height: min(100vw, 100dvh);
+  }
+
+  .controls-panel {
+    min-height: 0;
+  }
+}
+
+@media (orientation: landscape) {
+  .game-layout {
+    grid-template-columns: 1fr 100dvh 1fr;
+    grid-template-rows: 100dvh;
+    grid-template-areas: "left game right";
+  }
+
+  .game-screen {
+    grid-area: game;
+    width: 100dvh;
+    height: 100dvh;
+  }
+
+  .controls-panel {
+    display: contents;
+  }
+
+  .controls-panel .control-group:first-child {
+    grid-area: left;
+    flex-direction: column;
+  }
+
+  .controls-panel .control-group:last-child {
+    grid-area: right;
+    flex-direction: column;
+  }
+}
