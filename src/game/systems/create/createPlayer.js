@@ -4,8 +4,8 @@ export function createPlayer(scene) {
         scene.scale.height - 300,
         'run_0' // <-- Aqui era 'ship', agora usa o primeiro frame da corrida
     );
-    player.setCollideWorldBounds(true);
-
+    player.setCollideWorldBounds(true); 
+    scene.physics.add.collider(player, scene.platforms);
     return player;
 }
 

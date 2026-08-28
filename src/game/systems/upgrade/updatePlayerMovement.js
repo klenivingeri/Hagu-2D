@@ -13,11 +13,15 @@ export const updatePlayerMovement = (scene) => {
       scene.player.setFlipX(false); // Mantém a imagem normal para a direita
       scene.player.anims.play('run', true); // Toca a animação de correr
       scene.lastDirection = 1
-    } else scene.player.setVelocityX(0);
+    } else {
+      scene.player.setVelocityX(0);
+      scene.player.setTexture('run_0')
+    }
 
     if (jump && scene.player.body.blocked.down) {
       scene.player.setVelocityY(-200);
       scene.player.anims.stop(); 
       scene.player.setTexture('run_0'); // Define um frame estático de parado
     }
+    
 }

@@ -1,0 +1,53 @@
+{
+    "activeFile": "map_1.tmj",
+    "expandedProjectPaths": [
+    ],
+    "file.lastUsedOpenFilter": "Todos os Ficheiros (*)",
+    "fileStates": {
+        "map_1.tmj": {
+            "scale": 1.2646875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 239.9802322708179,
+                "y": 239.98023227081788
+            }
+        },
+        "map_1.tmj#world_tileset": {
+            "scaleInDock": 1
+        },
+        "map_1.tmx": {
+            "scale": 1.2646875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 239.9802322708179,
+                "y": 239.98023227081788
+            }
+        },
+        "map_1.tmx#world_tileset": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "last.exportedFilePath": "C:/Projetos/phaser/vite/public/assets/tiledmap",
+    "last.imagePath": "C:/Projetos/phaser/vite/public/assets/tiledmap",
+    "map.height": 30,
+    "map.lastUsedExportFilter": "Arquivos de mapa JSON (*.tmj *.json)",
+    "map.lastUsedFormat": "tmx",
+    "map.layerDataFormat": "3",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "openFiles": [
+        "map_1.tmj"
+    ],
+    "project": "world_tileset.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "map_1.tmj",
+        "map_1.tmx"
+    ],
+    "tileset.embedInMap": true,
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    }
+}

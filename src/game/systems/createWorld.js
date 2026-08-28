@@ -1,23 +1,20 @@
-import Phaser from 'phaser';
 
-// Constrói o mundo a partir do mapa Tiled carregado em GameScene.preload()
-// (chaves 'mapaDoJogo' e 'world_tileset_image').
 export function createWorld(scene) {
-  const map = scene.make.tilemap({ key: 'mapaDoJogo' });
+const map = scene.make.tilemap({ key: 'mapa_json' });
+  
+    // O primeiro argumento é o nome do tileset lá no Tiled.
+    // O segundo argumento é a chave da imagem que você definiu no preload.
+    const tileset = map.addTilesetImage('world_tileset', 'tileset_image');
+  
+    // Cria a camada ('ground' é o nome da camada no seu JSON)
 
-  // O nome passado aqui ('world_tileset') precisa ser IGUAL ao nome do
-  // tileset dentro do .tmj/.tsx; a chave ('world_tileset_image') precisa
-  // ser IGUAL à chave usada em this.load.image(...) no preload().
-  const tileset = map.addTilesetImage('world_tileset', 'world_tileset_image');
-
-  // Ordem = ordem de desenho (de trás para frente). Precisa bater com os
-  // nomes das camadas criadas no Tiled.
   const layerOrder = [
-    'hoziron',
+    'horizon',
     'sky',
     'far-background',
     'near-beckground',
     'ground',
+    'foreground',
     'obstacles',
     'collisions',
     'over-player',

@@ -11,7 +11,6 @@ Montanhas distantes, silhuetas de prédios ou árvores longínquas.
 ## Near Background (Decoração de Fundo):
 Paredes de cavernas, papel de parede de uma casa, janelas, vinhas na parede ou pilastras. Fica logo atrás dos personagens, mas não bloqueia o movimento.
 
-
 # Camadas de Jogo (Gameplay & Collision Layers)
 O coração interativo do mapa. É onde as regras do jogo, a física e a navegação acontecem.
 
