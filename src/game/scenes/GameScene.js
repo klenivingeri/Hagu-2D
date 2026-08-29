@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations } from '../systems/create/createPlayer.js';
-import { createEnemy, preloadEnemyAssets, createEnemyAnimations } from '../systems/createEnemy.js';
+import { createEnemy, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
 import { createControls } from '../systems/create/createControls.js';
+import { createWorld } from '../systems/create/createWorld.js';
 
-import { createBulletSystem } from '../systems/createBulletSystem.js';
+import { createBulletSystem } from '../systems/create/createBulletSystem.js';
 import { updatePlayerMovement } from '../systems/upgrade/updatePlayerMovement.js'
 import { updateEnemyMovement } from '../systems/upgrade/updateEnemy.js'
-import { createWorld } from '../systems/createWorld.js';
 
 
 export class GameScene extends Phaser.Scene {
