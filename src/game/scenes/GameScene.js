@@ -36,19 +36,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    createWorld(this)
+    createWorld(this);
+    createControls(this);
 
     createPlayerAnimations(this);
-    this.player = createPlayer(this)
-    
-    createControls(this);
+    this.player = createPlayer(this);
+
 
     this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 10 });
     this.bulletSystem = createBulletSystem(this);
+
     createEnemyAnimations(this)
-    //this.enemy = createEnemy(this);
     this.enemies = createEnemys(this);
-  
+    //this.enemy = createEnemy(this);
   }
 
   update() {
