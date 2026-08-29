@@ -7,8 +7,9 @@ import { createWorld } from '../systems/create/createWorld.js';
 
 import { createBulletSystem } from '../systems/create/createBulletSystem.js';
 import { updatePlayerMovement } from '../systems/upgrade/updatePlayerMovement.js'
-import { updateEnemyMovement } from '../systems/upgrade/updateEnemy.js'
-
+import { updateEnemyMovement } from '../systems/upgrade/updateEnemyMovement.js'
+import { createRails } from '../systems/create/createRails.js';
+import { updateRailMovement } from '../systems/upgrade/updateRailMovement.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -48,6 +49,8 @@ export class GameScene extends Phaser.Scene {
 
     createEnemyAnimations(this)
     this.enemies = createEnemys(this);
+    this.rails = createRails(this)
+
     //this.enemy = createEnemy(this);
   }
 
@@ -57,6 +60,11 @@ export class GameScene extends Phaser.Scene {
     if (this.enemies) {
       this.enemies.getChildren().forEach((enemy) => {
         updateEnemyMovement(this, enemy);
+      });
+    }
+    if (this.rails) {
+      this.rails.getChildren().forEach((rail) => {
+        updateRailMovement(this, rail);
       });
     }
     this.bulletSystem.update();

@@ -29,6 +29,7 @@ const {
 
   const enemyObjectLayer = map.getObjectLayer(ENEMY);
   const playerObjectLayer = map.getObjectLayer(PLAYER);
+  const railObjectLayer = map.getObjectLayer(RAIL);
 
   // Camadas que servem de chão/plataforma. Ative a colisão nelas por
   // "tudo que não é o tile vazio (-1)".
@@ -53,6 +54,7 @@ const {
   scene.limits = enemyLimits;
   scene.enemyLayer = enemyObjectLayer// Guardamos a referência da camada enemy aqui!
   scene.playerLayer = playerObjectLayer
+  scene.railLayer = railObjectLayer
 
   scene.map = map;
 }
