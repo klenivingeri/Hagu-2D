@@ -8,5 +8,8 @@ export const MAP_LAYERS = {
     OBSTACLES: 'obstacles',
     COLLISIONS: 'collisions',
     OVER_PLAYER: 'over-player',
-    DEAD_ZONE: 'dead-zone'
+    DEAD_ZONE: 'dead-zone',
+    LIMITS: 'limits',
+    PLAYER: 'player',
+    ENEMY: 'enemy',
 };

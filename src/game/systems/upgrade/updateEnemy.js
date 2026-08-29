@@ -18,20 +18,20 @@ export const updateEnemyMovement = (scene) => {
     }
   }
   
-  if (!scene.enemy || !scene.enemy.active) {
-    respawnInimigo(scene);
-  }
+  // if (!scene.enemy || !scene.enemy.active) {
+  //   respawnInimigo(scene);
+  // }
 }
 
-const respawnInimigo = (scene) => {
-  // Se já existe um inimigo ativo, não faz nada
-  if (scene.enemy && scene.enemy.active) return;
+// const respawnInimigo = (scene) => {
+//   // Se já existe um inimigo ativo, não faz nada
+//   if (scene.enemy && scene.enemy.active) return;
 
-  // Se o inimigo antigo ainda existe na memória (mesmo morto), destrói ele de vez primeiro
-  if (scene.enemy) {
-    scene.enemy.destroy();
-  }
+//   // Se o inimigo antigo ainda existe na memória (mesmo morto), destrói ele de vez primeiro
+//   if (scene.enemy) {
+//     scene.enemy.destroy();
+//   }
 
-  // Cria o novo
-  scene.enemy = createEnemy(scene);
-}
+//   // Cria o novo
+//   scene.enemy = createEnemy(scene);
+// }

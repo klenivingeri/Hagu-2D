@@ -42,7 +42,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    
     createWorld(this)
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D');

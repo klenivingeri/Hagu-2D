@@ -8,6 +8,7 @@ export function createEnemy(scene) {
   enemy.setFlipX(true);                // Inicia virado para a esquerda (já que vai para a esquerda)
   enemy.anims.play('enemy_run', true); // Já começa animando desde o nascimento
 
+  scene.physics.add.collider(enemy, scene.limits);
   scene.physics.add.collider(enemy, scene.platforms);
 
   if (scene.inimigoOverlap) {
