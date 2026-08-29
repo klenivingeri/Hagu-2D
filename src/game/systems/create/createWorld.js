@@ -26,12 +26,14 @@ const {
     if (layer) layers[name] = layer;
   });
 
+  const enemyObjectLayer = map.getObjectLayer(ENEMY);
+  const playerObjectLayer = map.getObjectLayer(PLAYER);
+
   // Camadas que servem de chão/plataforma. Ative a colisão nelas por
   // "tudo que não é o tile vazio (-1)".
   const collidableLayers = [GROUND, OBSTACLES, COLLISIONS]
     .map((name) => layers[name])
     .filter(Boolean);
-  console.log(layerOrder)
   collidableLayers.forEach((layer) => layer.setCollisionByExclusion([-1]));
 
   // Camada que deve aparecer na frente do player/inimigos/balas.
@@ -48,8 +50,8 @@ const {
   scene.platforms = collidableLayers;
   scene.deadZone = layers[DEAD_ZONE];
   scene.limits = enemyLimits;
-  scene.enemyLayer = layers[PLAYER]; // Guardamos a referência da camada enemy aqui!
-  scene.playerLayer = layers[ENEMY];
+  scene.enemyLayer = enemyObjectLayer// Guardamos a referência da camada enemy aqui!
+  scene.playerLayer = playerObjectLayer
 
   scene.map = map;
 }

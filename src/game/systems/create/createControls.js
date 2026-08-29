@@ -1,3 +1,5 @@
+import Phaser from 'phaser';
+
 function bindHold(element, onStart, onEnd) {
   if (!element) return;
 
@@ -18,6 +20,12 @@ function bindHold(element, onStart, onEnd) {
 }
 
 export function createControls(scene) {
+  scene.cursors = scene.input.keyboard.createCursorKeys();
+  scene.keys = scene.input.keyboard.addKeys('W,A,S,D');
+  scene.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+  scene.lastDirection = 1
+  scene.controlState = { left: false, right: false, jump: false };
+
   bindHold(
     document.querySelector('#btnEsquerda'),
     () => { scene.controlState.left = true; },

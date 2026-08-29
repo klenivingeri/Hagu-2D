@@ -28,6 +28,50 @@ export function createEnemy(scene) {
   return enemy;
 }
 
+export function createEnemys(scene){
+  const enemies = scene.physics.add.group();
+  
+  if (!scene.enemyLayer || !scene.enemyLayer.objects) return enemies;
+
+  scene.enemyLayer.objects.forEach((objectData) => {
+    const x = objectData.x;
+    const y = objectData.y - 10; 
+
+    const enemy = scene.physics.add.sprite(x, y, 'enemy_run_0');
+    enemy.setCollideWorldBounds(true);
+    
+    // Adiciona as colisões primeiro
+    scene.physics.add.collider(enemy, scene.limits);
+    scene.physics.add.collider(enemy, scene.platforms);
+
+    // ADICIONE ESTE BLOCO: Garante que a velocidade só é injetada 
+    // após o motor do Phaser estabilizar a posição nas camadas
+    scene.time.delayedCall(10, () => {
+      if (enemy && enemy.active) {
+        enemy.body.velocity.x = -150;
+        enemy.setFlipX(true);
+        enemy.anims.play('enemy_run', true);
+      }
+    });
+
+    enemies.add(enemy);
+  });
+
+  scene.physics.add.overlap(
+    scene.bullets,
+    enemies,
+    (bullet, inimigo) => {
+      bulletDestroy(bullet);
+      enemyDestroy(inimigo);
+    },
+    null,
+    scene
+  );
+
+  return enemies;
+}
+
+
 function bulletDestroy(bullet) {
   // Desativa o tiro
   bullet.setActive(false);
