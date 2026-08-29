@@ -8,6 +8,7 @@ export const gameConfig = {
   parent: 'phaser-content',
   width: 480,
   height: 480,
+  pixelArt: true, // Desativa o anti-aliasing para manter o pixel art nítido
   backgroundColor: '#0f172a',
   scale: {
     mode: Phaser.Scale.FIT,
@@ -17,7 +18,7 @@ export const gameConfig = {
     default: 'arcade',
     arcade: {
       gravity: { y: 600 },
-      debug: true, // <-- Isso faz a borda de colisão aparecer em volta de todos os sprites
+      debug: false, // <-- Isso faz a borda de colisão aparecer em volta de todos os sprites
     },
   },
   scene: [GameScene],
