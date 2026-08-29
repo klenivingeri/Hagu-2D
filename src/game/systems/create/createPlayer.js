@@ -1,3 +1,5 @@
+import { resizeCollider } from "./common";
+
 export function createPlayer(scene) {
   let player
   scene.playerLayer.objects.forEach((objectData) => {
@@ -10,6 +12,20 @@ export function createPlayer(scene) {
     scene.physics.add.collider(player, scene.platforms);
 
   })
+
+  const {
+    newWidth,
+    newHeight,
+    offsetX,
+    offsetY
+  } = resizeCollider(player)  
+
+  player.body.setSize(newWidth, newHeight);
+  player.body.setOffset(offsetX, offsetY);
+
+  player.status = {
+    life: 3
+  }
   return player;
 }
 

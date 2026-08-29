@@ -12,4 +12,5 @@ export const MAP_LAYERS = {
     LIMITS: 'limits',
     PLAYER: 'player',
     ENEMY: 'enemy',
+    RAIL: 'rail'
 };

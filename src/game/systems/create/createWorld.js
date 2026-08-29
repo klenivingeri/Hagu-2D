@@ -10,7 +10,8 @@ const {
   DEAD_ZONE,
   LIMITS,
   PLAYER,
-  ENEMY
+  ENEMY,
+  RAIL
 } = MAP_LAYERS
     // O primeiro argumento é o nome do tileset lá no Tiled.
     // O segundo argumento é a chave da imagem que você definiu no preload.
@@ -31,7 +32,7 @@ const {
 
   // Camadas que servem de chão/plataforma. Ative a colisão nelas por
   // "tudo que não é o tile vazio (-1)".
-  const collidableLayers = [GROUND, OBSTACLES, COLLISIONS]
+  const collidableLayers = [GROUND, OBSTACLES, COLLISIONS, RAIL]
     .map((name) => layers[name])
     .filter(Boolean);
   collidableLayers.forEach((layer) => layer.setCollisionByExclusion([-1]));
@@ -48,7 +49,7 @@ const {
   enemyLimits.setCollisionByExclusion([-1])
 
   scene.platforms = collidableLayers;
-  scene.deadZone = layers[DEAD_ZONE];
+  scene.deadZoneLayer = layers[DEAD_ZONE];
   scene.limits = enemyLimits;
   scene.enemyLayer = enemyObjectLayer// Guardamos a referência da camada enemy aqui!
   scene.playerLayer = playerObjectLayer

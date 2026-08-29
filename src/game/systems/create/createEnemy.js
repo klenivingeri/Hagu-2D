@@ -1,3 +1,5 @@
+import { resizeCollider } from "./common";
+
 export function createEnemy(scene) {
   const enemy = scene.physics.add.sprite(scene.scale.width - 200, scene.scale.height - 200, 'enemy_run_0');
 
@@ -40,6 +42,16 @@ export function createEnemys(scene){
     const enemy = scene.physics.add.sprite(x, y, 'enemy_run_0');
     enemy.setCollideWorldBounds(true);
     
+    const {
+      newWidth,
+      newHeight,
+      offsetX,
+      offsetY
+    } = resizeCollider(enemy)  
+
+    enemy.body.setSize(newWidth, newHeight);
+    enemy.body.setOffset(offsetX, offsetY);
+    
     // Adiciona as colisões primeiro
     scene.physics.add.collider(enemy, scene.limits);
     scene.physics.add.collider(enemy, scene.platforms);
@@ -48,7 +60,7 @@ export function createEnemys(scene){
     // após o motor do Phaser estabilizar a posição nas camadas
     scene.time.delayedCall(10, () => {
       if (enemy && enemy.active) {
-        enemy.body.velocity.x = -150;
+        enemy.body.velocity.x = -50;
         enemy.setFlipX(true);
         enemy.anims.play('enemy_run', true);
       }

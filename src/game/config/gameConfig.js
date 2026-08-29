@@ -17,7 +17,7 @@ export const gameConfig = {
     default: 'arcade',
     arcade: {
       gravity: { y: 600 },
-      debug: false,
+      debug: true, // <-- Isso faz a borda de colisão aparecer em volta de todos os sprites
     },
   },
   scene: [GameScene],

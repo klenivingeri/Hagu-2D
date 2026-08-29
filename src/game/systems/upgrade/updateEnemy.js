@@ -3,12 +3,12 @@ import { createEnemy } from "../create/createEnemy";
 export const updateEnemyMovement = (scene, enemy) => {
   if (enemy && enemy.active) {
     if (enemy.body.blocked.left) {
-      enemy.setVelocityX(100);
+      enemy.setVelocityX(40);
       enemy.setFlipX(false); // Olhando para a direita
       enemy.anims.play('enemy_run', true);
     }
     else if (enemy.body.blocked.right) {
-      enemy.setVelocityX(-100);
+      enemy.setVelocityX(-40);
       enemy.setFlipX(true); // Olhando para a esquerda
       enemy.anims.play('enemy_run', true);
     }

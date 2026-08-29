@@ -5,15 +5,15 @@
     "file.lastUsedOpenFilter": "Todos os Ficheiros (*)",
     "fileStates": {
         "map_1.tmj": {
-            "scale": 1.2646875,
-            "selectedLayer": 0,
+            "scale": 1.5,
+            "selectedLayer": 3,
             "viewCenter": {
-                "x": 239.9802322708179,
-                "y": 239.98023227081788
+                "x": 203.66666666666666,
+                "y": 252
             }
         },
         "map_1.tmj#world_tileset": {
-            "scaleInDock": 1
+            "scaleInDock": 1.5
         },
         "map_1.tmx": {
             "scale": 1.2646875,
@@ -40,7 +40,7 @@
         "map_1.tmj"
     ],
     "project": "world_tileset.tiled-project",
-    "property.type": "bool",
+    "property.type": "string",
     "recentFiles": [
         "map_1.tmj",
         "map_1.tmx"
