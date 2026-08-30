@@ -4,6 +4,9 @@
     ],
     "file.lastUsedOpenFilter": "Todos os Ficheiros (*)",
     "fileStates": {
+        "": {
+            "scaleInDock": 1
+        },
         "map_1.tmj": {
             "scale": 1.5,
             "selectedLayer": 3,
@@ -29,7 +32,7 @@
         }
     },
     "last.exportedFilePath": "C:/Projetos/phaser/vite/public/assets/tiledmap",
-    "last.imagePath": "C:/Projetos/phaser/vite/public/assets/coins",
+    "last.imagePath": "C:/Projetos/phaser/vite/public/assets/tiledmap",
     "map.height": 30,
     "map.lastUsedExportFilter": "Arquivos de mapa JSON (*.tmj *.json)",
     "map.lastUsedFormat": "tmx",

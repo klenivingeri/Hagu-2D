@@ -11,6 +11,7 @@ import { updatePlayerMovement } from '../systems/upgrade/updatePlayerMovement.js
 import { updateEnemyMovement } from '../systems/upgrade/updateEnemyMovement.js'
 import { createRails } from '../systems/create/createRails.js';
 import { updateRailMovement } from '../systems/upgrade/updateRailMovement.js';
+import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems/create/createCoins.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -30,6 +31,7 @@ export class GameScene extends Phaser.Scene {
 
     preloadEnemyAssets(this)
     preloadPlayerAssets(this)
+    preloadCoinAssets(this)
 
     // Log de qualquer asset que falhar ao carregar (ajuda a depurar caminhos errados)
     this.load.on('loaderror', (file) => {
@@ -53,6 +55,9 @@ export class GameScene extends Phaser.Scene {
     createEnemyAnimations(this)
     this.enemies = createEnemys(this);
     this.rails = createRails(this)
+
+    createCoinAnimations(this);
+    this.coins = createCoins(this);
 
     setupPlayerDamage(this, this.player, this.enemies);
 
