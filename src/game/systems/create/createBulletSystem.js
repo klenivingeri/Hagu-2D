@@ -1,32 +1,52 @@
 export function createBulletSystem(scene) {
-  const fire = () => {
-    // Pega um tiro disponível no pool ou cria um novo
-    const bullet = scene.bullets.get(scene.player.x, scene.player.y+5, 'bullet');
+  // Cria de fato o projétil e o lança na direção que o player está olhando.
+  const spawnBullet = () => {
+    const bullet = scene.bullets.get(scene.player.x, scene.player.y + 5, 'bullet');
 
     if (bullet) {
       bullet.setActive(true);
       bullet.setVisible(true);
-      bullet.body.enable = true; 
+      bullet.body.enable = true;
       bullet.body.allowGravity = false;
       bullet.body.setVelocityX(450 * scene.lastDirection);
       bullet.angle = 90;
       bullet.setDepth(5);
     }
+  };
 
-    // Troca a animação do player para "bow" ao atirar.
+  const fire = () => {
     const player = scene.player;
-    if (player && !player.isDead) {
-      player.setFlipX(scene.lastDirection === -1);
-      player.isShooting = true;
+    if (!player || player.isDead) return;
 
-      // Garante que não fiquem múltiplos listeners acumulados de disparos anteriores.
-      player.off('animationcomplete-bow');
-      player.once('animationcomplete-bow', () => {
-        player.isShooting = false;
-      });
+    player.setFlipX(scene.lastDirection === -1);
+    player.isShooting = true;
 
-      player.anims.play('bow', true);
+    // Garante que não fiquem múltiplos listeners acumulados de disparos anteriores.
+    // (Guardamos a referência no próprio player pois a função é recriada a cada fire().)
+    if (player._onBowFrame) {
+      player.off('animationupdate', player._onBowFrame);
     }
+    player.off('animationcomplete-bow');
+
+    // Só lança o bullet quando a animação "bow" chegar no quadro 3 (bow_3).
+    // OBS: o Phaser não tem um evento "animationupdate-bow" por chave (só o
+    // "animationcomplete-<key>" tem essa variante); por isso escutamos o
+    // evento genérico "animationupdate" e filtramos pela animação atual.
+    player._onBowFrame = (anim, frame) => {
+      if (anim.key === 'bow' && frame.textureKey === 'bow_3') {
+        spawnBullet();
+        player.off('animationupdate', player._onBowFrame); // um disparo por animação
+      }
+    };
+    player.on('animationupdate', player._onBowFrame);
+
+    player.once('animationcomplete-bow', () => {
+      player.isShooting = false;
+    });
+
+    // Sem o "true": força reiniciar a animação do zero a cada disparo,
+    // mesmo que o player já esteja no meio de um tiro anterior.
+    player.anims.play('bow');
   };
 
   scene.input.on('pointerdown', fire);
