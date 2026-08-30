@@ -18,6 +18,10 @@ export function createBulletSystem(scene) {
     const player = scene.player;
     if (!player || player.isDead) return;
 
+    // Já está no meio de uma animação de disparo: ignora o clique
+    // até a animação atual terminar (evita reiniciar e perder o bullet).
+    if (player.isShooting) return;
+
     player.setFlipX(scene.lastDirection === -1);
     player.isShooting = true;
 
@@ -44,8 +48,8 @@ export function createBulletSystem(scene) {
       player.isShooting = false;
     });
 
-    // Sem o "true": força reiniciar a animação do zero a cada disparo,
-    // mesmo que o player já esteja no meio de um tiro anterior.
+    // Toca a animação do zero. Como agora só entramos aqui quando não há
+    // nenhum tiro em andamento (guard acima), não precisamos do ignoreIfPlaying.
     player.anims.play('bow');
   };
 
