@@ -2,9 +2,6 @@ export const updatePlayerMovement = (scene) => {
     const left = scene.cursors.left.isDown || scene.keys.A.isDown || scene.controlState.left;
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
     
-    // Captura o pulo por teclado ou controle virtual
-    const jumpPressed = scene.cursors.up.isDown || scene.keys.W.isDown || scene.spaceKey.isDown || scene.controlState.jump;
-
     // --- Movimento Horizontal ---
     if (left) {
       scene.player.setVelocityX(-110);
@@ -21,14 +18,16 @@ export const updatePlayerMovement = (scene) => {
       scene.player.setTexture('run_0');
     }
 
-    // --- Movimento de Pulo (Com Consumo de Estado) ---
-    if (jumpPressed && scene.player.body.blocked.down) {
+    // --- Movimento de Pulo (Disparo Único Blindado) ---
+    // Verificamos se scene.controlState.jump é true (ele é ativado apenas 1 vez por toque ou por clique de tecla)
+    if (scene.controlState.jump && scene.player.body.blocked.down) {
       scene.player.setVelocityY(-200);
       scene.player.anims.stop(); 
       scene.player.setTexture('run_0'); // Define um frame estático de parado
     }
 
-    // IMPORTANTE: Limpa o estado do pulo do controle virtual imediatamente 
-    // para evitar que o personagem pule sozinho novamente ao tocar o chão.
+    // IMPORTANTE: Consome o comando imediatamente. 
+    // Isso garante que mesmo segurando o botão ou a tecla, a flag é apagada no mesmo frame, 
+    // exigindo soltar e apertar novamente para um novo pulo.
     scene.controlState.jump = false;
 }

@@ -20,6 +20,17 @@ export function createControls(scene) {
   const btnB = document.querySelector('#btnB');
   const actionPad = document.querySelector('#actionPad');
 
+  // --- Sistema de Teclado com Disparo Único (Evita pulo infinito ao segurar W/Espaço/Seta) ---
+  const triggerJumpOnce = () => {
+    scene.controlState.jump = true;
+  };
+
+  scene.spaceKey.on('down', triggerJumpOnce);
+  scene.keys.W.on('down', triggerJumpOnce);
+  if (scene.cursors.up) {
+    scene.cursors.up.on('down', triggerJumpOnce);
+  }
+
   // --- Sistema de Joystick Deslizável para o D-Pad (< | >) ---
   const updateDpadFromTouch = (clientX, clientY) => {
     const leftRect = btnEsquerda.getBoundingClientRect();
@@ -76,12 +87,11 @@ export function createControls(scene) {
   dpadPad.addEventListener('pointerleave', resetDpad);
 
   // --- Sistema de Joystick Deslizável para Ações (A e B) ---
-  let activeActionTarget = null; // Guarda qual botão está sendo pressionado no momento
+  let activeActionTarget = null; 
 
   const updateActionFromTouch = (clientX, clientY) => {
     const fireRect = btnA.getBoundingClientRect();
     const jumpRect = btnB.getBoundingClientRect();
-
 
     const isOverJump = (
       clientX >= jumpRect.left && clientX <= jumpRect.right &&
@@ -97,24 +107,23 @@ export function createControls(scene) {
       btnB.classList.add('pressed');
       btnA.classList.remove('pressed');
 
-      // Se mudou para o botão de pulo agora
+      // Só dispara o pulo se o dedo acabou de entrar no botão de pulo (evita pulo contínuo ao segurar)
       if (activeActionTarget !== 'jump') {
-        scene.controlState.jump = true; // Aciona o pulo
+        scene.controlState.jump = true; 
         activeActionTarget = 'jump';
       }
     } else if (isOverFire) {
       btnA.classList.add('pressed');
       btnB.classList.remove('pressed');
 
-      // Se mudou para o botão de tiro agora
+      // Só dispara o tiro se o dedo acabou de entrar no botão de tiro
       if (activeActionTarget !== 'fire') {
         if (scene.bulletSystem && typeof scene.bulletSystem.fire === 'function') {
-          scene.bulletSystem.fire(); // Dispara o tiro
+          scene.bulletSystem.fire(); 
         }
         activeActionTarget = 'fire';
       }
     } else {
-      // Dedo fora dos botões, mas ainda dentro do painel de ação
       btnB.classList.remove('pressed');
       btnA.classList.remove('pressed');
       activeActionTarget = null;
