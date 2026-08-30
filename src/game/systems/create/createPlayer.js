@@ -111,12 +111,16 @@ function killPlayer(scene, player) {
 export function preloadPlayerAssets(scene) {
   // Carregando os frames de pulo (0 a 5)
   for (let i = 0; i <= 5; i++) {
-    scene.load.image(`jump_${i}`, `assets/player/sprite_jump_${i}.png`);
+    scene.load.image(`jump_${i}`, `assets/player/jump/sprite_jump_${i}.png`);
   }
 
   // Carregando os frames de corrida (0 a 3)
   for (let i = 0; i <= 3; i++) {
-    scene.load.image(`run_${i}`, `assets/player/sprite_run_two_${i}.png`);
+    scene.load.image(`run_${i}`, `assets/player/run/sprite_run_two_${i}.png`);
+  }
+
+  for (let i = 0; i <= 5; i++) {
+    scene.load.image(`bow_${i}`, `assets/player/bow/sprite_weapon_bow_short_fire_slow_${i}.png`);
   }
 }
 
@@ -144,6 +148,20 @@ export function createPlayerAnimations(scene) {
       { key: 'jump_3' },
       { key: 'jump_4' },
       { key: 'jump_5' }
+    ],
+    frameRate: 10,
+    repeat: 0 // Roda apenas uma vez quando pula
+  });
+
+    scene.anims.create({
+    key: 'bow',
+    frames: [
+      { key: 'bow_0' },
+      { key: 'bow_1' },
+      { key: 'bow_2' },
+      { key: 'bow_3' },
+      { key: 'bow_4' },
+      { key: 'bow_5' }
     ],
     frameRate: 10,
     repeat: 0 // Roda apenas uma vez quando pula
