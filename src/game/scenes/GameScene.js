@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
-import { createPlayer, preloadPlayerAssets, createPlayerAnimations } from '../systems/create/createPlayer.js';
+import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage } from '../systems/create/createPlayer.js';
+import { createHUD, updateHUD } from '../systems/create/createhud.js';
 import { createEnemy, createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
 import { createControls } from '../systems/create/createControls.js';
 import { createWorld } from '../systems/create/createWorld.js';
@@ -43,6 +44,8 @@ export class GameScene extends Phaser.Scene {
     createPlayerAnimations(this);
     this.player = createPlayer(this);
 
+    createHUD(this);
+    updateHUD(this, this.player.status.life);
 
     this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 10 });
     this.bulletSystem = createBulletSystem(this);
@@ -50,6 +53,8 @@ export class GameScene extends Phaser.Scene {
     createEnemyAnimations(this)
     this.enemies = createEnemys(this);
     this.rails = createRails(this)
+
+    setupPlayerDamage(this, this.player, this.enemies);
 
     //this.enemy = createEnemy(this);
   }
@@ -70,5 +75,3 @@ export class GameScene extends Phaser.Scene {
     this.bulletSystem.update();
   }
 }
-
-
