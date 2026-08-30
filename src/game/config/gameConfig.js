@@ -8,8 +8,8 @@ export const gameConfig = {
   parent: 'phaser-content',
   width: 480,
   height: 480,
-  pixelArt: true, // Desativa o anti-aliasing para manter o pixel art nítido
   backgroundColor: '#0f172a',
+  pixelArt: true,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

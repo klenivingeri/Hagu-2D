@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* Layout base: mantém o jogo quadrado e centralizado. */
 html,
 body,
 #app {
@@ -16,6 +15,7 @@ body {
   min-height: 100dvh;
   overflow: hidden;
   background: #030712;
+  font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
 button {
@@ -37,46 +37,173 @@ button {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  background: #000;
 }
 
 .game-screen canvas {
   display: block;
 }
 
+/* Painel Geral de Controles */
 .controls-panel {
   display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  border-top: 2px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Colunas individuais de controle (Esquerda e Direita) */
+.control-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Painel do botão Select/Start individual */
+.meta-panel {
+  display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: space-around;
-  gap: 1rem;
-  padding: 1rem;
-  background: #111827;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* Estilo dos Botões SELECT e START */
+.meta-button {
+  width: 100%;
+  max-width: 120px;
+  height: 24px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #9ca3af;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  user-select: none;
+  transition: transform 0.05s ease, background 0.05s ease, color 0.05s ease;
+}
+
+.meta-button:active, .meta-button.pressed {
+  transform: scale(0.94);
+  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  color: #f3f4f6;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .control-group {
   display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 0.5rem;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* D-Pad Container */
+.dpad-container {
+  position: relative;
+  background: #0b0f19;
+  padding: 4px;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.dpad-center-line {
+  position: absolute;
+  left: 50%;
+  top: 15%;
+  bottom: 15%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Action Container */
+.action-container {
+  position: relative;
+  background: #120b0b;
+  padding: 4px;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.action-center-line {
+  position: absolute;
+  left: 50%;
+  top: 15%;
+  bottom: 15%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Botões Principais */
+.game-button {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgb(255 255 255 / .15);
+  border-radius: .75rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 1.25rem;
+  touch-action: none;
+  user-select: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: .75rem;
+  transition: transform 0.05s ease, background 0.05s ease;
 }
 
-.game-button {
-  min-width: 64px;
-  min-height: 52px;
-  padding: .75rem 1rem;
-  border: 1px solid rgb(255 255 255 / .12);
-  border-radius: .75rem;
-  background: rgb(255 255 255 / .08);
-  color: white;
-  font-weight: 700;
-  touch-action: manipulation;
-  user-select: none;
+.game-button:active, .game-button.pressed {
+  transform: scale(0.97);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.6) 100%);
+  border-color: rgba(59, 130, 246, 0.6);
 }
 
-.game-button:active {
-  transform: scale(.96);
-  background: rgb(255 255 255 / .16);
+.action-btn {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.3) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
+.action-btn:active, .action-btn.pressed {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.6) 0%, rgba(185, 28, 28, 0.8) 100%);
+}
+
+/* Responsividade: Portrait (Vertical) */
 @media (orientation: portrait) {
   .game-layout {
     grid-template-columns: 100vw;
@@ -93,6 +220,7 @@ button {
   }
 }
 
+/* Responsividade: Landscape (Horizontal - Estilo Switch) */
 @media (orientation: landscape) {
   .game-layout {
     grid-template-columns: 1fr 100dvh 1fr;
@@ -110,13 +238,19 @@ button {
     display: contents;
   }
 
-  .controls-panel .control-group:first-child {
+  .left-column {
     grid-area: left;
-    flex-direction: column;
+    margin: 0.75rem;
+    height: calc(100% - 1.5rem);
+    width: calc(100% - 1.5rem);
+    background: linear-gradient(90deg, rgba(17,24,39,0.9) 0%, rgba(17,24,39,0) 100%);
   }
 
-  .controls-panel .control-group:last-child {
+  .right-column {
     grid-area: right;
-    flex-direction: column;
+    margin: 0.75rem;
+    height: calc(100% - 1.5rem);
+    width: calc(100% - 1.5rem);
+    background: linear-gradient(-90deg, rgba(17,24,39,0.9) 0%, rgba(17,24,39,0) 100%);
   }
 }

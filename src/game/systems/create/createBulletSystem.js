@@ -1,7 +1,7 @@
 export function createBulletSystem(scene) {
   const fire = () => {
     // Pega um tiro disponível no pool ou cria um novo
-    const bullet = scene.bullets.get(scene.player.x, scene.player.y, 'bullet');
+    const bullet = scene.bullets.get(scene.player.x, scene.player.y+5, 'bullet');
 
     if (bullet) {
       bullet.setActive(true);
