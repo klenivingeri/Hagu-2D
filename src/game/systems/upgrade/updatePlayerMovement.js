@@ -6,22 +6,29 @@ export const updatePlayerMovement = (scene) => {
     if (left) {
       scene.player.setVelocityX(-110);
       scene.player.setFlipX(true); // Vira a imagem para a esquerda
-      scene.player.anims.play('run', true); // Toca a animação de correr
+      if (!scene.player.isShooting) {
+        scene.player.anims.play('run', true); // Toca a animação de correr
+      }
       scene.lastDirection = -1;
     } else if (right) {
       scene.player.setVelocityX(110);
       scene.player.setFlipX(false); // Mantém a imagem normal para a direita
-      scene.player.anims.play('run', true); // Toca a animação de correr
+      if (!scene.player.isShooting) {
+        scene.player.anims.play('run', true); // Toca a animação de correr
+      }
       scene.lastDirection = 1;
     } else {
       scene.player.setVelocityX(0);
-      scene.player.setTexture('run_0');
+      if (!scene.player.isShooting) {
+        scene.player.setTexture('run_0');
+      }
     }
 
     // --- Movimento de Pulo (Disparo Único Blindado) ---
     // Verificamos se scene.controlState.jump é true (ele é ativado apenas 1 vez por toque ou por clique de tecla)
     if (scene.controlState.jump && scene.player.body.blocked.down) {
       scene.player.setVelocityY(-200);
+      scene.player.isShooting = false; // Pulo interrompe o disparo de arco em andamento
       scene.player.anims.stop(); 
       scene.player.setTexture('run_0'); // Define um frame estático de parado
     }

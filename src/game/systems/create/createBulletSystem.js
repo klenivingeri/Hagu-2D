@@ -12,6 +12,21 @@ export function createBulletSystem(scene) {
       bullet.angle = 90;
       bullet.setDepth(5);
     }
+
+    // Troca a animação do player para "bow" ao atirar.
+    const player = scene.player;
+    if (player && !player.isDead) {
+      player.setFlipX(scene.lastDirection === -1);
+      player.isShooting = true;
+
+      // Garante que não fiquem múltiplos listeners acumulados de disparos anteriores.
+      player.off('animationcomplete-bow');
+      player.once('animationcomplete-bow', () => {
+        player.isShooting = false;
+      });
+
+      player.anims.play('bow', true);
+    }
   };
 
   scene.input.on('pointerdown', fire);
