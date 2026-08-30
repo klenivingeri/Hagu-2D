@@ -1,33 +1,31 @@
-import { createEnemy } from "../create/createEnemy";
-
 export const updateEnemyMovement = (scene, enemy) => {
-  if (enemy && enemy.active) {
-    if (enemy.body.blocked.left) {
-      enemy.setVelocityX(40);
-      enemy.setFlipX(false); // Olhando para a direita
-      enemy.anims.play('enemy_run', true);
-    }
-    else if (enemy.body.blocked.right) {
-      enemy.setVelocityX(-40);
-      enemy.setFlipX(true); // Olhando para a esquerda
-      enemy.anims.play('enemy_run', true);
-    }
+  if (!enemy || !enemy.active) return;
+
+  if (enemy.body.blocked.left) {
+    turnEnemy(enemy, 40, false);
+  } else if (enemy.body.blocked.right) {
+    turnEnemy(enemy, -40, true);
+  } else if (isAboutToFall(scene, enemy)) {
+    const goingLeft = enemy.body.velocity.x < 0;
+    turnEnemy(enemy, goingLeft ? 40 : -40, !goingLeft);
   }
-  
-  // if (!scene.enemy || !scene.enemy.active) {
-  //   respawnInimigo(scene);
-  // }
+};
+
+function turnEnemy(enemy, velocityX, flipX) {
+  enemy.setVelocityX(velocityX);
+  enemy.setFlipX(flipX);
+  enemy.anims.play('enemy_run', true);
 }
 
-// const respawnInimigo = (scene) => {
-//   // Se já existe um inimigo ativo, não faz nada
-//   if (scene.enemy && scene.enemy.active) return;
+// Olha um pouco à frente, na direção do movimento: se não tem chão ali, é beira de plataforma.
+function isAboutToFall(scene, enemy) {
+  const dir = Math.sign(enemy.body.velocity.x);
+  if (dir === 0) return false;
 
-//   // Se o inimigo antigo ainda existe na memória (mesmo morto), destrói ele de vez primeiro
-//   if (scene.enemy) {
-//     scene.enemy.destroy();
-//   }
+  const lookAheadX = enemy.body.x + (dir > 0 ? enemy.body.width + 4 : -4);
+  const feetY = enemy.body.y + enemy.body.height + 4;
 
-//   // Cria o novo
-//   scene.enemy = createEnemy(scene);
-// }
+  return !scene.platforms.some((layer) =>
+    layer.getTileAtWorldXY(lookAheadX, feetY, true)
+  );
+}

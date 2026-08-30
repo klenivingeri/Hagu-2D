@@ -49,8 +49,13 @@ const {
   const enemyLimits = layers[LIMITS];
   enemyLimits.setCollisionByExclusion([-1])
 
+  // Habilita overlap (sem bloquear o movimento) na dead-zone, pra detectar
+  // quando o player cai nela.
+  const deadZone = layers[DEAD_ZONE];
+  if (deadZone) deadZone.setCollisionByExclusion([-1]);
+
   scene.platforms = collidableLayers;
-  scene.deadZoneLayer = layers[DEAD_ZONE];
+  scene.deadZoneLayer = deadZone;
   scene.limits = enemyLimits;
   scene.enemyLayer = enemyObjectLayer// Guardamos a referência da camada enemy aqui!
   scene.playerLayer = playerObjectLayer

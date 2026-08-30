@@ -6,8 +6,8 @@ import { GameScene } from '../scenes/GameScene.js';
 export const gameConfig = {
   type: Phaser.AUTO,
   parent: 'phaser-content',
-  width: 480,
-  height: 480,
+  width: 448,
+  height: 448,
   backgroundColor: '#0f172a',
   pixelArt: true,
   scale: {
@@ -18,7 +18,7 @@ export const gameConfig = {
     default: 'arcade',
     arcade: {
       gravity: { y: 600 },
-      debug: false, // <-- Isso faz a borda de colisão aparecer em volta de todos os sprites
+      debug: true, // <-- Isso faz a borda de colisão aparecer em volta de todos os sprites
     },
   },
   scene: [GameScene],

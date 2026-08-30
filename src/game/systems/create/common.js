@@ -5,7 +5,7 @@ export const resizeCollider = (player) => {
 
     // Defina o novo tamanho (ex: 80% da largura e 70% da altura)
     const newWidth = originalWidth * 0.8;
-    const newHeight = originalHeight * 0.7;
+    const newHeight = originalHeight * 0.6;
 
     // Calcula o offset para centralizar na horizontal e empurrar para baixo (reduzindo o topo)
     const offsetX = (originalWidth - newWidth) / 2;
