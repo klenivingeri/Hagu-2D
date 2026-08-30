@@ -18,6 +18,9 @@ export function createBulletSystem(scene) {
     const player = scene.player;
     if (!player || player.isDead) return;
 
+    // Ainda nascendo: não deixa atirar por cima da animação de spawn.
+    if (player.isSpawning) return;
+
     // Já está no meio de uma animação de disparo: ignora o clique
     // até a animação atual terminar (evita reiniciar e perder o bullet).
     if (player.isShooting) return;

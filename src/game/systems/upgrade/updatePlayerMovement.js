@@ -1,4 +1,8 @@
 export const updatePlayerMovement = (scene) => {
+    // Enquanto o player está nascendo (animação "spawn"), ele fica travado:
+    // sem correr, pular ou ter o frame trocado por baixo da animação.
+    if (scene.player.isSpawning) return;
+
     const left = scene.cursors.left.isDown || scene.keys.A.isDown || scene.controlState.left;
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
     

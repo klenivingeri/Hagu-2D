@@ -32,8 +32,27 @@ export function createPlayer(scene) {
 
   player.invulnerable = false;
   player.isDead = false;
+  player.isShooting = false;
+
+  playSpawnAnimation(scene, player);
 
   return player;
+}
+
+// Toca a animação de "spawn" assim que o player é criado. Enquanto ela
+// roda, o player fica invulnerável (não pode tomar dano nascendo) e o
+// updatePlayerMovement fica pausado (veja o guard isSpawning lá), então a
+// animação não é interrompida por um "run_0"/"run" no meio do caminho.
+function playSpawnAnimation(scene, player) {
+  player.isSpawning = true;
+  player.invulnerable = true;
+
+  player.anims.play('spawn');
+  player.once('animationcomplete-spawn', () => {
+    player.isSpawning = false;
+    player.invulnerable = false;
+    player.setTexture('run_0'); // volta pro frame parado assim que termina
+  });
 }
 
 // Liga o dano por colisão com inimigo (com invencibilidade + piscada de 1s).
@@ -114,6 +133,10 @@ export function preloadPlayerAssets(scene) {
     scene.load.image(`jump_${i}`, `assets/player/jump/sprite_jump_${i}.png`);
   }
 
+  for (let i = 0; i <= 10; i++) {
+    scene.load.image(`spawn_${i}`, `assets/player/spawn/sprite_re_warp_${i}.png`);
+  }
+
   // Carregando os frames de corrida (0 a 3)
   for (let i = 0; i <= 3; i++) {
     scene.load.image(`run_${i}`, `assets/player/run/sprite_run_two_${i}.png`);
@@ -153,7 +176,7 @@ export function createPlayerAnimations(scene) {
     repeat: 0 // Roda apenas uma vez quando pula
   });
 
-    scene.anims.create({
+  scene.anims.create({
     key: 'bow',
     frames: [
       { key: 'bow_0' },
@@ -162,6 +185,25 @@ export function createPlayerAnimations(scene) {
       { key: 'bow_3' },
       { key: 'bow_4' },
       { key: 'bow_5' }
+    ],
+    frameRate: 10,
+    repeat: 0 // Roda apenas uma vez quando pula
+  });
+
+  scene.anims.create({
+    key: 'spawn',
+    frames: [
+      { key: 'spawn_0' },
+      { key: 'spawn_1' },
+      { key: 'spawn_2' },
+      { key: 'spawn_3' },
+      { key: 'spawn_4' },
+      { key: 'spawn_5' },
+      { key: 'spawn_6' },
+      { key: 'spawn_7' },
+      { key: 'spawn_8' },
+      { key: 'spawn_9' },
+      { key: 'spawn_10' }
     ],
     frameRate: 10,
     repeat: 0 // Roda apenas uma vez quando pula
