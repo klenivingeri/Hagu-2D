@@ -66,7 +66,7 @@ export class GameScene extends Phaser.Scene {
 
   update() {
     updatePlayerMovement(this)
-    updateEnemyMovement(this, this.enemy)
+    //updateEnemyMovement(this, this.enemy)
     if (this.enemies) {
       this.enemies.getChildren().forEach((enemy) => {
         updateEnemyMovement(this, enemy);

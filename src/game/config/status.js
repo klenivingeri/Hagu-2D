@@ -31,7 +31,7 @@ export function createPlayerStatus(overrides = {}) {
 
 export function createEnemyStatus(overrides = {}) {
   return {
-    life: 1,           // hoje o inimigo morre com 1 tiro (ver damageEnemy em createEnemy.js)
+    life: 3,              // +2 em relação ao original, pra dar pra ver a animação de stomp antes de morrer
     speed: 50,           // velocidade de patrulha - já usado em createEnemy(s)
     contactDamage: 1,      // dano que causa ao encostar no player (hoje hitByEnemy tira 1 vida fixo)
 

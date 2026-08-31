@@ -3,8 +3,10 @@ import { updateHUD } from "./createhud";
 import { ANIME_PLAYER } from "../../config/animations.js";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 import { createPlayerStatus } from "../../config/status.js";
+import { stompDamageEnemy } from "./createEnemy.js";
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
+const STOMP_TOLERANCE_RATIO = 0.5; // "pisou" se os pés estiverem na metade de cima do inimigo
 
 export function createPlayer(scene) {
   let player
@@ -73,6 +75,14 @@ export function setupPlayerDamage(scene, player, enemies) {
 
 function hitByEnemy(scene, player, enemy) {
   if (player.invulnerable || player.isDead) return; // ainda no cooldown, ignora o toque
+  if (!enemy || !enemy.active) return;
+
+  // Estilo Mario: caiu de cima em cima do inimigo -> quica e dá dano nele,
+  // sem o player levar dano.
+  if (isStomp(player, enemy)) {
+    stompEnemy(scene, player, enemy);
+    return;
+  }
 
   const damage = enemy?.status?.contactDamage ?? 1;
   player.status.life -= damage;
@@ -92,6 +102,25 @@ function hitByEnemy(scene, player, enemy) {
   }
 
   makePlayerInvulnerable(scene, player);
+}
+
+// Estava caindo (velocity.y > 0) com os pés na metade de cima do inimigo?
+// Como o overlap player x enemy não separa os corpos fisicamente (só
+// dispara o dano), não dá pra usar body.blocked/touching aqui — por isso
+// a checagem é por posição + direção do movimento.
+function isStomp(player, enemy) {
+  const isFalling = player.body.velocity.y > 0;
+  const stompLine = enemy.body.top + enemy.body.height * STOMP_TOLERANCE_RATIO;
+  return isFalling && player.body.bottom <= stompLine;
+}
+
+function stompEnemy(scene, player, enemy) {
+  // Quica pra cima, igual se tivesse apertado o botão de pulo.
+  player.setVelocityY(-player.status.jumpHeight);
+
+  // stompDamageEnemy decide sozinha a animação certa: "enemy_stomp" se o
+  // inimigo sobreviver, "enemy_spark" (morte) se esse dano for fatal.
+  stompDamageEnemy(enemy, player.status.jumpDamage);
 }
 
 function makePlayerInvulnerable(scene, player) {

@@ -7,6 +7,7 @@ export function createEnemy(scene) {
   const enemy = scene.physics.add.sprite(scene.scale.width - 200, scene.scale.height - 200, 'enemy_run_0');
 
   enemy.status = createEnemyStatus();
+  enemy.isStomped = false;
   enemy.setCollideWorldBounds(true);
   enemy.body.velocity.x = -enemy.status.speed;
 
@@ -45,6 +46,7 @@ export function createEnemys(scene){
 
     const enemy = scene.physics.add.sprite(x, y, 'enemy_run_0');
     enemy.status = createEnemyStatus();
+    enemy.isStomped = false;
     enemy.setCollideWorldBounds(true);
     
     const {
@@ -98,16 +100,61 @@ function bulletDestroy(bullet) {
 }
 
 // Desconta o dano do tiro (status.bulletDamage do player) da vida do
-// inimigo. Com os valores padrão (life: 1, bulletDamage: 1) o
-// comportamento continua sendo o de sempre: morre com 1 tiro.
-function damageEnemy(enemy, damage = 1) {
+// inimigo. Se isso matar o inimigo, toca a animação de morte (enemy_spark)
+// antes de sumir de vez (ver killEnemy).
+export function damageEnemy(enemy, damage = 1) {
   if (!enemy || !enemy.active) return;
 
   enemy.status.life -= damage;
 
   if (enemy.status.life <= 0) {
-    enemyDestroy(enemy);
+    killEnemy(enemy);
   }
+}
+
+// Dano por "pisão" (stomp - pular em cima do inimigo).
+// - Se o dano NÃO for suficiente pra matar (dano < vida): o inimigo
+//   sobrevive, toca a animação "enemy_stomp" (esmagado, mas vivo) e volta
+//   a correr normalmente assim que ela terminar.
+// - Se o dano for igual ou maior que a vida: o inimigo morre igual a
+//   qualquer outra morte (toca "enemy_spark", não "enemy_stomp" — senão a
+//   morte cortaria a animação de esmagado no meio).
+// Usada por createPlayer.js na mecânica de stomp.
+export function stompDamageEnemy(enemy, damage = 1) {
+  if (!enemy || !enemy.active) return;
+
+  const willSurvive = damage < enemy.status.life;
+  enemy.status.life -= damage;
+
+  if (!willSurvive) {
+    killEnemy(enemy);
+    return;
+  }
+
+  // Trava a animação de "run" até "enemy_stomp" terminar, e para o
+  // inimigo no lugar pra não ficar deslizando enquanto é "esmagado".
+  enemy.isStomped = true;
+  enemy.setVelocityX(0);
+  enemy.anims.play('enemy_stomp', true);
+
+  enemy.once('animationcomplete-enemy_stomp', () => {
+    enemy.isStomped = false;
+  });
+}
+
+// Morte do inimigo, seja por bullet ou por um stomp fatal: toca a
+// animação "enemy_spark" e só destrói de fato (enemyDestroy) quando ela
+// terminar. Desliga a física na hora pra não poder ser atingido de novo
+// nem continuar colidindo enquanto a animação de morte roda.
+function killEnemy(enemy) {
+  enemy.isStomped = true; // trava updateEnemyMovement também durante a morte
+  enemy.setVelocityX(0);
+  enemy.body.enable = false;
+  enemy.anims.play('enemy_spark', true);
+
+  enemy.once('animationcomplete-enemy_spark', () => {
+    enemyDestroy(enemy);
+  });
 }
 
 function enemyDestroy (enemy) {

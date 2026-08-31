@@ -19,6 +19,13 @@
 //   repeat     -> 0 = toca uma vez, -1 = loop infinito
 
 export const ANIME_PLAYER = [
+    {
+    key: 'idle',
+    url: 'assets/player/idle/sprite_base_idle_',
+    frames: 4, // 0 a 5
+    frameRate: 10,
+    repeat: 0,
+  },
   {
     key: 'jump',
     url: 'assets/player/jump/sprite_jump_',
@@ -51,17 +58,31 @@ export const ANIME_PLAYER = [
 
 export const ANIME_ENEMY = [
   {
-    key: 'enemy_jump',
-    url: 'assets/mobs/sprite_jump_',
-    frames: 5, // 0 a 5
+    key: 'enemy_run',
+    url: 'assets/mobs/mob_1/run/sprite_run_two_',
+    frames: 3, // 0 a 3
+    frameRate: 10,
+    repeat: -1,
+  },
+  {
+    key: 'enemy_stomp',
+    url: 'assets/mobs/mob_1/stomp/sprite_re_land_squash_',
+    frames: 4, // 0 a 3
     frameRate: 10,
     repeat: 0,
   },
   {
-    key: 'enemy_run',
-    url: 'assets/mobs/sprite_run_two_',
-    frames: 3, // 0 a 3
+    key: 'enemy_bow',
+    url: 'assets/mobs/mob_1/bow/sprite_weapon_bow_short_fire_fast_',
+    frames: 4, // 0 a 3
     frameRate: 10,
-    repeat: -1,
+    repeat: 0,
+  },
+  {
+    key: 'enemy_spark',
+    url: 'assets/mobs/mob_1/spark/sprite_z_die_spark_',
+    frames: 7, // 0 a 3
+    frameRate: 10,
+    repeat: 0,
   },
 ];

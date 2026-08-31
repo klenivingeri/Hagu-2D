@@ -24,7 +24,7 @@ export const updatePlayerMovement = (scene) => {
     } else {
       scene.player.setVelocityX(0);
       if (!scene.player.isShooting) {
-        scene.player.setTexture('run_0');
+        scene.player.anims.play('idle', true);
       }
     }
 
@@ -34,7 +34,8 @@ export const updatePlayerMovement = (scene) => {
       scene.player.setVelocityY(-scene.player.status.jumpHeight);
       scene.player.isShooting = false; // Pulo interrompe o disparo de arco em andamento
       scene.player.anims.stop(); 
-      scene.player.setTexture('run_0'); // Define um frame estático de parado
+      scene.player.anims.play('idle', true);
+      //scene.player.setTexture('run_0'); // Define um frame estático de parado
     }
 
     // IMPORTANTE: Consome o comando imediatamente. 

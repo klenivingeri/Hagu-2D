@@ -1,6 +1,11 @@
 export const updateEnemyMovement = (scene, enemy) => {
   if (!enemy || !enemy.active) return;
 
+  // Enquanto está tocando a animação de "esmagado" (stomp) ou "morte"
+  // (spark), não deixa a lógica de movimento trocar de volta pra
+  // "enemy_run" no meio do caminho.
+  if (enemy.isStomped) return;
+
   if (enemy.body.blocked.left) {
     turnEnemy(enemy, 40, false);
   } else if (enemy.body.blocked.right) {
