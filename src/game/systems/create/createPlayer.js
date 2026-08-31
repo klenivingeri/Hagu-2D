@@ -2,6 +2,7 @@ import { resizeCollider } from "./common";
 import { updateHUD } from "./createhud";
 import { ANIME_PLAYER } from "../../config/animations.js";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
+import { createPlayerStatus } from "../../config/status.js";
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
 
@@ -28,9 +29,7 @@ export function createPlayer(scene) {
   player.body.setSize(newWidth, newHeight);
   player.body.setOffset(offsetX, offsetY);
 
-  player.status = {
-    life: 3
-  }
+  player.status = createPlayerStatus();
 
   player.invulnerable = false;
   player.isDead = false;
@@ -66,16 +65,17 @@ export function setupPlayerDamage(scene, player, enemies) {
   scene.physics.add.overlap(
     player,
     enemies,
-    (playerObj) => hitByEnemy(scene, playerObj),
+    (playerObj, enemyObj) => hitByEnemy(scene, playerObj, enemyObj),
     null,
     scene
   );
 }
 
-function hitByEnemy(scene, player) {
+function hitByEnemy(scene, player, enemy) {
   if (player.invulnerable || player.isDead) return; // ainda no cooldown, ignora o toque
 
-  player.status.life -= 1;
+  const damage = enemy?.status?.contactDamage ?? 1;
+  player.status.life -= damage;
   updateHUD(scene, player.status.life);
 
   if (scene.hud) {

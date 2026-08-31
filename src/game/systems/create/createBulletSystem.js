@@ -11,6 +11,7 @@ export function createBulletSystem(scene) {
       bullet.body.setVelocityX(450 * scene.lastDirection);
       bullet.angle = 90;
       bullet.setDepth(5);
+      bullet.damage = scene.player.status.bulletDamage; // dano que esse tiro carrega
     }
   };
 

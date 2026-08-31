@@ -1,12 +1,14 @@
 import { resizeCollider } from "./common";
 import { ANIME_ENEMY } from "../../config/animations.js";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
+import { createEnemyStatus } from "../../config/status.js";
 
 export function createEnemy(scene) {
   const enemy = scene.physics.add.sprite(scene.scale.width - 200, scene.scale.height - 200, 'enemy_run_0');
 
+  enemy.status = createEnemyStatus();
   enemy.setCollideWorldBounds(true);
-  enemy.body.velocity.x = -150;
+  enemy.body.velocity.x = -enemy.status.speed;
 
   // --- ADICIONE ESTAS DUAS LINHAS AQUI ---
   enemy.setFlipX(true);                // Inicia virado para a esquerda (já que vai para a esquerda)
@@ -23,7 +25,7 @@ export function createEnemy(scene) {
     enemy,
     (bullet, inimigo) => {
       bulletDestroy(bullet)
-      enemyDestroy(inimigo)
+      damageEnemy(inimigo, bullet.damage)
     },
     null,
     scene
@@ -42,6 +44,7 @@ export function createEnemys(scene){
     const y = objectData.y - 10; 
 
     const enemy = scene.physics.add.sprite(x, y, 'enemy_run_0');
+    enemy.status = createEnemyStatus();
     enemy.setCollideWorldBounds(true);
     
     const {
@@ -62,7 +65,7 @@ export function createEnemys(scene){
     // após o motor do Phaser estabilizar a posição nas camadas
     scene.time.delayedCall(10, () => {
       if (enemy && enemy.active) {
-        enemy.body.velocity.x = -50;
+        enemy.body.velocity.x = -enemy.status.speed;
         enemy.setFlipX(true);
         enemy.anims.play('enemy_run', true);
       }
@@ -76,7 +79,7 @@ export function createEnemys(scene){
     enemies,
     (bullet, inimigo) => {
       bulletDestroy(bullet);
-      enemyDestroy(inimigo);
+      damageEnemy(inimigo, bullet.damage);
     },
     null,
     scene
@@ -92,6 +95,19 @@ function bulletDestroy(bullet) {
   bullet.setVisible(false);
   bullet.body.stop();
   bullet.setPosition(-1000, -1000);
+}
+
+// Desconta o dano do tiro (status.bulletDamage do player) da vida do
+// inimigo. Com os valores padrão (life: 1, bulletDamage: 1) o
+// comportamento continua sendo o de sempre: morre com 1 tiro.
+function damageEnemy(enemy, damage = 1) {
+  if (!enemy || !enemy.active) return;
+
+  enemy.status.life -= damage;
+
+  if (enemy.status.life <= 0) {
+    enemyDestroy(enemy);
+  }
 }
 
 function enemyDestroy (enemy) {
