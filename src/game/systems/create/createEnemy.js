@@ -1,4 +1,6 @@
 import { resizeCollider } from "./common";
+import { ANIME_ENEMY } from "../../config/animations.js";
+import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 
 export function createEnemy(scene) {
   const enemy = scene.physics.add.sprite(scene.scale.width - 200, scene.scale.height - 200, 'enemy_run_0');
@@ -102,43 +104,9 @@ function enemyDestroy (enemy) {
 
 
 export function preloadEnemyAssets(scene) {
-  // Carregando os frames de pulo (0 a 5)
-  for (let i = 0; i <= 5; i++) {
-    scene.load.image(`enemy_jump_${i}`, `assets/mobs/sprite_jump_${i}.png`);
-  }
-
-  // Carregando os frames de corrida (0 a 3)
-  for (let i = 0; i <= 3; i++) {
-    scene.load.image(`enemy_run_${i}`, `assets/mobs/sprite_run_two_${i}.png`);
-  }
+  preloadAnimations(scene, ANIME_ENEMY);
 }
 
 export function createEnemyAnimations(scene) {
-  // Animação de Corrida
-  scene.anims.create({
-    key: 'enemy_run',
-    frames: [
-      { key: 'enemy_run_0' },
-      { key: 'enemy_run_1' },
-      { key: 'enemy_run_2' },
-      { key: 'enemy_run_3' }
-    ],
-    frameRate: 10, // Velocidade da animação (quadros por segundo)
-    repeat: -1     // -1 significa loop infinito
-  });
-
-  // Animação de Pulo
-  scene.anims.create({
-    key: 'enemy_jump',
-    frames: [
-      { key: 'enemy_jump_0' },
-      { key: 'enemy_jump_1' },
-      { key: 'enemy_jump_2' },
-      { key: 'enemy_jump_3' },
-      { key: 'enemy_jump_4' },
-      { key: 'enemy_jump_5' }
-    ],
-    frameRate: 10,
-    repeat: 0 // Roda apenas uma vez quando pula
-  });
+  createAnimations(scene, ANIME_ENEMY);
 }
