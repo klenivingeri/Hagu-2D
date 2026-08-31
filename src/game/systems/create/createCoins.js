@@ -53,6 +53,34 @@ export function createCoins(scene) {
     coinsLayer.setVisible(false);
   }
 
+  if (scene.player) {
+    scene.physics.add.overlap(scene.player, coins, (player, coin) => {
+      collectCoin(scene, player, coin);
+    });
+  }
+
   scene.coins = coins;
   return coins;
+}
+
+function collectCoin(scene, player, coin) {
+  if (!coin.active || coin.isCollecting) return;
+
+  coin.isCollecting = true;
+  coin.body.enable = false;
+  player.status.totalCoins += 1;
+
+  if (scene.hud?.coinTotal) {
+    scene.hud.coinTotal.textContent = String(player.status.totalCoins);
+  }
+
+  // A animação da moeda continua durante o efeito de coleta.
+  scene.tweens.add({
+    targets: coin,
+    y: coin.y - 24,
+    scale: 0.90,
+    alpha: 0,
+    duration: 360,
+    onComplete: () => coin.destroy(),
+  });
 }

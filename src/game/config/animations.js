@@ -23,7 +23,7 @@ export const ANIME_PLAYER = [
     key: 'idle',
     url: 'assets/player/idle/sprite_base_idle_',
     frames: 4, // 0 a 5
-    frameRate: 10,
+    frameRate: 4,
     repeat: 0,
   },
   {

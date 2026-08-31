@@ -1,4 +1,6 @@
 // HUD simples em HTML/CSS (fora do canvas do Phaser) para mostrar as vidas do player.
+import { getVirtualFrame } from '../../commons/textureUtils.js';
+
 // Cria os corações dinamicamente e injeta dentro do container .game-screen,
 // já que ele é a área com a mesma dimensão/posição do jogo.
 
@@ -12,6 +14,8 @@ export function createHUD(scene) {
   // Evita duplicar o HUD se a cena for reiniciada (scene.restart())
   const existing = gameScreen.querySelector('.hud-hearts');
   if (existing) existing.remove();
+  const existingCoins = gameScreen.querySelector('.hud-coins');
+  if (existingCoins) existingCoins.remove();
 
   const maxLife = scene.player?.status?.life ?? 3;
 
@@ -29,20 +33,35 @@ export function createHUD(scene) {
 
   gameScreen.appendChild(hearts);
 
-  scene.hud = { container: hearts, hearts: heartEls };
+  // Frame 1 da spritesheet coin.png, usando o mesmo recorte virtual do jogo.
+  const coinFrame = getVirtualFrame(scene, 'coin', 1, 0, 12, 1);
+  const coins = document.createElement('div');
+  coins.className = 'hud-coins';
+  const coinTotal = document.createElement('span');
+  coinTotal.className = 'coin-total';
+  coinTotal.textContent = String(scene.player?.status?.totalCoins ?? 0);
+  const coinIcon = document.createElement('span');
+  coinIcon.className = 'coin-icon';
+  coinIcon.dataset.frame = coinFrame;
+  coins.append(coinTotal, coinIcon);
+  gameScreen.appendChild(coins);
+
+  scene.hud = { container: hearts, hearts: heartEls, coins, coinTotal };
 
   // Garante que some junto quando a cena for desligada/reiniciada
-  scene.events.once('shutdown', () => hearts.remove());
-  scene.events.once('destroy', () => hearts.remove());
+  scene.events.once('shutdown', () => { hearts.remove(); coins.remove(); });
+  scene.events.once('destroy', () => { hearts.remove(); coins.remove(); });
 }
 
 // Atualiza os corações preenchidos de acordo com a vida atual.
-export function updateHUD(scene, life) {
+export function updateHUD(scene, life, totalCoins = scene.player?.status?.totalCoins ?? 0) {
   if (!scene.hud) return;
 
   scene.hud.hearts.forEach((heart, index) => {
     heart.classList.toggle('empty', index >= life);
   });
+
+  if (scene.hud.coinTotal) scene.hud.coinTotal.textContent = String(totalCoins);
 }
 
 const HEART_SVG = `

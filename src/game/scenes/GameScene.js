@@ -47,7 +47,7 @@ export class GameScene extends Phaser.Scene {
     this.player = createPlayer(this);
 
     createHUD(this);
-    updateHUD(this, this.player.status.life);
+    updateHUD(this, this.player.status.life, this.player.status.totalCoins);
 
     this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 10 });
     this.bulletSystem = createBulletSystem(this);

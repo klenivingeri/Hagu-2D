@@ -23,6 +23,7 @@ export function createPlayerStatus(overrides = {}) {
     jumpDamage: 1,                 // dano ao pisar em cima do inimigo (stomp)
     currentWeapon: 'bow',           // arma equipada (hoje só existe o arco)
     totalGold: 0,
+    totalCoins: 0,
     exp: 0,
 
     ...overrides,
