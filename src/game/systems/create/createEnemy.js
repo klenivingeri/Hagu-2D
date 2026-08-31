@@ -3,11 +3,13 @@ import { ANIME_ENEMY } from "../../config/animations.js";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 import { createEnemyStatus } from "../../config/status.js";
 
+const ENEMY_DAMAGE_COOLDOWN_MS = 300; // tempo sem poder levar outro dano (bullet ou stomp), evita múltiplos hits de uma vez
+
 export function createEnemy(scene) {
   const enemy = scene.physics.add.sprite(scene.scale.width - 200, scene.scale.height - 200, 'enemy_run_0');
 
   enemy.status = createEnemyStatus();
-  enemy.isStomped = false;
+  initEnemyState(enemy);
   enemy.setCollideWorldBounds(true);
   enemy.body.velocity.x = -enemy.status.speed;
 
@@ -46,7 +48,7 @@ export function createEnemys(scene){
 
     const enemy = scene.physics.add.sprite(x, y, 'enemy_run_0');
     enemy.status = createEnemyStatus();
-    enemy.isStomped = false;
+    initEnemyState(enemy);
     enemy.setCollideWorldBounds(true);
     
     const {
@@ -90,6 +92,24 @@ export function createEnemys(scene){
   return enemies;
 }
 
+// Flags de estado do inimigo. Três coisas independentes, cada uma com uma
+// única responsabilidade (é essa mistura que causava o bug de ficar
+// "travado" e não virar mais de direção):
+//   isStomped    -> só controla ANIMAÇÃO: enquanto true, updateEnemyMovement
+//                   não sobrescreve os frames de enemy_stomp/enemy_spark.
+//                   Não mexe em velocidade/direção.
+//   invulnerable -> só controla DANO: enquanto true (300ms depois do
+//                   último hit), bullet e stomp são ignorados. Evita que
+//                   vários overlaps no mesmo instante contem como vários
+//                   hits de uma vez só.
+//   isDead       -> trava PERMANENTE assim que a vida chega a zero: nunca
+//                   mais recebe dano (bullet ou stomp), mesmo se por algum
+//                   motivo o body ainda estiver habilitado por um frame.
+function initEnemyState(enemy) {
+  enemy.isStomped = false;
+  enemy.invulnerable = false;
+  enemy.isDead = false;
+}
 
 function bulletDestroy(bullet) {
   // Desativa o tiro
@@ -99,55 +119,79 @@ function bulletDestroy(bullet) {
   bullet.setPosition(-1000, -1000);
 }
 
-// Desconta o dano do tiro (status.bulletDamage do player) da vida do
-// inimigo. Se isso matar o inimigo, toca a animação de morte (enemy_spark)
-// antes de sumir de vez (ver killEnemy).
+// Dano de tiro (bullet). Só decide a origem do dano — quem realmente
+// aplica é applyDamage (evita ter a mesma lógica de cooldown/morte
+// duplicada aqui e em stompDamageEnemy).
 export function damageEnemy(enemy, damage = 1) {
-  if (!enemy || !enemy.active) return;
-
-  enemy.status.life -= damage;
-
-  if (enemy.status.life <= 0) {
-    killEnemy(enemy);
-  }
+  applyDamage(enemy, damage, 'bullet');
 }
 
-// Dano por "pisão" (stomp - pular em cima do inimigo).
-// - Se o dano NÃO for suficiente pra matar (dano < vida): o inimigo
-//   sobrevive, toca a animação "enemy_stomp" (esmagado, mas vivo) e volta
-//   a correr normalmente assim que ela terminar.
-// - Se o dano for igual ou maior que a vida: o inimigo morre igual a
-//   qualquer outra morte (toca "enemy_spark", não "enemy_stomp" — senão a
-//   morte cortaria a animação de esmagado no meio).
+// Dano por "pisão" (stomp - pular em cima do inimigo). Mesma regra de
+// cooldown/morte do bullet; a única diferença é que, se o inimigo
+// sobreviver, toca a animação "enemy_stomp".
 // Usada por createPlayer.js na mecânica de stomp.
 export function stompDamageEnemy(enemy, damage = 1) {
-  if (!enemy || !enemy.active) return;
+  applyDamage(enemy, damage, 'stomp');
+}
 
-  const willSurvive = damage < enemy.status.life;
+// Núcleo único de aplicação de dano, usado tanto pelo bullet quanto pelo
+// stomp. Centralizar aqui evita que os dois caminhos fiquem com regras
+// (cooldown, morte, etc) divergentes/duplicadas.
+function applyDamage(enemy, damage, source) {
+  if (!enemy || !enemy.active) return;
+  if (enemy.isDead) return;        // já morrendo/morto: nunca mais recebe dano
+  if (enemy.invulnerable) return;  // ainda no cooldown do último hit
+
   enemy.status.life -= damage;
 
-  if (!willSurvive) {
+  // Cooldown de dano: por ENEMY_DAMAGE_COOLDOWN_MS esse inimigo não pode
+  // levar outro hit. Sem isso, o overlap (bullet ou player-em-cima)
+  // dispara em vários frames seguidos e contava como vários hits de uma
+  // vez só (era a causa do "morre rápido demais"/"trava" antes).
+  enemy.invulnerable = true;
+  enemy.scene.time.delayedCall(ENEMY_DAMAGE_COOLDOWN_MS, () => {
+    if (enemy && enemy.active) {
+      enemy.invulnerable = false;
+    }
+  });
+
+  if (enemy.status.life <= 0) {
     killEnemy(enemy);
     return;
   }
 
-  // Trava a animação de "run" até "enemy_stomp" terminar, e para o
-  // inimigo no lugar pra não ficar deslizando enquanto é "esmagado".
+  if (source === 'stomp') {
+    playStompAnimation(enemy);
+  }
+}
+
+// Toca "enemy_stomp" (esmagado, mas vivo). Trava só a ANIMAÇÃO de "run"
+// até ela terminar (isStomped) — a velocidade/direção do inimigo não são
+// tocadas aqui, então ele continua se deslocando e vira normalmente nas
+// bordas/paredes assim que updateEnemyMovement for liberado de novo.
+function playStompAnimation(enemy) {
   enemy.isStomped = true;
-  enemy.setVelocityX(0);
   enemy.anims.play('enemy_stomp', true);
 
   enemy.once('animationcomplete-enemy_stomp', () => {
+    // Se o inimigo morreu enquanto essa animação ainda tocava (ex: mais
+    // um hit chegou assim que o cooldown acabou), quem cuida da animação
+    // agora é o killEnemy — não mexe em mais nada aqui.
+    if (!enemy.active || enemy.isDead) return;
+
     enemy.isStomped = false;
+    enemy.anims.play('enemy_run', true); // volta pra animação de correr
   });
 }
 
 // Morte do inimigo, seja por bullet ou por um stomp fatal: toca a
 // animação "enemy_spark" e só destrói de fato (enemyDestroy) quando ela
-// terminar. Desliga a física na hora pra não poder ser atingido de novo
-// nem continuar colidindo enquanto a animação de morte roda.
+// terminar. Desliga a física NA HORA (não só depois da animação) pra
+// garantir que nenhum overlap (bullet ou player) consiga mais atingi-lo
+// enquanto ele morre.
 function killEnemy(enemy) {
-  enemy.isStomped = true; // trava updateEnemyMovement também durante a morte
+  enemy.isDead = true;
+  enemy.isStomped = true; // reaproveita a mesma trava de animação durante a morte
   enemy.setVelocityX(0);
   enemy.body.enable = false;
   enemy.anims.play('enemy_spark', true);

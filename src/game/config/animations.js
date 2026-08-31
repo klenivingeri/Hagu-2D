@@ -51,7 +51,7 @@ export const ANIME_PLAYER = [
     key: 'bow',
     url: 'assets/player/bow/sprite_weapon_bow_short_fire_slow_',
     frames: 5, // 0 a 5
-    frameRate: 10,
+    frameRate: 20,
     repeat: 0,
   },
 ];
@@ -82,7 +82,7 @@ export const ANIME_ENEMY = [
     key: 'enemy_spark',
     url: 'assets/mobs/mob_1/spark/sprite_z_die_spark_',
     frames: 7, // 0 a 3
-    frameRate: 10,
+    frameRate: 20,
     repeat: 0,
   },
 ];

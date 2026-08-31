@@ -78,7 +78,12 @@ function hitByEnemy(scene, player, enemy) {
   if (!enemy || !enemy.active) return;
 
   // Estilo Mario: caiu de cima em cima do inimigo -> quica e dá dano nele,
-  // sem o player levar dano.
+  // sem o player levar dano. O overlap dispara TODO FRAME enquanto as
+  // caixas de colisão ainda estão sobrepostas (physics.add.overlap não
+  // separa os corpos), mas quem decide se o dano realmente conta é o
+  // cooldown de invulnerabilidade do PRÓPRIO inimigo (300ms, ver
+  // applyDamage em createEnemy.js) — aqui só detectamos a geometria e
+  // despachamos, sem duplicar essa regra.
   if (isStomp(player, enemy)) {
     stompEnemy(scene, player, enemy);
     return;
