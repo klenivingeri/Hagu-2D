@@ -1,25 +1,32 @@
 import { resizeCollider } from "./common";
 import { updateHUD } from "./createhud";
-import { ANIME_PLAYER } from "../../config/animations.js";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 import { createPlayerStatus } from "../../config/status.js";
+import { PLAYERS_CONFIG, getEntityAnimationKey } from "../../config/entities.js";
+import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
 const STOMP_TOLERANCE_RATIO = 0.5; // "pisou" se os pés estiverem na metade de cima do inimigo
 
 export function createPlayer(scene) {
-  let player
-  scene.playerLayer.objects.forEach((objectData) => {
-    player = scene.physics.add.sprite(
+  const objectData = scene.playerLayer?.objects?.[0];
+  if (!objectData) return null;
+
+  const key = getTiledProperty(objectData.properties, 'key')
+    || scene.playerLayer.key || 'player';
+  const config = PLAYERS_CONFIG[key];
+  if (!config) throw new Error(`Configuração de player não encontrada para a key "${key}".`);
+
+  const player = scene.physics.add.sprite(
       objectData.x,
       objectData.y - 10,
-      'run_0'
+      `${getEntityAnimationKey(key, 'run')}_0`
     );
-    player.setCollideWorldBounds(true);
-    scene.physics.add.collider(player, scene.platforms);
-
-  })
+  player.entityKey = key;
+  player.entityConfig = config;
+  player.setCollideWorldBounds(true);
+  scene.physics.add.collider(player, scene.platforms);
 
   const {
     newWidth,
@@ -31,7 +38,7 @@ export function createPlayer(scene) {
   player.body.setSize(newWidth, newHeight);
   player.body.setOffset(offsetX, offsetY);
 
-  player.status = createPlayerStatus();
+  player.status = createPlayerStatus(config.stats);
 
   player.invulnerable = false;
   player.isDead = false;
@@ -50,11 +57,12 @@ function playSpawnAnimation(scene, player) {
   player.isSpawning = true;
   player.invulnerable = true;
 
-  player.anims.play('spawn');
-  player.once('animationcomplete-spawn', () => {
+  const spawnAnimation = getEntityAnimationKey(player.entityKey, 'spawn');
+  player.anims.play(spawnAnimation);
+  player.once(`animationcomplete-${spawnAnimation}`, () => {
     player.isSpawning = false;
     player.invulnerable = false;
-    player.setTexture('run_0'); // volta pro frame parado assim que termina
+    player.setTexture(`${getEntityAnimationKey(player.entityKey, 'run')}_0`);
   });
 }
 
@@ -164,9 +172,15 @@ function killPlayer(scene, player) {
 }
 
 export function preloadPlayerAssets(scene) {
-  preloadAnimations(scene, ANIME_PLAYER);
+  Object.entries(PLAYERS_CONFIG).forEach(([key, config]) => {
+    preloadAnimations(scene, config.animations.map((animation) => ({
+      ...animation, url: `${config.path}${animation.url}`,
+    })), key);
+  });
 }
 
 export function createPlayerAnimations(scene) {
-  createAnimations(scene, ANIME_PLAYER);
+  Object.entries(PLAYERS_CONFIG).forEach(([key, config]) => {
+    createAnimations(scene, config.animations, key);
+  });
 }

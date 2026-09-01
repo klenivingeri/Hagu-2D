@@ -1,3 +1,5 @@
+import { getEntityAnimationKey } from '../../config/entities.js';
+
 export const updateEnemyMovement = (scene, enemy) => {
   if (!enemy || !enemy.active) return;
 
@@ -27,7 +29,7 @@ function turnEnemy(enemy, velocityX, flipX) {
   // "enemy_stomp"/"enemy_spark" — a direção/velocidade muda de qualquer
   // jeito, mas os frames da animação em andamento não são interrompidos.
   if (!enemy.isStomped) {
-    enemy.anims.play('enemy_run', true);
+    enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
   }
 }
 

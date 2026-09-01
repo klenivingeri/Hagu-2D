@@ -1,3 +1,5 @@
+import { getEntityAnimationKey } from '../../config/entities.js';
+
 export const updatePlayerMovement = (scene) => {
     // Enquanto o player está nascendo (animação "spawn"), ele fica travado:
     // sem correr, pular ou ter o frame trocado por baixo da animação.
@@ -37,13 +39,14 @@ export const updatePlayerMovement = (scene) => {
 
       if (isAirborne) {
         // Evita reiniciar jump a cada frame depois que a animação terminar.
-        if (player.anims.currentAnim?.key !== 'jump') {
-          player.anims.play('jump', true);
+        const jumpAnimation = getEntityAnimationKey(player.entityKey, 'jump');
+        if (player.anims.currentAnim?.key !== jumpAnimation) {
+          player.anims.play(jumpAnimation, true);
         }
       } else if (left || right) {
-        player.anims.play('run', true);
+        player.anims.play(getEntityAnimationKey(player.entityKey, 'run'), true);
       } else {
-        player.anims.play('idle', true);
+        player.anims.play(getEntityAnimationKey(player.entityKey, 'idle'), true);
       }
     }
 

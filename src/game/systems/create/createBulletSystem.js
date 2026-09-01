@@ -1,3 +1,5 @@
+import { getEntityAnimationKey } from '../../config/entities.js';
+
 export function createBulletSystem(scene) {
   // Cria de fato o projétil e o lança na direção que o player está olhando.
   const spawnBullet = () => {
@@ -28,33 +30,35 @@ export function createBulletSystem(scene) {
 
     player.setFlipX(scene.lastDirection === -1);
     player.isShooting = true;
+    const bowAnimation = getEntityAnimationKey(player.entityKey, 'bow');
+    const bowFrame = `${bowAnimation}_3`;
 
     // Garante que não fiquem múltiplos listeners acumulados de disparos anteriores.
     // (Guardamos a referência no próprio player pois a função é recriada a cada fire().)
     if (player._onBowFrame) {
       player.off('animationupdate', player._onBowFrame);
     }
-    player.off('animationcomplete-bow');
+    player.off(`animationcomplete-${bowAnimation}`);
 
     // Só lança o bullet quando a animação "bow" chegar no quadro 3 (bow_3).
     // OBS: o Phaser não tem um evento "animationupdate-bow" por chave (só o
     // "animationcomplete-<key>" tem essa variante); por isso escutamos o
     // evento genérico "animationupdate" e filtramos pela animação atual.
     player._onBowFrame = (anim, frame) => {
-      if (anim.key === 'bow' && frame.textureKey === 'bow_3') {
+      if (anim.key === bowAnimation && frame.textureKey === bowFrame) {
         spawnBullet();
         player.off('animationupdate', player._onBowFrame); // um disparo por animação
       }
     };
     player.on('animationupdate', player._onBowFrame);
 
-    player.once('animationcomplete-bow', () => {
+    player.once(`animationcomplete-${bowAnimation}`, () => {
       player.isShooting = false;
     });
 
     // Toca a animação do zero. Como agora só entramos aqui quando não há
     // nenhum tiro em andamento (guard acima), não precisamos do ignoreIfPlaying.
-    player.anims.play('bow');
+    player.anims.play(bowAnimation);
   };
 
   scene.input.on('pointerdown', fire);

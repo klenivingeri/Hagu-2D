@@ -1,4 +1,5 @@
 import { MAP_LAYERS } from '../../../constants'
+import { getTiledProperty } from '../../commons/tiledUtils.js';
 
 export function createWorld(scene) {
 const map = scene.make.tilemap({ key: 'mapa_json' });
@@ -59,6 +60,12 @@ const {
   scene.limits = enemyLimits;
   scene.enemyLayer = enemyObjectLayer// Guardamos a referência da camada enemy aqui!
   scene.playerLayer = playerObjectLayer
+  if (scene.enemyLayer) {
+    scene.enemyLayer.key = getTiledProperty(enemyObjectLayer.properties, 'key');
+  }
+  if (scene.playerLayer) {
+    scene.playerLayer.key = getTiledProperty(playerObjectLayer.properties, 'key');
+  }
   scene.railLayer = railObjectLayer
 
   scene.map = map;

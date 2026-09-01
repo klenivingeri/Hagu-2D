@@ -1,21 +1,26 @@
 import { resizeCollider } from "./common";
-import { ANIME_ENEMY } from "../../config/animations.js";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 import { createEnemyStatus } from "../../config/status.js";
+import { MOBS_CONFIG, getEntityAnimationKey } from "../../config/entities.js";
+import { getTiledProperty } from "../../commons/tiledUtils.js";
 
 const ENEMY_DAMAGE_COOLDOWN_MS = 300; // tempo sem poder levar outro dano (bullet ou stomp), evita múltiplos hits de uma vez
 
 export function createEnemy(scene) {
-  const enemy = scene.physics.add.sprite(scene.scale.width - 200, scene.scale.height - 200, 'enemy_run_0');
+  const key = Object.keys(MOBS_CONFIG)[0];
+  const config = MOBS_CONFIG[key];
+  const enemy = scene.physics.add.sprite(scene.scale.width - 200, scene.scale.height - 200, `${getEntityAnimationKey(key, 'run')}_0`);
+  enemy.entityKey = key;
+  enemy.entityConfig = config;
 
-  enemy.status = createEnemyStatus();
+  enemy.status = createEnemyStatus(config.stats);
   initEnemyState(enemy);
   enemy.setCollideWorldBounds(true);
   enemy.body.velocity.x = -enemy.status.speed;
 
   // --- ADICIONE ESTAS DUAS LINHAS AQUI ---
   enemy.setFlipX(true);                // Inicia virado para a esquerda (já que vai para a esquerda)
-  enemy.anims.play('enemy_run', true); // Já começa animando desde o nascimento
+  enemy.anims.play(getEntityAnimationKey(key, 'run'), true);
 
   scene.physics.add.collider(enemy, scene.limits);
   scene.physics.add.collider(enemy, scene.platforms);
@@ -46,8 +51,17 @@ export function createEnemys(scene){
     const x = objectData.x;
     const y = objectData.y - 10; 
 
-    const enemy = scene.physics.add.sprite(x, y, 'enemy_run_0');
-    enemy.status = createEnemyStatus();
+    const key = getTiledProperty(objectData.properties, 'key')
+      || scene.enemyLayer.key || Object.keys(MOBS_CONFIG)[0];
+    const config = MOBS_CONFIG[key];
+    if (!config) {
+      console.warn(`Mob ignorado: não existe configuração para a key "${key}".`);
+      return;
+    }
+    const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
+    enemy.entityKey = key;
+    enemy.entityConfig = config;
+    enemy.status = createEnemyStatus(config.stats);
     initEnemyState(enemy);
     enemy.setCollideWorldBounds(true);
     
@@ -71,7 +85,7 @@ export function createEnemys(scene){
       if (enemy && enemy.active) {
         enemy.body.velocity.x = -enemy.status.speed;
         enemy.setFlipX(true);
-        enemy.anims.play('enemy_run', true);
+        enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
       }
     });
 
@@ -171,16 +185,16 @@ function applyDamage(enemy, damage, source) {
 // bordas/paredes assim que updateEnemyMovement for liberado de novo.
 function playStompAnimation(enemy) {
   enemy.isStomped = true;
-  enemy.anims.play('enemy_stomp', true);
+  enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'stomp'), true);
 
-  enemy.once('animationcomplete-enemy_stomp', () => {
+  enemy.once(`animationcomplete-${getEntityAnimationKey(enemy.entityKey, 'stomp')}`, () => {
     // Se o inimigo morreu enquanto essa animação ainda tocava (ex: mais
     // um hit chegou assim que o cooldown acabou), quem cuida da animação
     // agora é o killEnemy — não mexe em mais nada aqui.
     if (!enemy.active || enemy.isDead) return;
 
     enemy.isStomped = false;
-    enemy.anims.play('enemy_run', true); // volta pra animação de correr
+    enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
   });
 }
 
@@ -194,9 +208,9 @@ function killEnemy(enemy) {
   enemy.isStomped = true; // reaproveita a mesma trava de animação durante a morte
   enemy.setVelocityX(0);
   enemy.body.enable = false;
-  enemy.anims.play('enemy_spark', true);
+  enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'spark'), true);
 
-  enemy.once('animationcomplete-enemy_spark', () => {
+  enemy.once(`animationcomplete-${getEntityAnimationKey(enemy.entityKey, 'spark')}`, () => {
     enemyDestroy(enemy);
   });
 }
@@ -211,9 +225,15 @@ function enemyDestroy (enemy) {
 
 
 export function preloadEnemyAssets(scene) {
-  preloadAnimations(scene, ANIME_ENEMY);
+  Object.entries(MOBS_CONFIG).forEach(([key, config]) => {
+    preloadAnimations(scene, config.animations.map((animation) => ({
+      ...animation, url: `${config.path}${animation.url}`,
+    })), key);
+  });
 }
 
 export function createEnemyAnimations(scene) {
-  createAnimations(scene, ANIME_ENEMY);
+  Object.entries(MOBS_CONFIG).forEach(([key, config]) => {
+    createAnimations(scene, config.animations, key);
+  });
 }

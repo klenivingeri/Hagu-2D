@@ -486,6 +486,7 @@
         {
          "draworder":"topdown",
          "id":12,
+         "locked":true,
          "name":"enemy",
          "objects":[
                 {
@@ -494,6 +495,12 @@
                  "name":"Enemy",
                  "opacity":1,
                  "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
@@ -503,23 +510,16 @@
                 }, 
                 {
                  "height":0,
-                 "id":2,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":222.189276006919,
-                 "y":331.726216950828
-                }, 
-                {
-                 "height":0,
                  "id":3,
                  "name":"Enemy",
                  "opacity":1,
                  "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
@@ -533,6 +533,12 @@
                  "name":"",
                  "opacity":1,
                  "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
@@ -546,12 +552,18 @@
                  "name":"Enemy",
                  "opacity":1,
                  "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":225.228070175439,
-                 "y":189.693106004448
+                 "x":239.894736842105,
+                 "y":333.693106004448
                 }, 
                 {
                  "height":0,
@@ -559,6 +571,12 @@
                  "name":"Enemy",
                  "opacity":1,
                  "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
@@ -572,6 +590,12 @@
                  "name":"Enemy",
                  "opacity":1,
                  "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
@@ -585,12 +609,37 @@
                  "name":"Enemy",
                  "opacity":1,
                  "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":0,
                  "x":370.470471954534,
                  "y":62.1408450704225
+                }, 
+                {
+                 "height":0,
+                 "id":21,
+                 "name":"Enemy",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":226.666666666667,
+                 "y":177.333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -618,6 +667,12 @@
                  "y":413.169261181122
                 }],
          "opacity":1,
+         "properties":[
+                {
+                 "name":"key",
+                 "type":"string",
+                 "value":"player"
+                }],
          "type":"objectgroup",
          "visible":true,
          "x":0,
@@ -626,28 +681,17 @@
         {
          "draworder":"topdown",
          "id":18,
+         "locked":true,
          "name":"rail",
-         "objects":[
-                {
-                 "height":16.1548913043478,
-                 "id":11,
-                 "name":"",
-                 "opacity":1,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32.6666666666666,
-                 "x":255.287878787879,
-                 "y":112.182229907773
-                }],
+         "objects":[],
          "opacity":1,
          "type":"objectgroup",
          "visible":true,
          "x":0,
          "y":0
         }],
- "nextlayerid":20,
- "nextobjectid":12,
+ "nextlayerid":23,
+ "nextobjectid":22,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

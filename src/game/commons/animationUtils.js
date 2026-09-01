@@ -10,10 +10,11 @@
 
 // Enfileira o load.image de cada frame de cada animação da lista.
 // Chame dentro de preload().
-export function preloadAnimations(scene, animeList) {
+export function preloadAnimations(scene, animeList, entityKey = '') {
   animeList.forEach((props) => {
     for (let i = 0; i <= props.frames; i++) {
-      scene.load.image(`${props.key}_${i}`, `${props.url}${i}.png`);
+      const textureKey = entityKey ? `${entityKey}_${props.key}_${i}` : `${props.key}_${i}`;
+      scene.load.image(textureKey, `${props.url}${i}.png`);
     }
   });
 }
@@ -21,16 +22,17 @@ export function preloadAnimations(scene, animeList) {
 // Registra (scene.anims.create) cada animação da lista, montando o array
 // de frames a partir do mesmo prefixo usado no preload. Chame dentro de
 // create(), depois que os assets já foram carregados.
-export function createAnimations(scene, animeList) {
+export function createAnimations(scene, animeList, entityKey = '') {
   animeList.forEach((props) => {
     const frames = [];
+    const animationKey = entityKey ? `${entityKey}_${props.key}` : props.key;
 
     for (let i = 0; i <= props.frames; i++) {
-      frames.push({ key: `${props.key}_${i}` });
+      frames.push({ key: entityKey ? `${entityKey}_${props.key}_${i}` : `${props.key}_${i}` });
     }
 
     scene.anims.create({
-      key: props.key,
+      key: animationKey,
       frames,
       frameRate: props.frameRate,
       repeat: props.repeat,
