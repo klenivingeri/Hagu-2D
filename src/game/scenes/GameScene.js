@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage } from '../systems/create/createPlayer.js';
 import { createHUD, updateHUD } from '../systems/create/createhud.js';
-import { createEnemy, createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
+import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
 import { createControls } from '../systems/create/createControls.js';
 import { createWorld } from '../systems/create/createWorld.js';
 
@@ -60,13 +60,10 @@ export class GameScene extends Phaser.Scene {
     this.coins = createCoins(this);
 
     setupPlayerDamage(this, this.player, this.enemies);
-
-    //this.enemy = createEnemy(this);
   }
 
   update() {
     updatePlayerMovement(this)
-    //updateEnemyMovement(this, this.enemy)
     if (this.enemies) {
       this.enemies.getChildren().forEach((enemy) => {
         updateEnemyMovement(this, enemy);

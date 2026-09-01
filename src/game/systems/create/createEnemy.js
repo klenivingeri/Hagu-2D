@@ -3,101 +3,41 @@ import { preloadAnimations, createAnimations } from "../../commons/animationUtil
 import { createEnemyStatus } from "../../config/status.js";
 import { MOBS_CONFIG, getEntityAnimationKey } from "../../config/entities.js";
 import { getTiledProperty } from "../../commons/tiledUtils.js";
+import { getEnemyBehavior } from "../upgrade/enemyBehaviors.js";
 
 const ENEMY_DAMAGE_COOLDOWN_MS = 300; // tempo sem poder levar outro dano (bullet ou stomp), evita múltiplos hits de uma vez
 
-export function createEnemy(scene) {
-  const key = Object.keys(MOBS_CONFIG)[0];
-  const config = MOBS_CONFIG[key];
-  const enemy = scene.physics.add.sprite(scene.scale.width - 200, scene.scale.height - 200, `${getEntityAnimationKey(key, 'run')}_0`);
-  enemy.entityKey = key;
-  enemy.entityConfig = config;
+// ==========================================
+// CRIAÇÃO DOS INIMIGOS
+// ==========================================
+// spawnEnemy() é o ÚNICO lugar que monta um inimigo do zero (sprite, física,
+// status, behavior inicial). createEnemys() só lê a camada "enemy" do Tiled
+// e chama spawnEnemy() pra cada ponto encontrado. Se um dia precisar spawnar
+// um inimigo fora do Tiled (ex: onda de inimigos, respawn), chame spawnEnemy
+// diretamente em vez de duplicar essa lógica.
 
-  enemy.status = createEnemyStatus(config.stats);
-  initEnemyState(enemy);
-  enemy.setCollideWorldBounds(true);
-  enemy.body.velocity.x = -enemy.status.speed;
-
-  // --- ADICIONE ESTAS DUAS LINHAS AQUI ---
-  enemy.setFlipX(true);                // Inicia virado para a esquerda (já que vai para a esquerda)
-  enemy.anims.play(getEntityAnimationKey(key, 'run'), true);
-
-  scene.physics.add.collider(enemy, scene.limits);
-  scene.physics.add.collider(enemy, scene.platforms);
-
-  if (scene.inimigoOverlap) {
-    scene.inimigoOverlap.destroy(); // Remove o overlap antigo do inimigo morto
-  }
-  scene.inimigoOverlap = scene.physics.add.overlap(
-    scene.bullets,
-    enemy,
-    (bullet, inimigo) => {
-      bulletDestroy(bullet)
-      damageEnemy(inimigo, bullet.damage)
-    },
-    null,
-    scene
-  );
-
-  return enemy;
-}
-
-export function createEnemys(scene){
+export function createEnemys(scene) {
   const enemies = scene.physics.add.group();
-  
+
   if (!scene.enemyLayer || !scene.enemyLayer.objects) return enemies;
 
   scene.enemyLayer.objects.forEach((objectData) => {
-    const x = objectData.x;
-    const y = objectData.y - 10; 
-
     const key = getTiledProperty(objectData.properties, 'key')
-      || scene.enemyLayer.key || Object.keys(MOBS_CONFIG)[0];
-    const config = MOBS_CONFIG[key];
-    if (!config) {
-      console.warn(`Mob ignorado: não existe configuração para a key "${key}".`);
-      return;
-    }
-    const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
-    enemy.entityKey = key;
-    enemy.entityConfig = config;
-    enemy.status = createEnemyStatus(config.stats);
-    initEnemyState(enemy);
-    enemy.setCollideWorldBounds(true);
-    
-    const {
-      newWidth,
-      newHeight,
-      offsetX,
-      offsetY
-    } = resizeCollider(enemy)  
+      || scene.enemyLayer.key
+      || Object.keys(MOBS_CONFIG)[0];
 
-    enemy.body.setSize(newWidth, newHeight);
-    enemy.body.setOffset(offsetX, offsetY);
-    
-    // Adiciona as colisões primeiro
-    scene.physics.add.collider(enemy, scene.limits);
-    scene.physics.add.collider(enemy, scene.platforms);
-
-    // ADICIONE ESTE BLOCO: Garante que a velocidade só é injetada 
-    // após o motor do Phaser estabilizar a posição nas camadas
-    scene.time.delayedCall(10, () => {
-      if (enemy && enemy.active) {
-        enemy.body.velocity.x = -enemy.status.speed;
-        enemy.setFlipX(true);
-        enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
-      }
-    });
-
-    enemies.add(enemy);
+    const enemy = spawnEnemy(scene, objectData.x, objectData.y - 10, key);
+    if (enemy) enemies.add(enemy);
   });
 
+  // Um único overlap bullet x grupo cobre TODOS os inimigos (mortos ou
+  // recém-criados são adicionados/removidos do mesmo grupo automaticamente).
   scene.physics.add.overlap(
     scene.bullets,
     enemies,
-    (bullet, inimigo) => {
+    (bullet, enemy) => {
       bulletDestroy(bullet);
-      damageEnemy(inimigo, bullet.damage);
+      damageEnemy(enemy, bullet.damage);
     },
     null,
     scene
@@ -106,12 +46,51 @@ export function createEnemys(scene){
   return enemies;
 }
 
+// Cria um inimigo em (x, y) a partir de uma key do MOBS_CONFIG. Retorna
+// `null` (e loga um aviso) se a key não existir — assim um mob mal
+// configurado no Tiled não quebra a criação dos outros.
+function spawnEnemy(scene, x, y, key) {
+  const config = MOBS_CONFIG[key];
+  if (!config) {
+    console.warn(`Mob ignorado: não existe configuração para a key "${key}".`);
+    return null;
+  }
+
+  const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
+  enemy.entityKey = key;
+  enemy.entityConfig = config;
+  enemy.status = createEnemyStatus(config.stats);
+  initEnemyState(enemy);
+  enemy.setCollideWorldBounds(true);
+
+  const { newWidth, newHeight, offsetX, offsetY } = resizeCollider(enemy);
+  enemy.body.setSize(newWidth, newHeight);
+  enemy.body.setOffset(offsetX, offsetY);
+
+  scene.physics.add.collider(enemy, scene.limits);
+  scene.physics.add.collider(enemy, scene.platforms);
+
+  // O corpo físico só fica com posição/tamanho definitivos depois que o
+  // Phaser processa esse frame (colliders acima ainda estão "assentando").
+  // Por isso a velocidade/animação inicial (definida pela behavior do
+  // inimigo, ver enemyBehaviors.js) só é aplicada 10ms depois, e não na
+  // hora da criação.
+  scene.time.delayedCall(10, () => {
+    if (!enemy.active) return;
+    getEnemyBehavior(enemy).init(scene, enemy);
+    enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
+  });
+
+  return enemy;
+}
+
 // Flags de estado do inimigo. Três coisas independentes, cada uma com uma
 // única responsabilidade (é essa mistura que causava o bug de ficar
 // "travado" e não virar mais de direção):
-//   isStomped    -> só controla ANIMAÇÃO: enquanto true, updateEnemyMovement
-//                   não sobrescreve os frames de enemy_stomp/enemy_spark.
-//                   Não mexe em velocidade/direção.
+//   isStomped    -> só controla ANIMAÇÃO: enquanto true, as behaviors de
+//                   movimento (enemyBehaviors.js) não sobrescrevem os
+//                   frames de enemy_stomp/enemy_spark. Não mexe em
+//                   velocidade/direção.
 //   invulnerable -> só controla DANO: enquanto true (300ms depois do
 //                   último hit), bullet e stomp são ignorados. Evita que
 //                   vários overlaps no mesmo instante contem como vários
@@ -182,7 +161,7 @@ function applyDamage(enemy, damage, source) {
 // Toca "enemy_stomp" (esmagado, mas vivo). Trava só a ANIMAÇÃO de "run"
 // até ela terminar (isStomped) — a velocidade/direção do inimigo não são
 // tocadas aqui, então ele continua se deslocando e vira normalmente nas
-// bordas/paredes assim que updateEnemyMovement for liberado de novo.
+// bordas/paredes assim que a behavior for liberada de novo.
 function playStompAnimation(enemy) {
   enemy.isStomped = true;
   enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'stomp'), true);
@@ -215,14 +194,12 @@ function killEnemy(enemy) {
   });
 }
 
-function enemyDestroy (enemy) {
-  
+function enemyDestroy(enemy) {
   enemy.setActive(false);
   enemy.setVisible(false);
   enemy.body.enable = false; // Desliga a física para ele não colidir mais
   enemy.destroy();
 }
-
 
 export function preloadEnemyAssets(scene) {
   Object.entries(MOBS_CONFIG).forEach(([key, config]) => {
