@@ -1,7 +1,7 @@
 import { resizeCollider } from "./common";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 import { createEnemyStatus } from "../../config/status.js";
-import { MOBS_CONFIG, getEntityAnimationKey } from "../../config/entities.js";
+import { DEFAULT_MOB_KEY, DEFAULT_MOB_TYPE, MOB_ASSET_KEYS, getEntityAnimationKey, getMobConfig } from "../../config/entities.js";
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { getEnemyBehavior } from "../upgrade/enemyBehaviors.js";
 
@@ -22,11 +22,10 @@ export function createEnemys(scene) {
   if (!scene.enemyLayer || !scene.enemyLayer.objects) return enemies;
 
   scene.enemyLayer.objects.forEach((objectData) => {
-    const key = getTiledProperty(objectData.properties, 'key')
-      || scene.enemyLayer.key
-      || Object.keys(MOBS_CONFIG)[0];
+    const key = getTiledProperty(objectData.properties, 'key') || DEFAULT_MOB_KEY;
+    const type = getTiledProperty(objectData.properties, 'type') || DEFAULT_MOB_TYPE;
 
-    const enemy = spawnEnemy(scene, objectData.x, objectData.y - 10, key);
+    const enemy = spawnEnemy(scene, objectData.x, objectData.y - 10, key, type);
     if (enemy) enemies.add(enemy);
   });
 
@@ -49,15 +48,12 @@ export function createEnemys(scene) {
 // Cria um inimigo em (x, y) a partir de uma key do MOBS_CONFIG. Retorna
 // `null` (e loga um aviso) se a key não existir — assim um mob mal
 // configurado no Tiled não quebra a criação dos outros.
-function spawnEnemy(scene, x, y, key) {
-  const config = MOBS_CONFIG[key];
-  if (!config) {
-    console.warn(`Mob ignorado: não existe configuração para a key "${key}".`);
-    return null;
-  }
+function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE) {
+  const config = getMobConfig(type);
 
   const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
   enemy.entityKey = key;
+  enemy.entityType = type;
   enemy.entityConfig = config;
   enemy.status = createEnemyStatus(config.stats);
   initEnemyState(enemy);
@@ -202,15 +198,15 @@ function enemyDestroy(enemy) {
 }
 
 export function preloadEnemyAssets(scene) {
-  Object.entries(MOBS_CONFIG).forEach(([key, config]) => {
-    preloadAnimations(scene, config.animations.map((animation) => ({
-      ...animation, url: `${config.path}${animation.url}`,
-    })), key);
-  });
+  const config = getMobConfig();
+  const assetKeys = scene.enemyAssetKeys || MOB_ASSET_KEYS;
+  assetKeys.forEach((key) => preloadAnimations(scene, config.animations.map((animation) => ({
+    ...animation, url: `${config.path}${key}/${animation.url}`,
+  })), key));
 }
 
 export function createEnemyAnimations(scene) {
-  Object.entries(MOBS_CONFIG).forEach(([key, config]) => {
-    createAnimations(scene, config.animations, key);
-  });
+  const config = getMobConfig();
+  const assetKeys = scene.enemyAssetKeys || MOB_ASSET_KEYS;
+  assetKeys.forEach((key) => createAnimations(scene, config.animations, key));
 }

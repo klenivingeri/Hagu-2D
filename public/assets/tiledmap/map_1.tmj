@@ -486,7 +486,6 @@
         {
          "draworder":"topdown",
          "id":12,
-         "locked":true,
          "name":"enemy",
          "objects":[
                 {
@@ -500,6 +499,11 @@
                          "name":"key",
                          "type":"string",
                          "value":"mob_1"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
                         }],
                  "rotation":0,
                  "type":"",
@@ -519,6 +523,11 @@
                          "name":"key",
                          "type":"string",
                          "value":"mob_1"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
                         }],
                  "rotation":0,
                  "type":"",
@@ -538,6 +547,11 @@
                          "name":"key",
                          "type":"string",
                          "value":"mob_1"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
                         }],
                  "rotation":0,
                  "type":"",
@@ -556,7 +570,12 @@
                         {
                          "name":"key",
                          "type":"string",
-                         "value":"mob_1"
+                         "value":"dino"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
                         }],
                  "rotation":0,
                  "type":"",
@@ -576,6 +595,11 @@
                          "name":"key",
                          "type":"string",
                          "value":"mob_1"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
                         }],
                  "rotation":0,
                  "type":"",
@@ -595,6 +619,11 @@
                          "name":"key",
                          "type":"string",
                          "value":"mob_1"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
                         }],
                  "rotation":0,
                  "type":"",
@@ -614,6 +643,11 @@
                          "name":"key",
                          "type":"string",
                          "value":"mob_1"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
                         }],
                  "rotation":0,
                  "type":"",
@@ -633,13 +667,18 @@
                          "name":"key",
                          "type":"string",
                          "value":"mob_1"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
                         }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":226.666666666667,
-                 "y":177.333333333333
+                 "x":232,
+                 "y":189.333333333333
                 }],
          "opacity":1,
          "type":"objectgroup",

@@ -60,9 +60,6 @@ const {
   scene.limits = enemyLimits;
   scene.enemyLayer = enemyObjectLayer// Guardamos a referência da camada enemy aqui!
   scene.playerLayer = playerObjectLayer
-  if (scene.enemyLayer) {
-    scene.enemyLayer.key = getTiledProperty(enemyObjectLayer.properties, 'key');
-  }
   if (scene.playerLayer) {
     scene.playerLayer.key = getTiledProperty(playerObjectLayer.properties, 'key');
   }
