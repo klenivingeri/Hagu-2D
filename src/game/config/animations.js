@@ -28,7 +28,7 @@ export const ANIME_PLAYER = [
   },
   {
     key: 'jump',
-    url: 'assets/player/jump/sprite_jump_',
+    url: 'assets/player/jump/sprite_jump_hop_',
     frames: 5, // 0 a 5
     frameRate: 10,
     repeat: 0,

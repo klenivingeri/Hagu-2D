@@ -3,39 +3,48 @@ export const updatePlayerMovement = (scene) => {
     // sem correr, pular ou ter o frame trocado por baixo da animação.
     if (scene.player.isSpawning) return;
 
+    const player = scene.player;
     const left = scene.cursors.left.isDown || scene.keys.A.isDown || scene.controlState.left;
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
+    const wasGrounded = player.body.blocked.down;
+    let startedJump = false;
     
     // --- Movimento Horizontal ---
     if (left) {
-      scene.player.setVelocityX(-scene.player.status.speed);
-      scene.player.setFlipX(true); // Vira a imagem para a esquerda
-      if (!scene.player.isShooting) {
-        scene.player.anims.play('run', true); // Toca a animação de correr
-      }
+      player.setVelocityX(-player.status.speed);
+      player.setFlipX(true); // Vira a imagem para a esquerda
       scene.lastDirection = -1;
     } else if (right) {
-      scene.player.setVelocityX(scene.player.status.speed);
-      scene.player.setFlipX(false); // Mantém a imagem normal para a direita
-      if (!scene.player.isShooting) {
-        scene.player.anims.play('run', true); // Toca a animação de correr
-      }
+      player.setVelocityX(player.status.speed);
+      player.setFlipX(false); // Mantém a imagem normal para a direita
       scene.lastDirection = 1;
     } else {
-      scene.player.setVelocityX(0);
-      if (!scene.player.isShooting) {
-        scene.player.anims.play('idle', true);
-      }
+      player.setVelocityX(0);
     }
 
     // --- Movimento de Pulo (Disparo Único Blindado) ---
     // Verificamos se scene.controlState.jump é true (ele é ativado apenas 1 vez por toque ou por clique de tecla)
-    if (scene.controlState.jump && scene.player.body.blocked.down) {
-      scene.player.setVelocityY(-scene.player.status.jumpHeight);
-      scene.player.isShooting = false; // Pulo interrompe o disparo de arco em andamento
-      scene.player.anims.stop(); 
-      scene.player.anims.play('idle', true);
+    if (scene.controlState.jump && wasGrounded) {
+      player.setVelocityY(-player.status.jumpHeight);
+      player.isShooting = false; // Pulo interrompe o disparo de arco em andamento
+      startedJump = true;
       //scene.player.setTexture('run_0'); // Define um frame estático de parado
+    }
+
+    // No ar, jump tem prioridade sobre run e idle.
+    if (!player.isShooting) {
+      const isAirborne = startedJump || !player.body.blocked.down;
+
+      if (isAirborne) {
+        // Evita reiniciar jump a cada frame depois que a animação terminar.
+        if (player.anims.currentAnim?.key !== 'jump') {
+          player.anims.play('jump', true);
+        }
+      } else if (left || right) {
+        player.anims.play('run', true);
+      } else {
+        player.anims.play('idle', true);
+      }
     }
 
     // IMPORTANTE: Consome o comando imediatamente. 
