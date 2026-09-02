@@ -1,6 +1,20 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
+import { emitDustTrail, playTileImpactEffect } from '../../commons/dustTrail.js';
 
 export function createBulletSystem(scene) {
+  // O tiro colide fisicamente com o cenário. Cada layer colidível usa um
+  // callback próprio para garantir que o efeito aconteça somente em tiles,
+  // nunca no overlap com inimigos.
+  scene.platforms.forEach((colliderLayer) => {
+    scene.physics.add.collider(scene.bullets, colliderLayer, (bullet, tile) => {
+      if (!bullet?.active) return;
+
+      playTileImpactEffect(scene, tile);
+      emitDustTrail(scene, bullet, 'horizontal');
+      destroyBullet(bullet);
+    });
+  });
+
   // Cria de fato o projétil e o lança na direção que o player está olhando.
   const spawnBullet = () => {
     const bullet = scene.bullets.get(scene.player.x, scene.player.y + 5, 'bullet');
@@ -72,11 +86,17 @@ export function createBulletSystem(scene) {
         
         // Se o tiro passar da borda direita da tela, esconde e desativa o corpo
         if (bullet.x > scene.scale.width) {
-          bullet.setActive(false);
-          bullet.setVisible(false);
-          bullet.body.enable = false;
+          destroyBullet(bullet);
         }
       });
     },
   };
+}
+
+function destroyBullet(bullet) {
+  bullet.setActive(false);
+  bullet.setVisible(false);
+  bullet.body.stop();
+  bullet.body.enable = false;
+  bullet.setPosition(-1000, -1000);
 }

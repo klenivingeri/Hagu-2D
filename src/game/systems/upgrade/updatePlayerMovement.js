@@ -1,4 +1,5 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
+import { emitDustTrail } from '../../commons/dustTrail.js';
 
 export const updatePlayerMovement = (scene) => {
     // Enquanto o player está nascendo (animação "spawn"), ele fica travado:
@@ -63,6 +64,9 @@ export const updatePlayerMovement = (scene) => {
         if (player.body.velocity.y > player.status.wallSlideSpeed) {
             player.setVelocityY(player.status.wallSlideSpeed);
         }
+        if (player.body.velocity.y >= 0) {
+          emitDustTrail(scene, player, 'vertical');
+        }
     } else if (!canStickToWall) {
         player.isWallSliding = false;
     }
@@ -92,6 +96,9 @@ export const updatePlayerMovement = (scene) => {
           player.anims.play(jumpAnimation, true);
         }
       } else if (left || right) {
+        if (wasGrounded) {
+          emitDustTrail(scene, player, 'horizontal');
+        }
         player.anims.play(getEntityAnimationKey(player.entityKey, 'run'), true);
       } else {
         player.anims.play(getEntityAnimationKey(player.entityKey, 'idle'), true);
