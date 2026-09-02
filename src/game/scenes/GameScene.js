@@ -26,6 +26,7 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.image('tileset_image', 'assets/tiledmap/world_tileset.png');
+    this.load.image('platforms_image', 'assets/tiledmap/platforms.png');
     this.load.tilemapTiledJSON('mapa_json', 'assets/tiledmap/map_1.tmj');
 
     // O mapa precisa carregar primeiro para descobrirmos quais mobs existem.

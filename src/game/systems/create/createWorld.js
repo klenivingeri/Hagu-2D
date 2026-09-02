@@ -17,7 +17,9 @@ const {
 } = MAP_LAYERS
     // O primeiro argumento é o nome do tileset lá no Tiled.
     // O segundo argumento é a chave da imagem que você definiu no preload.
-    const tileset = map.addTilesetImage('world_tileset', 'tileset_image');
+    const worldTileset = map.addTilesetImage('world_tileset', 'tileset_image');
+    const platformsTileset = map.addTilesetImage('platforms', 'platforms_image');
+    const tilesets = [worldTileset, platformsTileset].filter(Boolean);
   
     // Cria a camada ('ground' é o nome da camada no seu JSON)
 
@@ -25,7 +27,7 @@ const {
 
   const layers = {};
   layerOrder.forEach((name) => {
-    const layer = map.createLayer(name, tileset, 0, 0);
+    const layer = map.createLayer(name, tilesets, 0, 0);
     if (layer) layers[name] = layer;
   });
 

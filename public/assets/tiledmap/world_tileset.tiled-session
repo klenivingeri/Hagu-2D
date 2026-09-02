@@ -15,8 +15,12 @@
                 "y": 252
             }
         },
+        "map_1.tmj#platforms": {
+            "scaleInEditor": 1
+        },
         "map_1.tmj#world_tileset": {
-            "scaleInDock": 1.5
+            "scaleInDock": 1.5,
+            "scaleInEditor": 1
         },
         "map_1.tmx": {
             "scale": 1.2646875,

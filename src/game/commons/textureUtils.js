@@ -1,5 +1,8 @@
 export function getVirtualFrame(scene, textureKey, col, row, totalCols = 16, totalRows = 16) {
   const texture = scene.textures.get(textureKey);
+  if (!texture || !texture.source?.[0]) {
+    throw new Error(`Textura "${textureKey}" não encontrada.`);
+  }
   const frameName = `${textureKey}_frame_${col}_${row}`;
   
   // Se ainda não criamos esse recorte, nós criamos agora
@@ -16,4 +19,17 @@ export function getVirtualFrame(scene, textureKey, col, row, totalCols = 16, tot
   }
   
   return frameName;
+}
+
+export function getTextureKeyByImageName(scene, imageName, fallbackKey) {
+  if (!imageName) return fallbackKey;
+
+  const normalizedImageName = imageName.replace(/\\/g, '/').split('/').pop();
+  const matchingKey = Object.keys(scene.textures.list).find((key) => {
+    const source = scene.textures.get(key)?.source?.[0]?.image;
+    const sourceName = source?.src?.replace(/\\/g, '/').split('/').pop();
+    return sourceName === normalizedImageName;
+  });
+
+  return matchingKey || fallbackKey;
 }
