@@ -1,16 +1,15 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
-import { emitDustTrail, playTileImpactEffect } from '../../commons/dustTrail.js';
+import { emitBulletImpactDust } from '../../commons/dustTrail.js';
 
 export function createBulletSystem(scene) {
   // O tiro colide fisicamente com o cenário. Cada layer colidível usa um
   // callback próprio para garantir que o efeito aconteça somente em tiles,
   // nunca no overlap com inimigos.
   scene.platforms.forEach((colliderLayer) => {
-    scene.physics.add.collider(scene.bullets, colliderLayer, (bullet, tile) => {
+    scene.physics.add.collider(scene.bullets, colliderLayer, (bullet) => {
       if (!bullet?.active) return;
 
-      playTileImpactEffect(scene, tile);
-      emitDustTrail(scene, bullet, 'horizontal');
+      emitBulletImpactDust(scene, bullet, Math.sign(bullet.body?.velocity.x || scene.lastDirection));
       destroyBullet(bullet);
     });
   });

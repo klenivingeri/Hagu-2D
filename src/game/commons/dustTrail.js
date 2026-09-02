@@ -64,37 +64,39 @@ export function emitDustTrail(scene, player, orientation = 'horizontal') {
 }
 
 /**
- * Faz o tile atingido dar uma pequena "esticada" de impacto, sem alterar o
- * tile original do mapa nem a sua colisão.
+ * Poeira específica do impacto do tiro.
+ * A rajada fica para trás do disparo: tiro para a direita espalha para a
+ * esquerda e tiro para a esquerda espalha para a direita.
  */
-export function playTileImpactEffect(scene, tile) {
-  const tileset = tile?.tileset;
-  const texture = tileset?.image;
+export function emitBulletImpactDust(scene, bullet, bulletDirection) {
+  const direction = bulletDirection < 0 ? -1 : 1;
+  const body = bullet.body;
+  const now = scene.time.now;
+  const lastEmission = bullet._lastBulletDustEmission ?? -Infinity;
 
-  if (!tile || tile.index < 0 || !texture) return;
+  if (now - lastEmission < DUST_EMISSION_INTERVAL) return;
+  bullet._lastBulletDustEmission = now;
 
-  const tileImpact = scene.add.image(
-    tile.getCenterX(),
-    tile.getCenterY(),
-    texture.key,
-    tile.index - tileset.firstgid
-  );
+  for (let index = 0; index < DUST_PARTICLES_PER_EMISSION; index += 1) {
+    const size = Phaser.Math.Between(2, 4);
+    const x = body.center.x;
+    const y = body.center.y + Phaser.Math.Between(-3, 3);
+    const driftX = -direction * Phaser.Math.Between(8, 20);
+    const driftY = Phaser.Math.Between(-10, 10);
+    const dust = scene.add.rectangle(x, y, size, size, DUST_COLOR, 0.8);
 
-  tileImpact
-    .setDisplaySize(tile.width, tile.height)
-    .setDepth((tile.tilemapLayer?.depth ?? 0) + 1);
+    dust.setDepth((bullet.depth ?? 0) + 1);
 
-  const originalScaleX = tileImpact.scaleX;
-  const originalScaleY = tileImpact.scaleY;
-
-  scene.tweens.add({
-    targets: tileImpact,
-    scaleX: originalScaleX * 1.18,
-    scaleY: originalScaleY * 1.18,
-    duration: 70,
-    yoyo: true,
-    repeat: 1,
-    ease: 'Sine.easeInOut',
-    onComplete: () => tileImpact.destroy(),
-  });
+    scene.tweens.add({
+      targets: dust,
+      x: x + driftX,
+      y: y + driftY,
+      alpha: 0,
+      scaleX: 0.5,
+      scaleY: 0.5,
+      duration: Phaser.Math.Between(140, 240),
+      ease: 'Quad.easeOut',
+      onComplete: () => dust.destroy(),
+    });
+  }
 }
