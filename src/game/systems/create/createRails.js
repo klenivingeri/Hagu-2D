@@ -18,6 +18,9 @@ export function createRails(scene) {
     const properties = objectData.properties || [];
     const getRailProperty = (name) =>
       getTiledProperty(properties, name) ?? getTiledProperty(layerProperties, name);
+    const direction = getRailProperty('direction') === 'up-down'
+      ? 'up-down'
+      : 'left-right';
     const imageName = getRailProperty('tile');
     // O tileset dos rails é carregado com uma chave própria no preload.
     // Mantemos esse mapeamento explícito porque o Phaser pode não expor o
@@ -60,12 +63,41 @@ export function createRails(scene) {
     // As flags blocked.left/right são usadas por updateRailMovement para
     // inverter o sentido ao alcançar a borda da tela/mapa.
     rail.body.setCollideWorldBounds(true);
-    rail.body.setVelocityX(40);
+    rail.direction = direction;
+    if (direction === 'up-down') {
+      rail.body.setVelocity(0, 40);
+    } else {
+      rail.body.setVelocity(40, 0);
+    }
 
     scene.physics.add.collider(rail, scene.limits);
     scene.physics.add.collider(rail, scene.platforms);
-    scene.physics.add.collider(rail, scene.player);
+    scene.physics.add.collider(rail, scene.player, null, canPlayerLandOnRail);
   });
 
   return rails;
+}
+
+// Rails funcionam como plataformas semissólidas: o player pode atravessá-los
+// subindo, mas pousa neles quando está parado ou descendo e vem de cima.
+function canPlayerLandOnRail(rail, player) {
+  const playerBody = player?.body;
+  const railBody = rail?.body;
+  if (!playerBody || !railBody) return false;
+
+  // Usa a posição anterior para detectar a passagem pelo topo. A posição
+  // atual já pode estar alguns pixels dentro do rail quando o callback roda.
+  const previousBottom = playerBody.prev.y + playerBody.height;
+  const wasAboveRail = previousBottom <= railBody.top + 4;
+  if (!wasAboveRail) return false;
+
+  const isFallingOrStopped = playerBody.velocity.y >= 0;
+  const isBeingCarriedByElevator =
+    rail.direction === 'up-down'
+    && railBody.velocity.y < 0
+    && playerBody.velocity.y > -100;
+
+  // Durante o pulo (velocidade bem negativa), atravessa o rail. A velocidade
+  // negativa pequena do elevador, porém, não deve cancelar a sustentação.
+  return isFallingOrStopped || isBeingCarriedByElevator;
 }

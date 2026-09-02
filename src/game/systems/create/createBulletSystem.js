@@ -1,5 +1,6 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitBulletImpactDust } from '../../commons/dustTrail.js';
+import { MAP_DEPTHS } from '../../../constants.js';
 
 export function createBulletSystem(scene) {
   // O tiro colide fisicamente com o cenário. Cada layer colidível usa um
@@ -25,7 +26,9 @@ export function createBulletSystem(scene) {
       bullet.body.allowGravity = false;
       bullet.body.setVelocityX(450 * scene.lastDirection);
       bullet.angle = 90;
-      bullet.setDepth(5);
+      // O projétil usa a mesma camada visual do player: fica na frente do
+      // que o player vê à frente e atrás do que cobre o player.
+      bullet.setDepth(scene.player.depth ?? MAP_DEPTHS.PLAYER);
       bullet.damage = scene.player.status.bulletDamage; // dano que esse tiro carrega
     }
   };
