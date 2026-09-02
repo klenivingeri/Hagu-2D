@@ -5,6 +5,10 @@ import { DEFAULT_MOB_KEY, DEFAULT_MOB_TYPE, getEntityAnimationKey, getMobConfig 
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { getEnemyBehavior } from "../upgrade/enemyBehaviors.js";
 
+const ENEMY_HIT_FLASH_MS = 100;
+const ENEMY_KNOCKBACK_SPEED = 80;
+const ENEMY_KNOCKBACK_MS = 100;
+
 const ENEMY_DAMAGE_COOLDOWN_MS = 300; // tempo sem poder levar outro dano (bullet ou stomp), evita múltiplos hits de uma vez
 
 // ==========================================
@@ -35,8 +39,9 @@ export function createEnemys(scene) {
     scene.bullets,
     enemies,
     (bullet, enemy) => {
+      const bulletDirection = Math.sign(bullet.body?.velocity.x || 0);
       bulletDestroy(bullet);
-      damageEnemy(enemy, bullet.damage);
+      damageEnemy(enemy, bullet.damage, bulletDirection);
     },
     null,
     scene
@@ -111,8 +116,8 @@ function bulletDestroy(bullet) {
 // Dano de tiro (bullet). Só decide a origem do dano — quem realmente
 // aplica é applyDamage (evita ter a mesma lógica de cooldown/morte
 // duplicada aqui e em stompDamageEnemy).
-export function damageEnemy(enemy, damage = 1) {
-  applyDamage(enemy, damage, 'bullet');
+export function damageEnemy(enemy, damage = 1, bulletDirection = 0) {
+  applyDamage(enemy, damage, 'bullet', bulletDirection);
 }
 
 // Dano por "pisão" (stomp - pular em cima do inimigo). Mesma regra de
@@ -126,12 +131,13 @@ export function stompDamageEnemy(enemy, damage = 1) {
 // Núcleo único de aplicação de dano, usado tanto pelo bullet quanto pelo
 // stomp. Centralizar aqui evita que os dois caminhos fiquem com regras
 // (cooldown, morte, etc) divergentes/duplicadas.
-function applyDamage(enemy, damage, source) {
+function applyDamage(enemy, damage, source, bulletDirection = 0) {
   if (!enemy || !enemy.active) return;
   if (enemy.isDead) return;        // já morrendo/morto: nunca mais recebe dano
   if (enemy.invulnerable) return;  // ainda no cooldown do último hit
 
   enemy.status.life -= damage;
+  playHitFeedback(enemy, damage, source, bulletDirection);
 
   // Cooldown de dano: por ENEMY_DAMAGE_COOLDOWN_MS esse inimigo não pode
   // levar outro hit. Sem isso, o overlap (bullet ou player-em-cima)
@@ -158,6 +164,51 @@ function applyDamage(enemy, damage, source) {
 // até ela terminar (isStomped) — a velocidade/direção do inimigo não são
 // tocadas aqui, então ele continua se deslocando e vira normalmente nas
 // bordas/paredes assim que a behavior for liberada de novo.
+function playHitFeedback(enemy, damage, source, bulletDirection) {
+  enemy.clearTint();
+  enemy.setTint(0xff3b30);
+  enemy.scene.time.delayedCall(ENEMY_HIT_FLASH_MS, () => {
+    if (enemy.active) enemy.clearTint();
+  });
+
+  const damageText = enemy.scene.add.text(enemy.x, enemy.y - enemy.height / 2, `-${damage}`, {
+    color: '#ff5a52',
+    fontSize: '8px',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2,
+  }).setOrigin(0.5).setDepth(20);
+
+  const startY = damageText.y;
+  enemy.scene.tweens.add({
+    targets: damageText,
+    y: startY - 4,
+    duration: 180,
+    hold: 70,
+    yoyo: true,
+    ease: 'Cubic.easeOut',
+  });
+
+  enemy.scene.tweens.add({
+    targets: damageText,
+    alpha: 0,
+    scale: 0.85,
+    duration: 430,
+    delay: 70,
+    ease: 'Linear',
+    onComplete: () => damageText.destroy(),
+  });
+
+  if (source === 'bullet' && bulletDirection !== 0 && enemy.body?.enable) {
+    enemy.setVelocityX(bulletDirection * ENEMY_KNOCKBACK_SPEED);
+    enemy.scene.time.delayedCall(ENEMY_KNOCKBACK_MS, () => {
+      if (enemy.active && !enemy.isDead) {
+        enemy.setVelocityX(enemy.flipX ? -enemy.status.speed : enemy.status.speed);
+      }
+    });
+  }
+}
+
 function playStompAnimation(enemy) {
   enemy.isStomped = true;
   enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'stomp'), true);

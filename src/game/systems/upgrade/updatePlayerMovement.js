@@ -8,20 +8,63 @@ export const updatePlayerMovement = (scene) => {
     const player = scene.player;
     const left = scene.cursors.left.isDown || scene.keys.A.isDown || scene.controlState.left;
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
-    const wasGrounded = player.body.blocked.down;
+    const wasGrounded = player.body.blocked.down || player.body.touching.down;
+    // Ao pousar no topo de um chão/plataforma, a tentativa da parede é
+    // reiniciada. Assim, depois de falhar e cair, pode tentar a mesma parede.
+    if (wasGrounded) {
+        player.lastWallSide = 0;
+    }
+    const touchingLeftWall = player.body.blocked.left || player.body.touching.left;
+    const touchingRightWall = player.body.blocked.right || player.body.touching.right;
+    const wallSide = touchingLeftWall ? -1 : touchingRightWall ? 1 : 0;
+    const canStickToWall = player.status.isStick
+        && !wasGrounded
+        && wallSide !== 0
+        // Durante o slide atual, continua preso na mesma parede. Depois de
+        // sair dela, só pode iniciar outro slide no lado oposto.
+        && (player.isWallSliding || player.lastWallSide !== wallSide);
     let startedJump = false;
+
+    // Ao apertar pulo na parede, lança o player para o lado oposto ao contato.
+    // O comando é consumido mais abaixo, então continua sendo um pulo por toque.
+    if (scene.controlState.jump && canStickToWall) {
+        player.setVelocity(
+            wallSide === -1 ? player.status.wallJumpHorizontalSpeed : -player.status.wallJumpHorizontalSpeed,
+            -player.status.jumpHeight
+        );
+        player.isWallSliding = false;
+        player.isShooting = false;
+        player.setFlipX(wallSide === 1);
+        scene.lastDirection = wallSide === -1 ? 1 : -1;
+        startedJump = true;
+    }
     
     // --- Movimento Horizontal ---
-    if (left) {
+    if (!startedJump && left) {
       player.setVelocityX(-player.status.speed);
       player.setFlipX(true); // Vira a imagem para a esquerda
       scene.lastDirection = -1;
-    } else if (right) {
+    } else if (!startedJump && right) {
       player.setVelocityX(player.status.speed);
       player.setFlipX(false); // Mantém a imagem normal para a direita
       scene.lastDirection = 1;
-    } else {
+    } else if (!startedJump) {
       player.setVelocityX(0);
+    }
+
+    // Enquanto houver contato lateral e o player estiver no ar, limita a queda.
+    // O velocity.y normal continua sendo usado para o salto; apenas a descida
+    // fica lenta, permitindo a troca de uma parede para a outra.
+    if (canStickToWall && !startedJump) {
+        if (!player.isWallSliding) {
+            player.lastWallSide = wallSide;
+        }
+        player.isWallSliding = true;
+        if (player.body.velocity.y > player.status.wallSlideSpeed) {
+            player.setVelocityY(player.status.wallSlideSpeed);
+        }
+    } else if (!canStickToWall) {
+        player.isWallSliding = false;
     }
 
     // --- Movimento de Pulo (Disparo Único Blindado) ---
@@ -37,7 +80,12 @@ export const updatePlayerMovement = (scene) => {
     if (!player.isShooting) {
       const isAirborne = startedJump || !player.body.blocked.down;
 
-      if (isAirborne) {
+      if (player.isWallSliding) {
+        const stickAnimation = getEntityAnimationKey(player.entityKey, 'stick');
+        if (player.anims.currentAnim?.key !== stickAnimation) {
+          player.anims.play(stickAnimation, true);
+        }
+      } else if (isAirborne) {
         // Evita reiniciar jump a cada frame depois que a animação terminar.
         const jumpAnimation = getEntityAnimationKey(player.entityKey, 'jump');
         if (player.anims.currentAnim?.key !== jumpAnimation) {

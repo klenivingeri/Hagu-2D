@@ -15,6 +15,9 @@ export function createPlayerStatus(overrides = {}) {
     life: 3,                  // vidas/corações
     speed: 110,                // velocidade horizontal (px/s) - já usado em updatePlayerMovement
     jumpHeight: 200,            // força do pulo (velocidade vertical, px/s) - já usado em updatePlayerMovement
+    isStick: true,              // habilidade de grudar na parede; começa ativa até o item existir
+    wallSlideSpeed: 45,         // velocidade máxima de descida ao grudar na parede
+    wallJumpHorizontalSpeed: 180, // impulso horizontal do pulo de parede
     bulletDamage: 1,             // dano de cada tiro - já usado em createBulletSystem/createEnemy (overlap bullet x enemy)
 
     // Campos abaixo ainda não têm mecânica implementada no jogo.

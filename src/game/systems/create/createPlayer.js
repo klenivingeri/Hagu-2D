@@ -25,6 +25,10 @@ export function createPlayer(scene) {
     );
   player.entityKey = key;
   player.entityConfig = config;
+  player.isWallSliding = false;
+  // -1 = última parede foi a esquerda, 1 = direita, 0 = nenhuma ainda.
+  // Impede reaprender na mesma parede sem antes trocar para a oposta.
+  player.lastWallSide = 0;
   player.setCollideWorldBounds(true);
   scene.physics.add.collider(player, scene.platforms);
 
