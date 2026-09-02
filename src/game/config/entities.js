@@ -57,9 +57,8 @@ export const MOBS_CONFIG = {
 };
 
 // A key do Tiled identifica os assets; o type identifica o comportamento/configuração.
-export const MOB_ASSET_KEYS = ['mob_1', 'dino'];
 export const DEFAULT_MOB_TYPE = 'default_mob';
-export const DEFAULT_MOB_KEY = MOB_ASSET_KEYS[0];
+export const DEFAULT_MOB_KEY = 'mob_1';
 
 function mergeMobConfig(base, overrides) {
   const result = { ...base };

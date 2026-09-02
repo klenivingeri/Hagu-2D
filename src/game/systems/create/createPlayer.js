@@ -35,8 +35,8 @@ export function createPlayer(scene) {
     offsetY
   } = resizeCollider(player)  
 
-  player.body.setSize(newWidth, newHeight);
-  player.body.setOffset(offsetX, offsetY);
+  player.body.setSize(newWidth * 0.7, newHeight);
+  player.body.setOffset(offsetX+2, offsetY);
 
   player.status = createPlayerStatus(config.stats);
 

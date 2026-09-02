@@ -44,6 +44,8 @@ export function createCoins(scene) {
       if (tile.index === -1) return; // célula vazia, sem coin aqui
 
       const coinSprite = coins.create(tile.getCenterX(), tile.getCenterY(), 'coin');
+      coinSprite.body.setSize(8, 12);
+      coinSprite.body.setOffset(4, 2);
       coinSprite.setDepth(4);
       coinSprite.anims.play('coin');
     });

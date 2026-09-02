@@ -1,7 +1,7 @@
 import { resizeCollider } from "./common";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 import { createEnemyStatus } from "../../config/status.js";
-import { DEFAULT_MOB_KEY, DEFAULT_MOB_TYPE, MOB_ASSET_KEYS, getEntityAnimationKey, getMobConfig } from "../../config/entities.js";
+import { DEFAULT_MOB_KEY, DEFAULT_MOB_TYPE, getEntityAnimationKey, getMobConfig } from "../../config/entities.js";
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { getEnemyBehavior } from "../upgrade/enemyBehaviors.js";
 
@@ -60,8 +60,8 @@ function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE) {
   enemy.setCollideWorldBounds(true);
 
   const { newWidth, newHeight, offsetX, offsetY } = resizeCollider(enemy);
-  enemy.body.setSize(newWidth, newHeight);
-  enemy.body.setOffset(offsetX, offsetY);
+  enemy.body.setSize(newWidth * 0.7, newHeight);
+  enemy.body.setOffset(offsetX+2, offsetY);
 
   scene.physics.add.collider(enemy, scene.limits);
   scene.physics.add.collider(enemy, scene.platforms);
@@ -197,9 +197,8 @@ function enemyDestroy(enemy) {
   enemy.destroy();
 }
 
-export function preloadEnemyAssets(scene) {
+export function preloadEnemyAssets(scene, assetKeys = []) {
   const config = getMobConfig();
-  const assetKeys = scene.enemyAssetKeys || MOB_ASSET_KEYS;
   assetKeys.forEach((key) => preloadAnimations(scene, config.animations.map((animation) => ({
     ...animation, url: `${config.path}${key}/${animation.url}`,
   })), key));
@@ -207,6 +206,6 @@ export function preloadEnemyAssets(scene) {
 
 export function createEnemyAnimations(scene) {
   const config = getMobConfig();
-  const assetKeys = scene.enemyAssetKeys || MOB_ASSET_KEYS;
+  const assetKeys = scene.enemyAssetKeys || [];
   assetKeys.forEach((key) => createAnimations(scene, config.animations, key));
 }

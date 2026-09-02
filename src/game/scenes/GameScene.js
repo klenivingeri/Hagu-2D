@@ -27,9 +27,15 @@ export class GameScene extends Phaser.Scene {
     this.load.image('tileset_image', 'assets/tiledmap/world_tileset.png');
     this.load.tilemapTiledJSON('mapa_json', 'assets/tiledmap/map_1.tmj');
 
+    // O mapa precisa carregar primeiro para descobrirmos quais mobs existem.
+    // O Phaser aceita novos arquivos enquanto o loader ainda está processando.
+    this.load.once('filecomplete-tilemapJSON-mapa_json', (_key, _type, mapData) => {
+      this.enemyAssetKeys = getEnemyAssetKeysFromMap(mapData);
+      preloadEnemyAssets(this, this.enemyAssetKeys);
+    });
+
     this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullet.png');
 
-    preloadEnemyAssets(this)
     preloadPlayerAssets(this)
     preloadCoinAssets(this)
 
@@ -76,4 +82,14 @@ export class GameScene extends Phaser.Scene {
     }
     this.bulletSystem.update();
   }
+}
+
+function getEnemyAssetKeysFromMap(mapData) {
+  const enemyLayer = mapData?.layers?.find((layer) => layer.name === 'enemy');
+  const keys = enemyLayer?.objects?.map((object) => {
+    const property = object.properties?.find(({ name }) => name === 'key');
+    return property?.value;
+  }).filter(Boolean) || [];
+
+  return [...new Set(keys)];
 }
