@@ -26,11 +26,31 @@ export function createPlayer(scene) {
   player.entityKey = key;
   player.entityConfig = config;
   player.isWallSliding = false;
+  // Atualizado exclusivamente pelo collider da layer obstacles.
+  player.stickableWallSide = 0;
   // -1 = última parede foi a esquerda, 1 = direita, 0 = nenhuma ainda.
   // Impede reaprender na mesma parede sem antes trocar para a oposta.
   player.lastWallSide = 0;
   player.setCollideWorldBounds(true);
-  scene.physics.add.collider(player, scene.platforms);
+  // obstacles precisa ficar fora deste collider geral. Caso contrário, ele
+  // é separado primeiro e o collider específico abaixo não recebe o tile.
+  const playerPlatforms = scene.platforms.filter((layer) => layer !== scene.obstacles);
+  scene.physics.add.collider(player, playerPlatforms);
+  if (scene.obstacles) {
+    scene.physics.add.collider(player, scene.obstacles, (playerObj, tile) => {
+      // O callback do collider recebe o Tile. Não usamos blocked.left/right
+      // porque o player também colide com scene.platforms, que inclui a
+      // própria obstacles e pode sobrescrever esses flags.
+      const body = playerObj.body;
+      const tileTop = tile.getTop();
+      const tileBottom = tile.getBottom();
+      const hasVerticalContact = body.bottom > tileTop && body.top < tileBottom;
+
+      if (hasVerticalContact) {
+        player.stickableWallSide = body.center.x < tile.getCenterX() ? -1 : 1;
+      }
+    });
+  }
 
   const {
     newWidth,

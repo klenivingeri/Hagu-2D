@@ -15,9 +15,10 @@ export const updatePlayerMovement = (scene) => {
     if (wasGrounded) {
         player.lastWallSide = 0;
     }
-    const touchingLeftWall = player.body.blocked.left || player.body.touching.left;
-    const touchingRightWall = player.body.blocked.right || player.body.touching.right;
-    const wallSide = touchingLeftWall ? -1 : touchingRightWall ? 1 : 0;
+    // blocked.left/right sozinho não informa qual layer causou o contato.
+    // Este valor só é preenchido pelo collider de obstacles.
+    const wallSide = player.stickableWallSide;
+    player.stickableWallSide = 0;
     const canStickToWall = player.status.isStick
         && !wasGrounded
         && wallSide !== 0

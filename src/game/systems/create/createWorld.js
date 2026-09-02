@@ -56,6 +56,8 @@ const {
   if (deadZone) deadZone.setCollisionByExclusion([-1]);
 
   scene.platforms = collidableLayers;
+  // Apenas esta layer pode ativar a habilidade de grudar na parede.
+  scene.obstacles = layers[OBSTACLES] || null;
   scene.deadZoneLayer = deadZone;
   scene.limits = enemyLimits;
   scene.enemyLayer = enemyObjectLayer// Guardamos a referência da camada enemy aqui!
