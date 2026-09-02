@@ -4,6 +4,7 @@ import { createEnemyStatus } from "../../config/status.js";
 import { DEFAULT_MOB_KEY, DEFAULT_MOB_TYPE, getEntityAnimationKey, getMobConfig } from "../../config/entities.js";
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { getEnemyBehavior } from "../upgrade/enemyBehaviors.js";
+import { MAP_DEPTHS } from "../../../constants.js";
 
 const ENEMY_HIT_FLASH_MS = 100;
 const ENEMY_KNOCKBACK_SPEED = 80;
@@ -57,6 +58,7 @@ function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE) {
   const config = getMobConfig(type);
 
   const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
+  enemy.setDepth(MAP_DEPTHS.PLAYER);
   enemy.entityKey = key;
   enemy.entityType = type;
   enemy.entityConfig = config;

@@ -35,7 +35,7 @@
     "last.imagePath": "C:/Projetos/phaser/vite/public/assets/tiledmap",
     "map.height": 30,
     "map.lastUsedExportFilter": "Arquivos de mapa JSON (*.tmj *.json)",
-    "map.lastUsedFormat": "tmx",
+    "map.lastUsedFormat": "json",
     "map.layerDataFormat": "3",
     "map.tileHeight": 16,
     "map.tileWidth": 16,

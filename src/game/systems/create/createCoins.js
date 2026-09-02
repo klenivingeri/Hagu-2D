@@ -3,6 +3,7 @@
 const COINS_LAYER_NAME = 'coins';
 const COIN_TILESET_NAME = 'coin';
 const COIN_FRAME_COUNT = 12;
+const COIN_DEPTH = 50;
 
 export function preloadCoinAssets(scene) {
   // coin.png tem 12 frames de 16x16 lado a lado (192x16 no total).
@@ -46,7 +47,7 @@ export function createCoins(scene) {
       const coinSprite = coins.create(tile.getCenterX(), tile.getCenterY(), 'coin');
       coinSprite.body.setSize(8, 12);
       coinSprite.body.setOffset(4, 2);
-      coinSprite.setDepth(4);
+      coinSprite.setDepth(COIN_DEPTH);
       coinSprite.anims.play('coin');
     });
 

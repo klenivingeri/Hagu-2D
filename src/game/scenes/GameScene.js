@@ -12,6 +12,7 @@ import { updateEnemyMovement } from '../systems/upgrade/updateEnemyMovement.js'
 import { createRails } from '../systems/create/createRails.js';
 import { updateRailMovement } from '../systems/upgrade/updateRailMovement.js';
 import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems/create/createCoins.js';
+import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeVisibility.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -70,6 +71,7 @@ export class GameScene extends Phaser.Scene {
 
   update() {
     updatePlayerMovement(this)
+    updateGroundFakeVisibility(this);
     if (this.enemies) {
       this.enemies.getChildren().forEach((enemy) => {
         updateEnemyMovement(this, enemy);

@@ -1,10 +1,11 @@
-import { MAP_LAYERS } from '../../../constants'
+import { MAP_LAYERS, MAP_DEPTHS } from '../../../constants'
 import { getTiledProperty } from '../../commons/tiledUtils.js';
 
 export function createWorld(scene) {
 const map = scene.make.tilemap({ key: 'mapa_json' });
 const { 
   GROUND,
+  GROUND_FAKE,
   OBSTACLES,
   COLLISIONS,
   OVER_PLAYER,
@@ -39,8 +40,12 @@ const {
     .filter(Boolean);
   collidableLayers.forEach((layer) => layer.setCollisionByExclusion([-1]));
 
-  // Camada que deve aparecer na frente do player/inimigos/balas.
-  if (layers[OVER_PLAYER]) layers[OVER_PLAYER].setDepth(10);
+  // A ordem do Tiled é apenas a ordem de criação. Definimos o depth de cada
+  // layer para manter a sobreposição mesmo quando sprites são criados depois.
+  Object.entries(MAP_DEPTHS).forEach(([layerKey, depth]) => {
+    const layerName = MAP_LAYERS[layerKey];
+    if (layers[layerName]) layers[layerName].setDepth(depth);
+  });
 
   scene.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
   scene.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -56,6 +61,10 @@ const {
   if (deadZone) deadZone.setCollisionByExclusion([-1]);
 
   scene.platforms = collidableLayers;
+  // Camada visual usada para cobrir a entrada da caverna. Ela não participa
+  // da física: sua transparência será controlada pela posição do player.
+  scene.groundLayer = layers[GROUND] || null;
+  scene.groundFakeLayer = layers[GROUND_FAKE] || null;
   // Apenas esta layer pode ativar a habilidade de grudar na parede.
   scene.obstacles = layers[OBSTACLES] || null;
   scene.deadZoneLayer = deadZone;
