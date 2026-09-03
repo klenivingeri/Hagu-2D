@@ -116,6 +116,8 @@
     "project": "world_tileset.tiled-project",
     "property.type": "bool",
     "recentFiles": [
+        "map_3.tmj",
+        "map_2.tmj",
         "map_4.tmj",
         "map_1.tmj",
         "map_1.tmx"

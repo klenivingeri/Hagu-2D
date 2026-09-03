@@ -559,64 +559,6 @@
          "objects":[
                 {
                  "height":0,
-                 "id":1,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"key",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"path",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":143.909068445762,
-                 "y":300.888559426736
-                }, 
-                {
-                 "height":0,
-                 "id":3,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"key",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"path",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":381.912527798369,
-                 "y":364.145292809489
-                }, 
-                {
-                 "height":0,
                  "id":5,
                  "name":"",
                  "opacity":1,
@@ -652,6 +594,16 @@
                  "point":true,
                  "properties":[
                         {
+                         "name":"bidirectional",
+                         "type":"bool",
+                         "value":false
+                        }, 
+                        {
+                         "name":"direction",
+                         "type":"string",
+                         "value":"right"
+                        }, 
+                        {
                          "name":"key",
                          "type":"string",
                          "value":"dino_shoot"
@@ -662,9 +614,24 @@
                          "value":"dino"
                         }, 
                         {
+                         "name":"patrol",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
                          "name":"type",
                          "type":"string",
                          "value":"patrol_and_shoot"
+                        }, 
+                        {
+                         "name":"visionRangeTilesHeight",
+                         "type":"int",
+                         "value":0
+                        }, 
+                        {
+                         "name":"visionRangeTilesWidth",
+                         "type":"int",
+                         "value":0
                         }],
                  "rotation":0,
                  "type":"",
@@ -675,127 +642,21 @@
                 }, 
                 {
                  "height":0,
-                 "id":7,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"key",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"path",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":145.490486780331,
-                 "y":44.6987892265876
-                }, 
-                {
-                 "height":0,
-                 "id":8,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"key",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"path",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":222.979985174203,
-                 "y":28.093896713615
-                }, 
-                {
-                 "height":0,
-                 "id":9,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"key",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"path",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":370.470471954534,
-                 "y":62.1408450704225
-                }, 
-                {
-                 "height":0,
-                 "id":21,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"key",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"path",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":232,
-                 "y":189.333333333333
-                }, 
-                {
-                 "height":0,
                  "id":24,
-                 "name":"Enemy",
+                 "name":"Mob_1",
                  "opacity":1,
                  "point":true,
                  "properties":[
+                        {
+                         "name":"bidirectional",
+                         "type":"bool",
+                         "value":false
+                        }, 
+                        {
+                         "name":"direction",
+                         "type":"string",
+                         "value":"right"
+                        }, 
                         {
                          "name":"key",
                          "type":"string",
@@ -807,59 +668,104 @@
                          "value":"mob_1"
                         }, 
                         {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":238,
-                 "y":328.666666666667
-                }, 
-                {
-                 "height":0,
-                 "id":28,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"key",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"path",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":368,
-                 "y":412
-                }, 
-                {
-                 "height":0,
-                 "id":30,
-                 "name":"Enemy",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"chaser",
+                         "name":"patrol",
                          "type":"bool",
                          "value":true
                         }, 
                         {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
+                        }, 
+                        {
+                         "name":"visionRangeTilesHeight",
+                         "type":"int",
+                         "value":0
+                        }, 
+                        {
+                         "name":"visionRangeTilesWidth",
+                         "type":"int",
+                         "value":0
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":238.5,
+                 "y":328.666666666667
+                }, 
+                {
+                 "height":0,
+                 "id":33,
+                 "name":"Mob_1",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"bidirectional",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"direction",
+                         "type":"string",
+                         "value":"right"
+                        }, 
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"dino"
+                        }, 
+                        {
+                         "name":"path",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
+                         "name":"patrol",
+                         "type":"bool",
+                         "value":false
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
+                        }, 
+                        {
+                         "name":"visionRangeTilesHeight",
+                         "type":"int",
+                         "value":0
+                        }, 
+                        {
+                         "name":"visionRangeTilesWidth",
+                         "type":"int",
+                         "value":2
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":84,
+                 "y":285.666666666667
+                }, 
+                {
+                 "height":0,
+                 "id":30,
+                 "name":"Bat Fly",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"bidirectional",
+                         "type":"bool",
+                         "value":false
+                        }, 
+                        {
+                         "name":"direction",
+                         "type":"string",
+                         "value":"right"
+                        }, 
+                        {
                          "name":"key",
                          "type":"string",
                          "value":"bat"
@@ -870,16 +776,85 @@
                          "value":"bat"
                         }, 
                         {
+                         "name":"patrol",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
                          "name":"type",
                          "type":"string",
-                         "value":"aggro_fly"
+                         "value":"patrol_fly"
+                        }, 
+                        {
+                         "name":"visionRangeTilesHeight",
+                         "type":"int",
+                         "value":0
+                        }, 
+                        {
+                         "name":"visionRangeTilesWidth",
+                         "type":"int",
+                         "value":0
                         }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":0,
                  "x":390.5,
-                 "y":323
+                 "y":318.5
+                }, 
+                {
+                 "height":0,
+                 "id":34,
+                 "name":"Bat Fly",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"bidirectional",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"direction",
+                         "type":"string",
+                         "value":"right"
+                        }, 
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"bat"
+                        }, 
+                        {
+                         "name":"path",
+                         "type":"string",
+                         "value":"bat"
+                        }, 
+                        {
+                         "name":"patrol",
+                         "type":"bool",
+                         "value":false
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol_fly"
+                        }, 
+                        {
+                         "name":"visionRangeTilesHeight",
+                         "type":"int",
+                         "value":2
+                        }, 
+                        {
+                         "name":"visionRangeTilesWidth",
+                         "type":"int",
+                         "value":2
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":183.5,
+                 "y":143
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -1009,7 +984,7 @@
          "y":0
         }],
  "nextlayerid":25,
- "nextobjectid":31,
+ "nextobjectid":35,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

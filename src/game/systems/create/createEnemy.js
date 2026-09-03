@@ -35,7 +35,11 @@ export function createEnemys(scene) {
     const path = getTiledProperty(objectData.properties, 'path') || '';
     const chaser = getTiledProperty(objectData.properties, 'chaser');
 
-    const enemy = spawnEnemy(scene, objectData.x, objectData.y - 10, key, type, path, chaser);
+    // Inimigos terrestres usam o pequeno ajuste vertical para encaixar os
+    // pés no chão. O aggro_fly é um ponto livre no ar e deve nascer
+    // exatamente na coordenada marcada no Tiled.
+    const spawnY = type === FLY_BEHAVIOR ? objectData.y : objectData.y - 10;
+    const enemy = spawnEnemy(scene, objectData.x, spawnY, key, type, path, chaser);
     if (enemy) enemies.add(enemy);
   });
 
@@ -68,6 +72,8 @@ function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE, path = '', chaser
   enemy.entityPath = path;
   enemy.entityType = type;
   enemy.entityConfig = config;
+  enemy.spawnX = x;
+  enemy.spawnY = y;
   enemy.chaser = chaser === undefined
     ? config.chaser === true
     : chaser === true || chaser === 'true' || chaser === 1;

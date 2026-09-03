@@ -119,8 +119,11 @@ const patrolAndShoot = {
 
 const aggroFly = {
   init(scene, enemy) {
-    enemy.flyOriginX = enemy.x;
-    enemy.flyOriginY = enemy.y;
+    // A origem deve ser a posição de spawn do Tiled, e não uma posição
+    // capturada depois que o Arcade Physics já processou o corpo.
+    enemy.flyOriginX = enemy.spawnX ?? enemy.x;
+    enemy.flyOriginY = enemy.spawnY ?? enemy.y;
+    enemy.setPosition(enemy.flyOriginX, enemy.flyOriginY);
     enemy.flyPatrolDirection = -1;
     enemy.flyState = 'patrol';
     enemy.body.setAllowGravity(false);
