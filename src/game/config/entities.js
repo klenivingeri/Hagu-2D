@@ -55,6 +55,7 @@ export const MOBS_CONFIG = {
     attack: { damage: 1, cooldown: 1500 },
     projectile: { key: 'arrow', speed: 130 },
     behavior: 'patrol_and_shoot',
+    chaser: false,
     animations: [
       { key: 'run', url: 'run_bow/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
       { key: 'stomp', url: 'stomp/sprite_re_land_squash_', frames: 4, frameRate: 10, repeat: 0 },
@@ -62,17 +63,18 @@ export const MOBS_CONFIG = {
       { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 7, frameRate: 20, repeat: 0 },
     ],
   },
-  aggro_chaser: {
+  aggro_fly: {
     path: 'assets/mobs/',
-    stats: { life: 5, type: 'brute', className: 'melee', speed: 50, chaseSpeed: 100 },
-    ai: { visionRangeTiles: 3 },
-    behavior: 'aggro_chaser',
+    stats: { life: 5, type: 'brute', className: 'melee', speed: 50, chaseSpeed: 50 },
+    ai: { visionRangeTiles: 7 },
+    behavior: 'aggro_fly',
+    chaser: true,
     debug: true,
     animations: [
-      { key: 'run', url: 'run/sprite_weapon_shield_run_', frames: 3, frameRate: 10, repeat: -1 },
-      { key: 'stomp', url: 'stomp/sprite_re_land_squash_', frames: 4, frameRate: 10, repeat: 0 },
-      { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 7, frameRate: 20, repeat: 0 },
-      { key: 'attack', url: 'attack/sprite_weapon_shield_atk_melee_', frames: 7, frameRate: 10, repeat: 0 },
+      { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 5, repeat: -1 },
+      { key: 'stomp', url: 'run/sprite_run_two_', frames: 3, frameRate: 5, repeat: 0 },
+      { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 5, frameRate: 20, repeat: 0 },
+      { key: 'attack', url: 'run/sprite_run_two_', frames: 3, frameRate: 5, repeat: 0 },
     ],
   },
 };

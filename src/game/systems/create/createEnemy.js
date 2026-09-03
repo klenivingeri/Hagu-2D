@@ -11,6 +11,7 @@ import { emitEnemyHitBurst } from "../../commons/dustTrail.js";
 const ENEMY_HIT_FLASH_MS = 100;
 const ENEMY_KNOCKBACK_SPEED = 80;
 const ENEMY_KNOCKBACK_MS = 100;
+const FLY_BEHAVIOR = 'aggro_fly';
 
 const ENEMY_DAMAGE_COOLDOWN_MS = 300; // tempo sem poder levar outro dano (bullet ou stomp), evita múltiplos hits de uma vez
 
@@ -32,8 +33,9 @@ export function createEnemys(scene) {
     const key = getTiledProperty(objectData.properties, 'key') || DEFAULT_MOB_KEY;
     const type = getTiledProperty(objectData.properties, 'type') || DEFAULT_MOB_TYPE;
     const path = getTiledProperty(objectData.properties, 'path') || '';
+    const chaser = getTiledProperty(objectData.properties, 'chaser');
 
-    const enemy = spawnEnemy(scene, objectData.x, objectData.y - 10, key, type, path);
+    const enemy = spawnEnemy(scene, objectData.x, objectData.y - 10, key, type, path, chaser);
     if (enemy) enemies.add(enemy);
   });
 
@@ -57,7 +59,7 @@ export function createEnemys(scene) {
 // Cria um inimigo em (x, y) a partir de uma key do MOBS_CONFIG. Retorna
 // `null` (e loga um aviso) se a key não existir — assim um mob mal
 // configurado no Tiled não quebra a criação dos outros.
-function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE, path = '') {
+function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE, path = '', chaser) {
   const config = getMobConfig(type);
 
   const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
@@ -66,9 +68,13 @@ function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE, path = '') {
   enemy.entityPath = path;
   enemy.entityType = type;
   enemy.entityConfig = config;
+  enemy.chaser = chaser === undefined
+    ? config.chaser === true
+    : chaser === true || chaser === 'true' || chaser === 1;
   enemy.status = createEnemyStatus(config.stats);
   initEnemyState(enemy);
   enemy.setCollideWorldBounds(true);
+  if (config.behavior === FLY_BEHAVIOR) enemy.body.setAllowGravity(false);
 
   const { newWidth, newHeight, offsetX, offsetY } = resizeCollider(enemy);
   enemy.body.setSize(newWidth * 0.7, newHeight);

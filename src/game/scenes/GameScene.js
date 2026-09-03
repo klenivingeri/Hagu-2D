@@ -116,6 +116,9 @@ function getEnemyDefinitionsFromMap(mapData) {
     const property = object.properties?.find(({ name }) => name === 'key');
     const type = object.properties?.find(({ name }) => name === 'type');
     const path = object.properties?.find(({ name }) => name === 'path');
-    return property?.value ? { key: property.value, path: path?.value, type: type?.value } : null;
+    const chaser = object.properties?.find(({ name }) => name === 'chaser');
+    return property?.value
+      ? { key: property.value, path: path?.value, type: type?.value, chaser: chaser?.value }
+      : null;
   }).filter(Boolean) || [];
 }

@@ -22,6 +22,8 @@ import { getEntityAnimationKey } from '../../config/entities.js';
 const LOOK_AHEAD_MARGIN = 1; // px que o inimigo "olha" à frente pra detectar beira de plataforma
 const DEFAULT_MELEE_ATTACK_DISTANCE = 2;
 const DEFAULT_MELEE_ATTACK_COOLDOWN = 900;
+const FLY_VISION_SIZE_TILES = 3;
+const FLY_RETURN_EPSILON = 2;
 
 // --- patrol: anda pra frente e vira ao bater em parede ou chegar na beira
 // de uma plataforma. É o comportamento padrão (usado pelo mob_1 hoje).
@@ -87,7 +89,7 @@ const patrolAndShoot = {
     const direction = enemy.body.velocity.x < 0 ? -1 : enemy.body.velocity.x > 0 ? 1 : (enemy.flipX ? -1 : 1);
     const dx = (player?.body?.center.x ?? player?.x ?? 0) - enemy.body.center.x;
     const dy = Math.abs((player?.body?.center.y ?? player?.y ?? 0) - enemy.body.center.y);
-    const canSeePlayer = Boolean(player && !player.isDead && Math.abs(dx) <= range
+    const canSeePlayer = Boolean(enemy.chaser && player && !player.isDead && Math.abs(dx) <= range
       && Math.sign(dx) === direction && dy <= tileSize);
 
     updateVisionDebug(scene, enemy, range, direction, canSeePlayer);
@@ -115,10 +117,74 @@ const patrolAndShoot = {
   },
 };
 
+const aggroFly = {
+  init(scene, enemy) {
+    enemy.flyOriginX = enemy.x;
+    enemy.flyOriginY = enemy.y;
+    enemy.flyPatrolDirection = -1;
+    enemy.flyState = 'patrol';
+    enemy.body.setAllowGravity(false);
+    enemy.setVelocity(-enemy.status.speed, 0);
+    enemy.setFlipX(true);
+  },
+
+  update(scene, enemy) {
+    if (!enemy.body) return;
+    const tileSize = scene.map?.tileWidth || 16;
+    const visionSize = FLY_VISION_SIZE_TILES * tileSize;
+    const halfVision = visionSize / 2;
+    const player = scene.player;
+    const playerX = player?.body?.center.x ?? player?.x;
+    const playerY = player?.body?.center.y ?? player?.y;
+    const dx = (playerX ?? 0) - enemy.body.center.x;
+    const dy = (playerY ?? 0) - enemy.body.center.y;
+    const canSeePlayer = Boolean(enemy.chaser && player && !player.isDead
+      && Math.abs(dx) <= halfVision && Math.abs(dy) <= halfVision);
+
+    if (canSeePlayer) {
+      enemy.flyState = 'chase';
+      moveFlyTowards(enemy, playerX, playerY, getFlyChaseSpeed(enemy));
+    } else if (enemy.flyState === 'chase' || enemy.flyState === 'returning') {
+      enemy.flyState = 'returning';
+      const originDx = enemy.flyOriginX - enemy.x;
+      const originDy = enemy.flyOriginY - enemy.y;
+      if (Math.abs(originDx) <= FLY_RETURN_EPSILON && Math.abs(originDy) <= FLY_RETURN_EPSILON) {
+        enemy.setPosition(enemy.flyOriginX, enemy.flyOriginY);
+        enemy.flyState = 'patrol';
+        enemy.setVelocityX(enemy.flyPatrolDirection * enemy.status.speed);
+        enemy.setVelocityY(0);
+      } else {
+        moveFlyTowards(enemy, enemy.flyOriginX, enemy.flyOriginY, enemy.status.speed);
+      }
+    } else {
+      enemy.setVelocityX(enemy.flyPatrolDirection * enemy.status.speed);
+      enemy.setVelocityY(0);
+      if (enemy.body.blocked.left || enemy.body.touching.left) {
+        setFlyPatrolDirection(enemy, 1);
+      } else if (enemy.body.blocked.right || enemy.body.touching.right) {
+        setFlyPatrolDirection(enemy, -1);
+      }
+      enemy.setY(enemy.flyOriginY);
+    }
+
+    if (!enemy.isStomped && !enemy.isAttacking) {
+      enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
+    }
+    updateFlyVisionDebug(scene, enemy, visionSize, canSeePlayer);
+  },
+};
+
+function setFlyPatrolDirection(enemy, direction) {
+  enemy.flyPatrolDirection = direction;
+  enemy.setVelocityX(direction * enemy.status.speed);
+  enemy.setFlipX(direction < 0);
+}
+
 export const ENEMY_BEHAVIORS = {
   patrol,
   sentinel,
   patrol_and_shoot: patrolAndShoot,
+  aggro_fly: aggroFly,
 };
 
 // Resolve a behavior de um inimigo já criado (usa 'patrol' se o mob não
@@ -210,7 +276,10 @@ function isAboutToFall(scene, enemy) {
 
 function updateVisionDebug(scene, enemy, range, direction, canSeePlayer) {
   const debug = scene.debug === true || enemy.entityConfig?.debug === true || enemy.entityConfig?.ai?.debug === true;
-  if (!debug) return;
+  if (!debug || !enemy.chaser) {
+    enemy.visionDebugGraphics?.clear();
+    return;
+  }
   if (!enemy.visionDebugGraphics) enemy.visionDebugGraphics = scene.add.graphics().setDepth(119);
   const graphics = enemy.visionDebugGraphics;
   const body = enemy.body;
@@ -221,4 +290,38 @@ function updateVisionDebug(scene, enemy, range, direction, canSeePlayer) {
   graphics.fillRect(startX, body.top, range, body.height);
   graphics.strokeRect(startX, body.top, range, body.height);
   graphics.lineBetween(body.center.x, body.center.y, body.center.x + direction * range, body.center.y);
+}
+
+function getFlyChaseSpeed(enemy) {
+  const configured = Number(enemy.entityConfig?.stats?.chaseSpeed);
+  return Math.min(Number.isFinite(configured) && configured > 0 ? configured : 80, 100);
+}
+
+function moveFlyTowards(enemy, targetX, targetY, speed) {
+  const dx = targetX - enemy.x;
+  const dy = targetY - enemy.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance <= FLY_RETURN_EPSILON) {
+    enemy.setVelocity(0, 0);
+    return;
+  }
+  enemy.setVelocity((dx / distance) * speed, (dy / distance) * speed);
+  if (Math.abs(dx) > 0.5) enemy.setFlipX(dx < 0);
+}
+
+function updateFlyVisionDebug(scene, enemy, size, canSeePlayer) {
+  const debug = scene.debug === true || enemy.entityConfig?.debug === true || enemy.entityConfig?.ai?.debug === true;
+  if (!debug || !enemy.chaser) {
+    enemy.visionDebugGraphics?.clear();
+    return;
+  }
+  if (!enemy.visionDebugGraphics) enemy.visionDebugGraphics = scene.add.graphics().setDepth(119);
+  const graphics = enemy.visionDebugGraphics;
+  const left = enemy.body.center.x - size / 2;
+  const top = enemy.body.center.y - size / 2;
+  graphics.clear();
+  graphics.lineStyle(1, canSeePlayer ? 0xff4d4d : 0xffd166, 0.95);
+  graphics.fillStyle(canSeePlayer ? 0xff4d4d : 0xffd166, 0.12);
+  graphics.fillRect(left, top, size, size);
+  graphics.strokeRect(left, top, size, size);
 }
