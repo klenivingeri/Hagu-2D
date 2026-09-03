@@ -125,7 +125,9 @@ function hitByEnemy(scene, player, enemy) {
     return;
   }
 
-  const damage = enemy?.status?.contactDamage ?? 1;
+  const damage = enemy?.entityConfig?.attack?.damage
+    ?? enemy?.status?.contactDamage
+    ?? 1;
   damagePlayer(scene, damage);
 }
 

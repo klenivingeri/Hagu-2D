@@ -97,7 +97,7 @@ export function createBulletSystem(scene) {
       bullet.body.allowGravity = false;
       bullet.body.setVelocityX((Number(config.speed) || 300) * direction);
       bullet.owner = 'enemy';
-      bullet.damage = Number(config.damage) || 1;
+      bullet.damage = Number(enemy.entityConfig?.attack?.damage ?? config.damage) || 1;
       bullet.angle = direction < 0 ? 270 : 90;
       bullet.setDepth(enemy.depth ?? MAP_DEPTHS.PLAYER);
     },

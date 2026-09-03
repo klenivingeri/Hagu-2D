@@ -806,7 +806,7 @@
                         {
                          "name":"path",
                          "type":"string",
-                         "value":"dino"
+                         "value":"mob_1"
                         }, 
                         {
                          "name":"type",

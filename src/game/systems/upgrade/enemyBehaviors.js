@@ -20,6 +20,8 @@ import { getEntityAnimationKey } from '../../config/entities.js';
 // GameScene, createEnemy e updateEnemyMovement não precisam mudar.
 
 const LOOK_AHEAD_MARGIN = 1; // px que o inimigo "olha" à frente pra detectar beira de plataforma
+const DEFAULT_MELEE_ATTACK_DISTANCE = 2;
+const DEFAULT_MELEE_ATTACK_COOLDOWN = 900;
 
 // --- patrol: anda pra frente e vira ao bater em parede ou chegar na beira
 // de uma plataforma. É o comportamento padrão (usado pelo mob_1 hoje).
@@ -46,6 +48,8 @@ const patrol = {
       const goingLeft = enemy.body.velocity.x < 0;
       turnEnemy(enemy, goingLeft ? enemy.status.speed : -enemy.status.speed, !goingLeft);
     }
+
+    tryMeleeAttack(scene, enemy);
   },
 };
 
@@ -88,7 +92,7 @@ const patrolAndShoot = {
 
     updateVisionDebug(scene, enemy, range, direction, canSeePlayer);
     if (canSeePlayer && scene.bulletSystem && scene.time.now >= (enemy.nextAttackAt || 0)) {
-      enemy.nextAttackAt = scene.time.now + (Number(ai.attackCooldown) || 0);
+      enemy.nextAttackAt = scene.time.now + getAttackCooldown(enemy, ai);
       if (!enemy.isStomped) {
         const bowAnimation = getEntityAnimationKey(enemy.entityKey, 'bow');
         const bowFrame = `${bowAnimation}_3`;
@@ -111,77 +115,10 @@ const patrolAndShoot = {
   },
 };
 
-const aggroChaser = {
-  init(scene, enemy) {
-    patrol.init(scene, enemy);
-    enemy.isAttacking = false;
-    enemy.nextAttackAt = 0;
-  },
-
-  update(scene, enemy) {
-    if (enemy.isAttacking) {
-      enemy.setVelocityX(0);
-      return;
-    }
-
-    const player = scene.player;
-    const ai = enemy.entityConfig?.ai || {};
-    const tileSize = scene.map?.tileWidth || 16;
-    const range = (Number(ai.visionRangeTiles) || 0) * tileSize;
-    const attackRange = (Number(ai.attackRangeTiles) || 1) * tileSize;
-    const dx = (player?.body?.center.x ?? player?.x ?? 0) - enemy.body.center.x;
-    const dy = Math.abs((player?.body?.center.y ?? player?.y ?? 0) - enemy.body.center.y);
-
-    if (!player || player.isDead || Math.abs(dx) > range || dy > tileSize) {
-      patrol.update(scene, enemy);
-      return;
-    }
-
-    const direction = dx < 0 ? -1 : 1;
-    enemy.setFlipX(direction < 0);
-    if (Math.abs(dx) <= attackRange && scene.time.now >= (enemy.nextAttackAt || 0)) {
-      startChaserAttack(scene, enemy, direction, ai);
-      return;
-    }
-
-    if ((direction < 0 && enemy.body.blocked.left) || (direction > 0 && enemy.body.blocked.right)
-      || isAboutToFall(scene, enemy)) {
-      patrol.update(scene, enemy);
-      return;
-    }
-
-    enemy.setVelocityX(direction * enemy.status.speed);
-    if (!enemy.isStomped) enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
-  },
-};
-
-function startChaserAttack(scene, enemy, direction, ai) {
-  enemy.isAttacking = true;
-  enemy.nextAttackAt = scene.time.now + (Number(ai.attackCooldown) || 900);
-  enemy.setVelocityX(0);
-  const attackType = ai.attackType || enemy.entityConfig?.stats?.className;
-  const animationKey = ['ranged', 'carry'].includes(attackType) ? 'bow' : 'attack';
-  const animation = getEntityAnimationKey(enemy.entityKey, animationKey);
-
-  if (!scene.anims.exists(animation)) {
-    enemy.isAttacking = false;
-    return;
-  }
-  enemy.anims.play(animation, true);
-  enemy.once(`animationcomplete-${animation}`, () => {
-    enemy.isAttacking = false;
-    if (enemy.active && !enemy.isStomped) {
-      enemy.setVelocityX(direction * enemy.status.speed);
-      enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
-    }
-  });
-}
-
 export const ENEMY_BEHAVIORS = {
   patrol,
   sentinel,
   patrol_and_shoot: patrolAndShoot,
-  aggro_chaser: aggroChaser,
 };
 
 // Resolve a behavior de um inimigo já criado (usa 'patrol' se o mob não
@@ -198,9 +135,57 @@ function turnEnemy(enemy, velocityX, flipX) {
   // Só troca pra animação de "run" se não estiver no meio de
   // "enemy_stomp"/"enemy_spark" — a direção/velocidade muda de qualquer
   // jeito, mas os frames da animação em andamento não são interrompidos.
-  if (!enemy.isStomped) {
+  if (!enemy.isStomped && !enemy.isAttacking) {
     enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
   }
+}
+
+function tryMeleeAttack(scene, enemy) {
+  if (enemy.isStomped || enemy.isDead || enemy.isAttacking) return;
+  if (enemy.entityConfig?.stats?.className !== 'melee') return;
+  const attack = enemy.entityConfig?.attack || {};
+  const attackDistance = Number.isFinite(Number(attack.rangePx))
+    ? Math.max(0, Number(attack.rangePx))
+    : DEFAULT_MELEE_ATTACK_DISTANCE;
+  const attackCooldown = getAttackCooldown(enemy, {});
+  if (scene.time.now < (enemy.nextMeleeAttackAt || 0)) return;
+
+  const player = scene.player;
+  if (!player || player.isDead || !player.body || !enemy.body) return;
+
+  const sameHeight = enemy.body.bottom > player.body.top && enemy.body.top < player.body.bottom;
+  if (!sameHeight) return;
+
+  const playerCenterX = player.body.center.x;
+  const enemyCenterX = enemy.body.center.x;
+  const direction = playerCenterX < enemyCenterX ? -1 : 1;
+  const gap = direction < 0
+    ? enemy.body.left - player.body.right
+    : player.body.left - enemy.body.right;
+  const movingTowardPlayer = Math.sign(enemy.body.velocity.x) === direction || enemy.body.velocity.x === 0;
+
+  if (!movingTowardPlayer || gap > attackDistance) return;
+
+  const animation = getEntityAnimationKey(enemy.entityKey, 'attack');
+  if (!scene.anims.exists(animation)) return;
+
+  enemy.isAttacking = true;
+  enemy.nextMeleeAttackAt = scene.time.now + attackCooldown;
+  enemy.setFlipX(direction < 0);
+  enemy.anims.play(animation, true);
+  enemy.once(`animationcomplete-${animation}`, () => {
+    enemy.isAttacking = false;
+    if (enemy.active && !enemy.isStomped && !enemy.isDead) {
+      enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
+    }
+  });
+}
+
+function getAttackCooldown(enemy, ai = {}) {
+  const attackCooldown = enemy.entityConfig?.attack?.cooldown;
+  if (Number.isFinite(Number(attackCooldown))) return Math.max(0, Number(attackCooldown));
+  if (Number.isFinite(Number(ai.attackCooldown))) return Math.max(0, Number(ai.attackCooldown));
+  return DEFAULT_MELEE_ATTACK_COOLDOWN;
 }
 
 // Olha um pouco à frente, na direção do movimento: se não tem chão ali, é beira de plataforma.
