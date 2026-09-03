@@ -68,9 +68,53 @@ const sentinel = {
   },
 };
 
+const patrolAndShoot = {
+  init(scene, enemy) {
+    patrol.init(scene, enemy);
+    enemy.nextAttackAt = 0;
+  },
+
+  update(scene, enemy) {
+    patrol.update(scene, enemy);
+    const player = scene.player;
+    const ai = enemy.entityConfig?.ai || {};
+    const tileSize = scene.map?.tileWidth || 16;
+    const range = Math.max(0, Number(ai.visionRangeTiles) || 0) * tileSize;
+    const direction = enemy.body.velocity.x < 0 ? -1 : enemy.body.velocity.x > 0 ? 1 : (enemy.flipX ? -1 : 1);
+    const dx = (player?.body?.center.x ?? player?.x ?? 0) - enemy.body.center.x;
+    const dy = Math.abs((player?.body?.center.y ?? player?.y ?? 0) - enemy.body.center.y);
+    const canSeePlayer = Boolean(player && !player.isDead && Math.abs(dx) <= range
+      && Math.sign(dx) === direction && dy <= tileSize);
+
+    updateVisionDebug(scene, enemy, range, direction, canSeePlayer);
+    if (canSeePlayer && scene.bulletSystem && scene.time.now >= (enemy.nextAttackAt || 0)) {
+      enemy.nextAttackAt = scene.time.now + (Number(ai.attackCooldown) || 0);
+      if (!enemy.isStomped) {
+        const bowAnimation = getEntityAnimationKey(enemy.entityKey, 'bow');
+        const bowFrame = `${bowAnimation}_3`;
+        enemy._onBowFrame = (anim, frame) => {
+          if (anim.key === bowAnimation && frame.textureKey === bowFrame) {
+            scene.bulletSystem.fireEnemy(enemy, direction);
+            enemy.off('animationupdate', enemy._onBowFrame);
+          }
+        };
+        enemy.on('animationupdate', enemy._onBowFrame);
+        enemy.anims.play(bowAnimation, true);
+        enemy.once(`animationcomplete-${bowAnimation}`, () => {
+          enemy.off('animationupdate', enemy._onBowFrame);
+          if (enemy.active && !enemy.isStomped) {
+            enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
+          }
+        });
+      }
+    }
+  },
+};
+
 export const ENEMY_BEHAVIORS = {
   patrol,
   sentinel,
+  patrol_and_shoot: patrolAndShoot,
 };
 
 // Resolve a behavior de um inimigo já criado (usa 'patrol' se o mob não
@@ -110,4 +154,19 @@ function isAboutToFall(scene, enemy) {
     if (tile && tile.index !== -1) return false;
   }
   return true;
+}
+
+function updateVisionDebug(scene, enemy, range, direction, canSeePlayer) {
+  const debug = scene.debug === true || enemy.entityConfig?.debug === true || enemy.entityConfig?.ai?.debug === true;
+  if (!debug) return;
+  if (!enemy.visionDebugGraphics) enemy.visionDebugGraphics = scene.add.graphics().setDepth(119);
+  const graphics = enemy.visionDebugGraphics;
+  const body = enemy.body;
+  const startX = direction > 0 ? body.right : body.left - range;
+  graphics.clear();
+  graphics.lineStyle(1, canSeePlayer ? 0xff4d4d : 0xffd166, 0.95);
+  graphics.fillStyle(canSeePlayer ? 0xff4d4d : 0xffd166, 0.12);
+  graphics.fillRect(startX, body.top, range, body.height);
+  graphics.strokeRect(startX, body.top, range, body.height);
+  graphics.lineBetween(body.center.x, body.center.y, body.center.x + direction * range, body.center.y);
 }

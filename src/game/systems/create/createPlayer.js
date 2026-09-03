@@ -6,6 +6,7 @@ import { PLAYERS_CONFIG, getEntityAnimationKey } from "../../config/entities.js"
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
 import { MAP_DEPTHS } from "../../../constants.js";
+import { emitEnemyHitBurst } from "../../commons/dustTrail.js";
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
 const STOMP_TOLERANCE_RATIO = 0.5; // "pisou" se os pés estiverem na metade de cima do inimigo
@@ -125,6 +126,14 @@ function hitByEnemy(scene, player, enemy) {
   }
 
   const damage = enemy?.status?.contactDamage ?? 1;
+  damagePlayer(scene, damage);
+}
+
+export function damagePlayer(scene, damage = 1) {
+  const player = scene.player;
+  if (!player || player.invulnerable || player.isDead) return;
+
+  emitEnemyHitBurst(scene, player);
   player.status.life -= damage;
   updateHUD(scene, player.status.life);
 

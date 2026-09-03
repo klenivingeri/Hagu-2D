@@ -31,7 +31,7 @@ export const MOBS_CONFIG = {
       { key: 'idle', url: 'idle/sprite_base_idle_', frames: 3, frameRate: 4, repeat: 0 },
       { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
       { key: 'stomp', url: 'stomp/sprite_re_land_squash_', frames: 4, frameRate: 10, repeat: 0 },
-      { key: 'bow', url: 'bow/sprite_weapon_bow_short_fire_fast_', frames: 4, frameRate: 10, repeat: 0 },
+      { key: 'bow', url: 'bow/sprite_weapon_bow_tall_fire_slow_bag_', frames: 5, frameRate: 20, repeat: 0 },
       { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 7, frameRate: 20, repeat: 0 },
     ],
     stats: { life: 3, speed: 50, chaseSpeed: 100 },
@@ -46,8 +46,9 @@ export const MOBS_CONFIG = {
   patrol_and_shoot: {
     path: 'assets/mobs/',
     stats: { life: 2, type: 'ranger', className: 'ranged', speed: 45 },
-    ai: { visionRangeTiles: 3, attackCooldown: 1500 },
-    projectile: { key: 'arrow', speed: 250, damage: 1 },
+    ai: { visionRangeTiles: 4, attackCooldown: 1500 },
+    debug: false,
+    projectile: { key: 'arrow', speed: 130, damage: 1 },
     behavior: 'patrol_and_shoot',
   },
   aggro_chaser: {

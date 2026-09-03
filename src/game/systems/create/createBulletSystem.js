@@ -15,6 +15,12 @@ export function createBulletSystem(scene) {
     });
   });
 
+  scene.physics.add.overlap(scene.bullets, scene.player, (player, bullet) => {
+    if (!bullet?.active || bullet.owner !== 'enemy') return;
+    destroyBullet(bullet);
+    scene.damagePlayer?.(bullet.damage || 1);
+  });
+
   // Cria de fato o projétil e o lança na direção que o player está olhando.
   const spawnBullet = () => {
     const bullet = scene.bullets.get(scene.player.x, scene.player.y + 5, 'bullet');
@@ -25,6 +31,7 @@ export function createBulletSystem(scene) {
       bullet.body.enable = true;
       bullet.body.allowGravity = false;
       bullet.body.setVelocityX(450 * scene.lastDirection);
+      bullet.owner = 'player';
       bullet.angle = 90;
       // O projétil usa a mesma camada visual do player: fica na frente do
       // que o player vê à frente e atrás do que cobre o player.
@@ -81,6 +88,19 @@ export function createBulletSystem(scene) {
 
   return {
     fire,
+    fireEnemy(enemy, direction) {
+      const bullet = scene.bullets.get(enemy.body.center.x + direction * 8, enemy.body.center.y, 'bullet');
+      if (!bullet) return;
+      const config = enemy.entityConfig?.projectile || {};
+      bullet.setActive(true).setVisible(true);
+      bullet.body.enable = true;
+      bullet.body.allowGravity = false;
+      bullet.body.setVelocityX((Number(config.speed) || 300) * direction);
+      bullet.owner = 'enemy';
+      bullet.damage = Number(config.damage) || 1;
+      bullet.angle = direction < 0 ? 270 : 90;
+      bullet.setDepth(enemy.depth ?? MAP_DEPTHS.PLAYER);
+    },
     update() {
       // Usando getChildren() para retornar um array padrão do JS
       scene.bullets.getChildren().forEach((bullet) => {

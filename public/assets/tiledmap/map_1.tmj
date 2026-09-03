@@ -193,6 +193,7 @@
             17, 17, 17, 17, 17, 17, 17, 17, 17, 0, 0, 17, 0, 0, 17, 17, 17, 0, 0, 0, 17, 17, 17, 17, 17, 17, 17, 17],
          "height":28,
          "id":23,
+         "locked":true,
          "name":"ground",
          "opacity":1,
          "type":"tilelayer",
@@ -525,6 +526,7 @@
         {
          "draworder":"topdown",
          "id":13,
+         "locked":true,
          "name":"player",
          "objects":[
                 {
@@ -555,7 +557,6 @@
         {
          "draworder":"topdown",
          "id":12,
-         "locked":true,
          "name":"enemy",
          "objects":[
                 {
@@ -633,7 +634,7 @@
                 {
                  "height":0,
                  "id":6,
-                 "name":"Enemy",
+                 "name":"Enemy Dino",
                  "opacity":1,
                  "point":true,
                  "properties":[
@@ -645,7 +646,7 @@
                         {
                          "name":"type",
                          "type":"string",
-                         "value":"patrol"
+                         "value":"patrol_and_shoot"
                         }],
                  "rotation":0,
                  "type":"",

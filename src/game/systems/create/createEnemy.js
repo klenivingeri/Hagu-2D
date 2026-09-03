@@ -44,7 +44,7 @@ export function createEnemys(scene) {
     (bullet, enemy) => {
       const bulletDirection = Math.sign(bullet.body?.velocity.x || 0);
       bulletDestroy(bullet);
-      damageEnemy(enemy, bullet.damage, bulletDirection);
+      if (bullet.owner !== 'enemy') damageEnemy(enemy, bullet.damage, bulletDirection);
     },
     null,
     scene

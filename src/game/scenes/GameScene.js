@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
-import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage } from '../systems/create/createPlayer.js';
+import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
 import { createHUD, updateHUD } from '../systems/create/createhud.js';
 import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
 import { createControls } from '../systems/create/createControls.js';
@@ -64,6 +64,7 @@ export class GameScene extends Phaser.Scene {
 
     this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 10 });
     this.bulletSystem = createBulletSystem(this);
+    this.damagePlayer = (damage) => damagePlayer(this, damage);
 
     createEnemyAnimations(this)
     this.enemies = createEnemys(this);
