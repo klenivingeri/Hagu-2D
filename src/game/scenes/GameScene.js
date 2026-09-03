@@ -13,6 +13,7 @@ import { createRails } from '../systems/create/createRails.js';
 import { updateRailMovement } from '../systems/upgrade/updateRailMovement.js';
 import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems/create/createCoins.js';
 import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeVisibility.js';
+import { preloadDustTexture } from '../commons/dustTrail.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -48,6 +49,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // Gera a textura de 2x2px da poeira uma única vez, antes de qualquer
+    // emitDustTrail/emitBulletImpactDust ser chamado.
+    preloadDustTexture(this);
+
     createWorld(this);
     createControls(this);
 
@@ -73,15 +78,20 @@ export class GameScene extends Phaser.Scene {
   update() {
     updatePlayerMovement(this)
     updateGroundFakeVisibility(this);
+
+    // for clássico em vez de getChildren().forEach(...): evita recriar uma
+    // arrow function nova a cada chamada de update() (60x/segundo).
     if (this.enemies) {
-      this.enemies.getChildren().forEach((enemy) => {
-        updateEnemyMovement(this, enemy);
-      });
+      const enemyList = this.enemies.getChildren();
+      for (let i = 0; i < enemyList.length; i += 1) {
+        updateEnemyMovement(this, enemyList[i]);
+      }
     }
     if (this.rails) {
-      this.rails.getChildren().forEach((rail) => {
-        updateRailMovement(this, rail);
-      });
+      const railList = this.rails.getChildren();
+      for (let i = 0; i < railList.length; i += 1) {
+        updateRailMovement(this, railList[i]);
+      }
     }
     this.bulletSystem.update();
   }

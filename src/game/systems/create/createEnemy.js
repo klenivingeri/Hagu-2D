@@ -5,6 +5,7 @@ import { DEFAULT_MOB_KEY, DEFAULT_MOB_TYPE, getEntityAnimationKey, getMobConfig 
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { getEnemyBehavior } from "../upgrade/enemyBehaviors.js";
 import { MAP_DEPTHS } from "../../../constants.js";
+import { showFloatingDamage } from "../../commons/floatingTextPool.js";
 
 const ENEMY_HIT_FLASH_MS = 100;
 const ENEMY_KNOCKBACK_SPEED = 80;
@@ -173,33 +174,9 @@ function playHitFeedback(enemy, damage, source, bulletDirection) {
     if (enemy.active) enemy.clearTint();
   });
 
-  const damageText = enemy.scene.add.text(enemy.x, enemy.y - enemy.height / 2, `-${damage}`, {
-    color: '#ff5a52',
-    fontSize: '8px',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2,
-  }).setOrigin(0.5).setDepth(20);
-
-  const startY = damageText.y;
-  enemy.scene.tweens.add({
-    targets: damageText,
-    y: startY - 4,
-    duration: 180,
-    hold: 70,
-    yoyo: true,
-    ease: 'Cubic.easeOut',
-  });
-
-  enemy.scene.tweens.add({
-    targets: damageText,
-    alpha: 0,
-    scale: 0.85,
-    duration: 430,
-    delay: 70,
-    ease: 'Linear',
-    onComplete: () => damageText.destroy(),
-  });
+  // Antes: criava um Text novo + 2 tweens e destruía tudo no final (GC
+  // pressure a cada hit). Agora reaproveita um pool fixo de textos.
+  showFloatingDamage(enemy.scene, enemy.x, enemy.y - enemy.height / 2, damage);
 
   if (source === 'bullet' && bulletDirection !== 0 && enemy.body?.enable) {
     enemy.setVelocityX(bulletDirection * ENEMY_KNOCKBACK_SPEED);

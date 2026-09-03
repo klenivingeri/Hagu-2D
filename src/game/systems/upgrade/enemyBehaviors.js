@@ -102,10 +102,12 @@ function isAboutToFall(scene, enemy) {
 
   // nonNull=false (padrão) aqui é de propósito: com nonNull=true o Phaser
   // NUNCA devolve null (devolve um tile "fake" com index -1 pra célula
-  // vazia), e esse fake também é truthy — o .some() abaixo dava sempre
-  // true e o inimigo nunca detectava a beira da plataforma (caía direto).
-  return !scene.platforms.some((layer) => {
-    const tile = layer.getTileAtWorldXY(lookAheadX, feetY);
-    return tile && tile.index !== -1;
-  });
+  // vazia), e esse fake também é truthy — um .some() com closure aqui
+  // (como era antes) alocava uma função nova por inimigo a cada frame.
+  // Loop simples evita essa alocação.
+  for (let i = 0; i < scene.platforms.length; i += 1) {
+    const tile = scene.platforms[i].getTileAtWorldXY(lookAheadX, feetY);
+    if (tile && tile.index !== -1) return false;
+  }
+  return true;
 }
