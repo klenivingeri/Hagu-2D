@@ -77,16 +77,16 @@ export function emitDustTrail(scene, player, orientation = 'horizontal') {
     if (orientation === 'vertical') {
       // Nasce na lateral do corpo e sobe/espalha um pouco, simulando o
       // atrito da parede durante a descida.
-      x = wallSide === -1 ? body.left - 2 : body.right + 2;
-      y = Phaser.Math.Between(body.top + 3, body.bottom - 3);
-      vx = wallSide * Phaser.Math.Between(40, 120);
-      vy = Phaser.Math.Between(-70, 70);
+    x = wallSide === -1 ? body.left - 1 : body.right + 1;
+    y = Phaser.Math.Between(body.top, body.bottom + 1);
+    vx = wallSide * Phaser.Math.Between(1, 5);
+    vy = Phaser.Math.Between(0, 30);
     } else {
       // Nasce perto dos pés e fica para trás em relação ao movimento.
-      x = body.center.x - direction * Phaser.Math.Between(3, 9);
-      y = body.bottom - Phaser.Math.Between(0, 3);
-      vx = -direction * Phaser.Math.Between(80, 180);
-      vy = Phaser.Math.Between(-50, -10);
+    x = body.center.x - direction * Phaser.Math.Between(0, 2);
+    y = body.bottom - Phaser.Math.Between(0, 1);
+    vx = -direction * Phaser.Math.Between(5, 20);
+    vy = Phaser.Math.Between(-15, -5);
     }
 
     emitParticle(emitter, x, y, vx, vy);

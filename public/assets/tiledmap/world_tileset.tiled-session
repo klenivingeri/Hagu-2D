@@ -9,13 +9,17 @@
         },
         "map_1.tmj": {
             "scale": 1.5,
-            "selectedLayer": 3,
+            "selectedLayer": 4,
             "viewCenter": {
-                "x": 203.66666666666666,
-                "y": 252
+                "x": 216.33333333333331,
+                "y": 263.33333333333326
             }
         },
+        "map_1.tmj#coin": {
+            "scaleInDock": 1
+        },
         "map_1.tmj#platforms": {
+            "scaleInDock": 1,
             "scaleInEditor": 1
         },
         "map_1.tmj#world_tileset": {

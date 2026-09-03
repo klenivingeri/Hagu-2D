@@ -4,7 +4,7 @@ export const MAP_LAYERS = {
     FAR_BACKGROUND: 'far-background',
     NEAR_BECKGROUND: 'near-beckground',
     GROUND: 'ground',
-    GROUND_FAKE: 'ground-fake',
+    GROUND_FAKE: 'groundfake',
     FOREGROUND: 'foreground',
     OBSTACLES: 'obstacles',
     COLLISIONS: 'collisions',
