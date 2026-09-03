@@ -28,6 +28,7 @@ export function createPlayer(scene) {
   player.entityKey = key;
   player.entityConfig = config;
   player.isWallSliding = false;
+  player.lastGroundedAt = -Infinity;
   // Atualizado exclusivamente pelo collider da layer obstacles.
   player.stickableWallSide = 0;
   // -1 = última parede foi a esquerda, 1 = direita, 0 = nenhuma ainda.

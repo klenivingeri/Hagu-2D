@@ -22,8 +22,6 @@ export const updateRailMovement = (scene, rail) => {
       && rail.body.touching.up;
 
     if (playerIsOnTop) {
-      const deltaX = rail.body.x - rail.body.prev.x;
-
       if (rail.direction === 'up-down') {
         // O Arcade Physics já resolve a colisão vertical. Sincronizar a
         // velocidade evita a disputa entre gravidade, collider e deltaY.
@@ -31,8 +29,21 @@ export const updateRailMovement = (scene, rail) => {
           scene.player.body.setVelocityY(rail.body.velocity.y);
         }
       } else {
-        // No rail horizontal, carregamos o player junto no eixo X.
-        scene.player.x += deltaX;
+        // IMPORTANTE: usar setVelocityX (não `player.x += deltaX`).
+        // O Arcade Physics só resolve colisão de tile no eixo X usando
+        // body.deltaX(), que é calculado a partir da integração de
+        // velocidade daquele step. Um deslocamento manual de x é
+        // re-sincronizado para o body no preUpdate do frame seguinte
+        // ANTES do cálculo de prev.x/deltaX, então o Phaser nunca "vê"
+        // esse movimento — quando o player está parado (velocity.x = 0)
+        // o resultado é atravessar tiles de colisão (ground) como um
+        // fantasma. Somando a velocidade do rail à velocidade atual do
+        // player (já setada por updatePlayerMovement neste frame),
+        // garantimos um deltaX real e a colisão volta a funcionar,
+        // igual já acontece no eixo Y.
+        scene.player.body.setVelocityX(
+          scene.player.body.velocity.x + rail.body.velocity.x
+        );
       }
     }
   }

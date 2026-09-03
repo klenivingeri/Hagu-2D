@@ -13,6 +13,7 @@
 export function createPlayerStatus(overrides = {}) {
   return {
     life: 3,                  // vidas/corações
+    coyoteTimeMs: 65,
     speed: 110,                // velocidade horizontal (px/s) - já usado em updatePlayerMovement
     jumpHeight: 200,            // força do pulo (velocidade vertical, px/s) - já usado em updatePlayerMovement
     isStick: true,              // habilidade de grudar na parede; começa ativa até o item existir

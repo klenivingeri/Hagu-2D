@@ -6,6 +6,7 @@ import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { getEnemyBehavior } from "../upgrade/enemyBehaviors.js";
 import { MAP_DEPTHS } from "../../../constants.js";
 import { showFloatingDamage } from "../../commons/floatingTextPool.js";
+import { emitEnemyHitBurst } from "../../commons/dustTrail.js";
 
 const ENEMY_HIT_FLASH_MS = 100;
 const ENEMY_KNOCKBACK_SPEED = 80;
@@ -168,6 +169,10 @@ function applyDamage(enemy, damage, source, bulletDirection = 0) {
 // tocadas aqui, então ele continua se deslocando e vira normalmente nas
 // bordas/paredes assim que a behavior for liberada de novo.
 function playHitFeedback(enemy, damage, source, bulletDirection) {
+  if (source === 'bullet') {
+    emitEnemyHitBurst(enemy.scene, enemy);
+  }
+
   enemy.clearTint();
   enemy.setTint(0xff3b30);
   enemy.scene.time.delayedCall(ENEMY_HIT_FLASH_MS, () => {

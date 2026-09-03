@@ -10,6 +10,14 @@ export const updatePlayerMovement = (scene) => {
     const left = scene.cursors.left.isDown || scene.keys.A.isDown || scene.controlState.left;
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
     const wasGrounded = player.body.blocked.down || player.body.touching.down;
+    const now = scene.time.now;
+
+    if (wasGrounded) {
+      player.lastGroundedAt = now;
+    }
+
+    const canUseCoyoteJump = !wasGrounded
+      && now - player.lastGroundedAt <= player.status.coyoteTimeMs;
     // Ao pousar no topo de um chão/plataforma, a tentativa da parede é
     // reiniciada. Assim, depois de falhar e cair, pode tentar a mesma parede.
     if (wasGrounded) {
@@ -74,7 +82,7 @@ export const updatePlayerMovement = (scene) => {
 
     // --- Movimento de Pulo (Disparo Único Blindado) ---
     // Verificamos se scene.controlState.jump é true (ele é ativado apenas 1 vez por toque ou por clique de tecla)
-    if (scene.controlState.jump && wasGrounded) {
+    if (scene.controlState.jump && (wasGrounded || canUseCoyoteJump)) {
       player.setVelocityY(-player.status.jumpHeight);
       player.isShooting = false; // Pulo interrompe o disparo de arco em andamento
       startedJump = true;

@@ -3,6 +3,8 @@ import Phaser from 'phaser';
 const DUST_COLOR = 0x9a9a9a;
 const DUST_PARTICLES_PER_EMISSION = 4;
 const DUST_EMISSION_INTERVAL = 90;
+const BULLET_IMPACT_PARTICLES = 8;
+const ENEMY_HIT_PARTICLES = 6;
 
 /**
  * Gera a textura de 2x2px usada pela poeira, uma única vez por jogo.
@@ -109,21 +111,87 @@ export function emitBulletImpactDust(scene, bullet, bulletDirection) {
 
   const emitter = getDustEmitter(scene);
 
-  for (let index = 0; index < DUST_PARTICLES_PER_EMISSION; index += 1) {
-    const x = body.center.x;
-    const y = body.center.y + Phaser.Math.Between(-3, 3);
-    const vx = -direction * Phaser.Math.Between(80, 200);
-    const vy = Phaser.Math.Between(-100, 100);
+  const x = body.center.x;
+  const y = body.center.y;
 
-    emitParticle(emitter, x, y, vx, vy);
+  // Clarão curto para deixar o instante da colisão mais legível.
+  const flash = scene.add.circle(x, y, 3, 0xffffff, 0.9);
+  flash.setDepth(10000);
+  scene.tweens.add({
+    targets: flash,
+    scale: 2.5,
+    alpha: 0,
+    duration: 90,
+    ease: 'Cubic.Out',
+    onComplete: () => flash.destroy(),
+  });
+
+  // Fragmentos saem em leque, dando a sensação de que o projétil se partiu
+  // no impacto, em vez de apenas deixar um rastro para trás.
+  for (let index = 0; index < BULLET_IMPACT_PARTICLES; index += 1) {
+    const angle = Phaser.Math.DegToRad(Phaser.Math.Between(0, 359));
+    const speed = Phaser.Math.Between(70, 170);
+    const vx = Math.cos(angle) * speed - direction * 30;
+    const vy = Math.sin(angle) * speed;
+
+    emitParticle(emitter, x, y + Phaser.Math.Between(-2, 2), vx, vy, {
+      scale: Phaser.Math.FloatBetween(0.8, 1.6),
+      lifespan: Phaser.Math.Between(160, 260),
+    });
   }
 }
 
-function emitParticle(emitter, x, y, vx, vy) {
+/**
+ * Faíscas menores para indicar que o bullet acertou um inimigo.
+ * É diferente do impacto em layer: não simula poeira, e sim um hit rápido.
+ */
+export function emitEnemyHitBurst(scene, enemy) {
+  const body = enemy.body;
+  const x = body?.center.x ?? enemy.x;
+  const y = body?.center.y ?? enemy.y;
+  const emitter = getDustEmitter(scene);
+
+  const flash = scene.add.circle(x, y, 2.5, 0xfff3a3, 0.95);
+  flash.setDepth(10000);
+  scene.tweens.add({
+    targets: flash,
+    scale: 1.8,
+    alpha: 0,
+    duration: 70,
+    ease: 'Cubic.Out',
+    onComplete: () => flash.destroy(),
+  });
+
+  for (let index = 0; index < ENEMY_HIT_PARTICLES; index += 1) {
+    const angle = Phaser.Math.DegToRad(Phaser.Math.Between(0, 359));
+    const speed = Phaser.Math.Between(45, 110);
+
+    emitParticle(
+      emitter,
+      x,
+      y + Phaser.Math.Between(-2, 2),
+      Math.cos(angle) * speed,
+      Math.sin(angle) * speed,
+      {
+        scale: Phaser.Math.FloatBetween(0.7, 1.2),
+        lifespan: Phaser.Math.Between(120, 200),
+        tint: 0xffd166,
+      }
+    );
+  }
+}
+
+function emitParticle(emitter, x, y, vx, vy, options = {}) {
   emitter.emitParticleAt(x, y, 1);
   const particle = emitter.alive[emitter.alive.length - 1];
   if (particle) {
     particle.velocityX = vx;
     particle.velocityY = vy;
+    if (options.scale !== undefined) {
+      particle.scaleX = options.scale;
+      particle.scaleY = options.scale;
+    }
+    if (options.lifespan !== undefined) particle.life = options.lifespan;
+    if (options.tint !== undefined) particle.tint = options.tint;
   }
 }
