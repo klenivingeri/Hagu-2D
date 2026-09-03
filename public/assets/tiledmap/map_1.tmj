@@ -572,6 +572,11 @@
                          "value":"mob_1"
                         }, 
                         {
+                         "name":"path",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
                          "name":"type",
                          "type":"string",
                          "value":"patrol"
@@ -592,6 +597,11 @@
                  "properties":[
                         {
                          "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
+                         "name":"path",
                          "type":"string",
                          "value":"mob_1"
                         }, 
@@ -620,6 +630,11 @@
                          "value":"mob_1"
                         }, 
                         {
+                         "name":"path",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
                          "name":"type",
                          "type":"string",
                          "value":"patrol"
@@ -634,12 +649,17 @@
                 {
                  "height":0,
                  "id":6,
-                 "name":"Enemy Dino",
+                 "name":"Dino Shoot",
                  "opacity":1,
                  "point":true,
                  "properties":[
                         {
                          "name":"key",
+                         "type":"string",
+                         "value":"dino_shoot"
+                        }, 
+                        {
+                         "name":"path",
                          "type":"string",
                          "value":"dino"
                         }, 
@@ -668,6 +688,11 @@
                          "value":"mob_1"
                         }, 
                         {
+                         "name":"path",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
                          "name":"type",
                          "type":"string",
                          "value":"patrol"
@@ -688,6 +713,11 @@
                  "properties":[
                         {
                          "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
+                         "name":"path",
                          "type":"string",
                          "value":"mob_1"
                         }, 
@@ -716,6 +746,11 @@
                          "value":"mob_1"
                         }, 
                         {
+                         "name":"path",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
                          "name":"type",
                          "type":"string",
                          "value":"patrol"
@@ -736,6 +771,11 @@
                  "properties":[
                         {
                          "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
+                         "name":"path",
                          "type":"string",
                          "value":"mob_1"
                         }, 
@@ -764,6 +804,11 @@
                          "value":"dino"
                         }, 
                         {
+                         "name":"path",
+                         "type":"string",
+                         "value":"dino"
+                        }, 
+                        {
                          "name":"type",
                          "type":"string",
                          "value":"patrol"
@@ -774,6 +819,35 @@
                  "width":0,
                  "x":238,
                  "y":328.666666666667
+                }, 
+                {
+                 "height":0,
+                 "id":28,
+                 "name":"Enemy",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
+                         "name":"path",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":368,
+                 "y":412
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -881,7 +955,7 @@
          "y":0
         }],
  "nextlayerid":24,
- "nextobjectid":28,
+ "nextobjectid":29,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

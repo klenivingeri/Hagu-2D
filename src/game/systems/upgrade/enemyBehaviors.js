@@ -111,10 +111,77 @@ const patrolAndShoot = {
   },
 };
 
+const aggroChaser = {
+  init(scene, enemy) {
+    patrol.init(scene, enemy);
+    enemy.isAttacking = false;
+    enemy.nextAttackAt = 0;
+  },
+
+  update(scene, enemy) {
+    if (enemy.isAttacking) {
+      enemy.setVelocityX(0);
+      return;
+    }
+
+    const player = scene.player;
+    const ai = enemy.entityConfig?.ai || {};
+    const tileSize = scene.map?.tileWidth || 16;
+    const range = (Number(ai.visionRangeTiles) || 0) * tileSize;
+    const attackRange = (Number(ai.attackRangeTiles) || 1) * tileSize;
+    const dx = (player?.body?.center.x ?? player?.x ?? 0) - enemy.body.center.x;
+    const dy = Math.abs((player?.body?.center.y ?? player?.y ?? 0) - enemy.body.center.y);
+
+    if (!player || player.isDead || Math.abs(dx) > range || dy > tileSize) {
+      patrol.update(scene, enemy);
+      return;
+    }
+
+    const direction = dx < 0 ? -1 : 1;
+    enemy.setFlipX(direction < 0);
+    if (Math.abs(dx) <= attackRange && scene.time.now >= (enemy.nextAttackAt || 0)) {
+      startChaserAttack(scene, enemy, direction, ai);
+      return;
+    }
+
+    if ((direction < 0 && enemy.body.blocked.left) || (direction > 0 && enemy.body.blocked.right)
+      || isAboutToFall(scene, enemy)) {
+      patrol.update(scene, enemy);
+      return;
+    }
+
+    enemy.setVelocityX(direction * enemy.status.speed);
+    if (!enemy.isStomped) enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
+  },
+};
+
+function startChaserAttack(scene, enemy, direction, ai) {
+  enemy.isAttacking = true;
+  enemy.nextAttackAt = scene.time.now + (Number(ai.attackCooldown) || 900);
+  enemy.setVelocityX(0);
+  const attackType = ai.attackType || enemy.entityConfig?.stats?.className;
+  const animationKey = ['ranged', 'carry'].includes(attackType) ? 'bow' : 'attack';
+  const animation = getEntityAnimationKey(enemy.entityKey, animationKey);
+
+  if (!scene.anims.exists(animation)) {
+    enemy.isAttacking = false;
+    return;
+  }
+  enemy.anims.play(animation, true);
+  enemy.once(`animationcomplete-${animation}`, () => {
+    enemy.isAttacking = false;
+    if (enemy.active && !enemy.isStomped) {
+      enemy.setVelocityX(direction * enemy.status.speed);
+      enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
+    }
+  });
+}
+
 export const ENEMY_BEHAVIORS = {
   patrol,
   sentinel,
   patrol_and_shoot: patrolAndShoot,
+  aggro_chaser: aggroChaser,
 };
 
 // Resolve a behavior de um inimigo já criado (usa 'patrol' se o mob não

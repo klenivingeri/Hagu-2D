@@ -28,9 +28,11 @@ export function createAnimations(scene, animeList, entityKey = '') {
     const animationKey = entityKey ? `${entityKey}_${props.key}` : props.key;
 
     for (let i = 0; i <= props.frames; i++) {
-      frames.push({ key: entityKey ? `${entityKey}_${props.key}_${i}` : `${props.key}_${i}` });
+      const frameKey = entityKey ? `${entityKey}_${props.key}_${i}` : `${props.key}_${i}`;
+      if (scene.textures.exists(frameKey)) frames.push({ key: frameKey });
     }
 
+    if (!frames.length) return;
     scene.anims.create({
       key: animationKey,
       frames,

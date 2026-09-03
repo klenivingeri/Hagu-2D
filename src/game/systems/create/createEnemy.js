@@ -31,8 +31,9 @@ export function createEnemys(scene) {
   scene.enemyLayer.objects.forEach((objectData) => {
     const key = getTiledProperty(objectData.properties, 'key') || DEFAULT_MOB_KEY;
     const type = getTiledProperty(objectData.properties, 'type') || DEFAULT_MOB_TYPE;
+    const path = getTiledProperty(objectData.properties, 'path') || '';
 
-    const enemy = spawnEnemy(scene, objectData.x, objectData.y - 10, key, type);
+    const enemy = spawnEnemy(scene, objectData.x, objectData.y - 10, key, type, path);
     if (enemy) enemies.add(enemy);
   });
 
@@ -56,12 +57,13 @@ export function createEnemys(scene) {
 // Cria um inimigo em (x, y) a partir de uma key do MOBS_CONFIG. Retorna
 // `null` (e loga um aviso) se a key não existir — assim um mob mal
 // configurado no Tiled não quebra a criação dos outros.
-function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE) {
+function spawnEnemy(scene, x, y, key, type = DEFAULT_MOB_TYPE, path = '') {
   const config = getMobConfig(type);
 
   const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
   enemy.setDepth(MAP_DEPTHS.PLAYER);
   enemy.entityKey = key;
+  enemy.entityPath = path;
   enemy.entityType = type;
   enemy.entityConfig = config;
   enemy.status = createEnemyStatus(config.stats);
@@ -233,14 +235,29 @@ function enemyDestroy(enemy) {
 }
 
 export function preloadEnemyAssets(scene, assetKeys = []) {
-  const config = getMobConfig();
-  assetKeys.forEach((key) => preloadAnimations(scene, config.animations.map((animation) => ({
-    ...animation, url: `${config.path}${key}/${animation.url}`,
-  })), key));
+  const definitions = assetKeys.map((item) => typeof item === 'string'
+    ? { key: item, type: DEFAULT_MOB_TYPE } : item);
+  const loaded = new Set();
+  definitions.forEach(({ key, path = '', type = DEFAULT_MOB_TYPE }) => {
+    const config = getMobConfig(type);
+    const id = `${key}:${type}`;
+    if (loaded.has(id)) return;
+    loaded.add(id);
+    preloadAnimations(scene, config.animations.map((animation) => ({
+      ...animation, url: `${config.path}${path || key}/${animation.url}`,
+    })), key);
+  });
 }
 
 export function createEnemyAnimations(scene) {
-  const config = getMobConfig();
-  const assetKeys = scene.enemyAssetKeys || [];
-  assetKeys.forEach((key) => createAnimations(scene, config.animations, key));
+  const definitions = scene.enemyDefinitions || (scene.enemyAssetKeys || [])
+    .map((key) => ({ key, type: DEFAULT_MOB_TYPE }));
+  const created = new Set();
+  definitions.forEach(({ key, type = DEFAULT_MOB_TYPE }) => {
+    const config = getMobConfig(type);
+    const id = `${key}:${type}`;
+    if (created.has(id)) return;
+    created.add(id);
+    createAnimations(scene, config.animations, key);
+  });
 }

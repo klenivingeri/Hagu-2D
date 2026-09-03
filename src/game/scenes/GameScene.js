@@ -33,8 +33,9 @@ export class GameScene extends Phaser.Scene {
     // O mapa precisa carregar primeiro para descobrirmos quais mobs existem.
     // O Phaser aceita novos arquivos enquanto o loader ainda está processando.
     this.load.once('filecomplete-tilemapJSON-mapa_json', (_key, _type, mapData) => {
-      this.enemyAssetKeys = getEnemyAssetKeysFromMap(mapData);
-      preloadEnemyAssets(this, this.enemyAssetKeys);
+      this.enemyDefinitions = getEnemyDefinitionsFromMap(mapData);
+      this.enemyAssetKeys = this.enemyDefinitions.map(({ key }) => key);
+      preloadEnemyAssets(this, this.enemyDefinitions);
     });
 
     this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullet.png');
@@ -98,12 +99,12 @@ export class GameScene extends Phaser.Scene {
   }
 }
 
-function getEnemyAssetKeysFromMap(mapData) {
+function getEnemyDefinitionsFromMap(mapData) {
   const enemyLayer = mapData?.layers?.find((layer) => layer.name === 'enemy');
-  const keys = enemyLayer?.objects?.map((object) => {
+  return enemyLayer?.objects?.map((object) => {
     const property = object.properties?.find(({ name }) => name === 'key');
-    return property?.value;
+    const type = object.properties?.find(({ name }) => name === 'type');
+    const path = object.properties?.find(({ name }) => name === 'path');
+    return property?.value ? { key: property.value, path: path?.value, type: type?.value } : null;
   }).filter(Boolean) || [];
-
-  return [...new Set(keys)];
 }
