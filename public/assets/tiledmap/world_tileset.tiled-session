@@ -8,11 +8,14 @@
             "scaleInDock": 1
         },
         "map_1.tmj": {
-            "scale": 1.5,
-            "selectedLayer": 4,
+            "expandedObjectLayers": [
+                24
+            ],
+            "scale": 4,
+            "selectedLayer": 16,
             "viewCenter": {
-                "x": 216.33333333333331,
-                "y": 263.33333333333326
+                "x": 357.375,
+                "y": 65.75
             }
         },
         "map_1.tmj#coin": {
@@ -37,6 +40,66 @@
         "map_1.tmx#world_tileset": {
             "scaleInDock": 1,
             "scaleInEditor": 1
+        },
+        "map_2.tmj": {
+            "expandedObjectLayers": [
+                24
+            ],
+            "scale": 5.5,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 352.4545454545455,
+                "y": 91.09090909090908
+            }
+        },
+        "map_2.tmj#coin": {
+            "scaleInDock": 1
+        },
+        "map_2.tmj#platforms": {
+            "scaleInDock": 1
+        },
+        "map_2.tmj#world_tileset": {
+            "scaleInDock": 1
+        },
+        "map_3.tmj": {
+            "expandedObjectLayers": [
+                24
+            ],
+            "scale": 8,
+            "selectedLayer": 16,
+            "viewCenter": {
+                "x": 389.0625,
+                "y": 41
+            }
+        },
+        "map_3.tmj#coin": {
+            "scaleInDock": 1
+        },
+        "map_3.tmj#platforms": {
+            "scaleInDock": 1
+        },
+        "map_3.tmj#world_tileset": {
+            "scaleInDock": 1
+        },
+        "map_4.tmj": {
+            "expandedObjectLayers": [
+                24
+            ],
+            "scale": 1,
+            "selectedLayer": 14,
+            "viewCenter": {
+                "x": 325.5,
+                "y": 169
+            }
+        },
+        "map_4.tmj#coin": {
+            "scaleInDock": 1
+        },
+        "map_4.tmj#platforms": {
+            "scaleInDock": 1
+        },
+        "map_4.tmj#world_tileset": {
+            "scaleInDock": 1.5
         }
     },
     "last.exportedFilePath": "C:/Projetos/phaser/vite/public/assets/tiledmap",
@@ -51,8 +114,9 @@
         "map_1.tmj"
     ],
     "project": "world_tileset.tiled-project",
-    "property.type": "string",
+    "property.type": "bool",
     "recentFiles": [
+        "map_4.tmj",
         "map_1.tmj",
         "map_1.tmx"
     ],

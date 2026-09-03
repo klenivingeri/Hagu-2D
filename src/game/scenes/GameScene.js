@@ -14,6 +14,7 @@ import { updateRailMovement } from '../systems/upgrade/updateRailMovement.js';
 import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems/create/createCoins.js';
 import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeVisibility.js';
 import { preloadDustTexture } from '../commons/dustTrail.js';
+import { preloadPortalAssets, createPortalAnimations, createPortals } from '../systems/create/createPortals.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -36,6 +37,9 @@ export class GameScene extends Phaser.Scene {
       this.enemyDefinitions = getEnemyDefinitionsFromMap(mapData);
       this.enemyAssetKeys = this.enemyDefinitions.map(({ key }) => key);
       preloadEnemyAssets(this, this.enemyDefinitions);
+      if (mapData?.layers?.some((layer) => layer.name === 'portal')) {
+        preloadPortalAssets(this);
+      }
     });
 
     this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullet.png');
@@ -70,6 +74,13 @@ export class GameScene extends Phaser.Scene {
     createEnemyAnimations(this)
     this.enemies = createEnemys(this);
     this.rails = createRails(this)
+
+    if (this.portalLayer) {
+      createPortalAnimations(this);
+      this.portals = createPortals(this, this.portalLayer);
+    } else {
+      this.portals = [];
+    }
 
     createCoinAnimations(this);
     this.coins = createCoins(this);

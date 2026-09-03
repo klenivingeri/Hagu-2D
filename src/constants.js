@@ -13,7 +13,8 @@ export const MAP_LAYERS = {
     LIMITS: 'limits',
     PLAYER: 'player',
     ENEMY: 'enemy',
-    RAIL: 'rail'
+    RAIL: 'rail',
+    PORTAL: 'portal'
 };
 
 // Depths explícitos: no Phaser, layers e sprites criados depois podem ficar
@@ -33,4 +34,5 @@ export const MAP_DEPTHS = {
     OVER_PLAYER: 100,
     DEAD_ZONE: 110,
     LIMITS: 120,
+    PORTAL: 35,
 };

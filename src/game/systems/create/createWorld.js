@@ -34,6 +34,7 @@ const {
   const enemyObjectLayer = map.getObjectLayer(ENEMY);
   const playerObjectLayer = map.getObjectLayer(PLAYER);
   const railObjectLayer = map.getObjectLayer(RAIL);
+  const portalObjectLayer = map.getObjectLayer(MAP_LAYERS.PORTAL);
 
   // Camadas que servem de chão/plataforma. Ative a colisão nelas por
   // "tudo que não é o tile vazio (-1)".
@@ -77,6 +78,7 @@ const {
     scene.playerLayer.key = getTiledProperty(playerObjectLayer.properties, 'key');
   }
   scene.railLayer = railObjectLayer
+  scene.portalLayer = portalObjectLayer
 
   scene.map = map;
 }

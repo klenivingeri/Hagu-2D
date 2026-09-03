@@ -848,6 +848,35 @@
                  "width":0,
                  "x":368,
                  "y":412
+                }, 
+                {
+                 "height":0,
+                 "id":30,
+                 "name":"Enemy",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"bat"
+                        }, 
+                        {
+                         "name":"path",
+                         "type":"string",
+                         "value":"bat"
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"aggro_fly"
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":383,
+                 "y":282.5
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -953,9 +982,32 @@
          "visible":true,
          "x":0,
          "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":24,
+         "name":"portal",
+         "objects":[
+                {
+                 "height":22.5,
+                 "id":29,
+                 "name":"",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":15,
+                 "x":432.416666666667,
+                 "y":21.5
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
         }],
- "nextlayerid":24,
- "nextobjectid":29,
+ "nextlayerid":25,
+ "nextobjectid":31,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",
