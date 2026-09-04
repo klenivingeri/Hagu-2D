@@ -1,5 +1,6 @@
 import { MAP_DEPTHS } from '../../../constants.js';
 import { addGlobalDiamant, gameState } from '../../state/gameState.js';
+import { animateCollectible, stopCollectibleAnimation } from '../../commons/collectibleAnimation.js';
 
 const DIAMANTS_LAYER_NAME = 'diamants';
 const COIN_TILESET_NAME = 'coin';
@@ -23,6 +24,7 @@ export function createDiamants(scene) {
       scene.physics.add.existing(diamant);
       diamant.body.setSize(14, 14).setOffset(-7, -7);
       diamants.add(diamant);
+      animateCollectible(scene, diamant);
     });
     layer.setVisible(false);
   }
@@ -31,6 +33,7 @@ export function createDiamants(scene) {
     if (!diamant.active || diamant.isCollecting) return;
     diamant.isCollecting = true;
     diamant.body.enable = false;
+    stopCollectibleAnimation(diamant);
     scene.player.levelDiamants = (scene.player.levelDiamants || 0) + 1;
     addGlobalDiamant(1);
     scene.player.status.diamant = gameState.diamant;
@@ -50,4 +53,5 @@ export function spawnDroppedDiamant(scene, x, y) {
   diamant.body.setAllowGravity(false);
   diamant.body.setSize(14, 14).setOffset(-7, -7);
   scene.diamants.add(diamant);
+  animateCollectible(scene, diamant);
 }

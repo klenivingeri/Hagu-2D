@@ -13,7 +13,7 @@ import { gameState } from '../state/gameState.js';
 
 export function createPlayerStatus(overrides = {}) {
   return {
-    life: 3,                  // vidas/corações
+    life: gameState.maxlife,  // vidas/corações
     coyoteTimeMs: 65,
     speed: 110,                // velocidade horizontal (px/s) - já usado em updatePlayerMovement
     jumpHeight: 200,            // força do pulo (velocidade vertical, px/s) - já usado em updatePlayerMovement

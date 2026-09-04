@@ -1,6 +1,7 @@
 // Estado persistente da sessão do jogo. Como este módulo é importado uma
 // única vez pelo bundle, seus valores sobrevivem a scene.restart().
 export const gameState = {
+  maxlife: 3,
   gold: 0,
   coins: 0,
   diamant: 0,
@@ -26,6 +27,10 @@ export function addGlobalCoins(amount = 1) {
 
 export function addGlobalDiamant(amount = 1) {
   gameState.diamant += amount;
+}
+
+export function addGlobalMaxLife(amount = 1) {
+  gameState.maxlife = Math.max(0, gameState.maxlife + amount);
 }
 
 export function addGlobalExp(amount = 1) {

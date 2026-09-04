@@ -156,6 +156,14 @@ button {
 .diamond-icon {
   font-size: 8px;
   line-height: 16px;
+  display: inline-block;
+  transform-origin: center;
+  animation: collectible-spin 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes collectible-spin {
+  from { transform: translateY(1px) scaleX(1); }
+  to { transform: translateY(-1px) scaleX(0.65) scaleY(1.12); }
 }
 
 /* Painel Geral de Controles */

@@ -1,5 +1,6 @@
 // HUD simples em HTML/CSS (fora do canvas do Phaser) para mostrar as vidas do player.
 import { getVirtualFrame } from '../../commons/textureUtils.js';
+import { gameState } from '../../state/gameState.js';
 
 // Cria os corações dinamicamente e injeta dentro do container .game-screen,
 // já que ele é a área com a mesma dimensão/posição do jogo.
@@ -19,7 +20,7 @@ export function createHUD(scene) {
   const existingDiamants = gameScreen.querySelector('.hud-diamants');
   if (existingDiamants) existingDiamants.remove();
 
-  const maxLife = scene.player?.status?.life ?? 3;
+  const maxLife = gameState.maxlife;
 
   const hearts = document.createElement('div');
   hearts.className = 'hud-hearts';
@@ -65,7 +66,7 @@ export function createHUD(scene) {
   resources.append(diamants, separator, coins);
   gameScreen.appendChild(resources);
 
-  scene.hud = { container: hearts, hearts: heartEls, coins, coinTotal, diamants, diamondTotal, resources };
+  scene.hud = { container: hearts, hearts: heartEls, heartSvg: HEART_SVG, coins, coinTotal, diamants, diamondTotal, resources };
 
   // Garante que some junto quando a cena for desligada/reiniciada
   scene.events.once('shutdown', () => { hearts.remove(); resources.remove(); });
