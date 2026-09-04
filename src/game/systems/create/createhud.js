@@ -16,6 +16,8 @@ export function createHUD(scene) {
   if (existing) existing.remove();
   const existingCoins = gameScreen.querySelector('.hud-coins');
   if (existingCoins) existingCoins.remove();
+  const existingDiamants = gameScreen.querySelector('.hud-diamants');
+  if (existingDiamants) existingDiamants.remove();
 
   const maxLife = scene.player?.status?.life ?? 3;
 
@@ -39,22 +41,39 @@ export function createHUD(scene) {
   coins.className = 'hud-coins';
   const coinTotal = document.createElement('span');
   coinTotal.className = 'coin-total';
-  coinTotal.textContent = String(scene.player?.status?.totalCoins ?? 0);
+  coinTotal.textContent = String(scene.player?.levelCoins ?? 0);
   const coinIcon = document.createElement('span');
   coinIcon.className = 'coin-icon';
   coinIcon.dataset.frame = coinFrame;
   coins.append(coinTotal, coinIcon);
-  gameScreen.appendChild(coins);
 
-  scene.hud = { container: hearts, hearts: heartEls, coins, coinTotal };
+  const diamants = document.createElement('div');
+  diamants.className = 'hud-diamants';
+  const diamondTotal = document.createElement('span');
+  diamondTotal.className = 'diamond-total';
+  diamondTotal.textContent = String(scene.player?.levelDiamants ?? 0);
+  const diamondIcon = document.createElement('span');
+  diamondIcon.className = 'diamond-icon';
+  diamondIcon.textContent = '💎';
+  diamants.append(diamondTotal, diamondIcon);
+
+  const resources = document.createElement('div');
+  resources.className = 'hud-resources';
+  const separator = document.createElement('span');
+  separator.className = 'hud-resource-separator';
+  separator.textContent = '|';
+  resources.append(diamants, separator, coins);
+  gameScreen.appendChild(resources);
+
+  scene.hud = { container: hearts, hearts: heartEls, coins, coinTotal, diamants, diamondTotal, resources };
 
   // Garante que some junto quando a cena for desligada/reiniciada
-  scene.events.once('shutdown', () => { hearts.remove(); coins.remove(); });
-  scene.events.once('destroy', () => { hearts.remove(); coins.remove(); });
+  scene.events.once('shutdown', () => { hearts.remove(); resources.remove(); });
+  scene.events.once('destroy', () => { hearts.remove(); resources.remove(); });
 }
 
 // Atualiza os corações preenchidos de acordo com a vida atual.
-export function updateHUD(scene, life, totalCoins = scene.player?.status?.totalCoins ?? 0) {
+export function updateHUD(scene, life, totalCoins = scene.player?.levelCoins ?? 0) {
   if (!scene.hud) return;
 
   scene.hud.hearts.forEach((heart, index) => {
@@ -62,6 +81,7 @@ export function updateHUD(scene, life, totalCoins = scene.player?.status?.totalC
   });
 
   if (scene.hud.coinTotal) scene.hud.coinTotal.textContent = String(totalCoins);
+  if (scene.hud.diamondTotal) scene.hud.diamondTotal.textContent = String(scene.player?.levelDiamants ?? 0);
 }
 
 const HEART_SVG = `

@@ -12,6 +12,7 @@ import { updateEnemyMovement } from '../systems/upgrade/updateEnemyMovement.js'
 import { createRails } from '../systems/create/createRails.js';
 import { updateRailMovement } from '../systems/upgrade/updateRailMovement.js';
 import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems/create/createCoins.js';
+import { createDiamants } from '../systems/create/createDiamants.js';
 import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeVisibility.js';
 import { preloadDustTexture } from '../commons/dustTrail.js';
 import { preloadPortalAssets, createPortalAnimations, createPortals } from '../systems/create/createPortals.js';
@@ -65,11 +66,13 @@ export class GameScene extends Phaser.Scene {
     this.player = createPlayer(this);
 
     createHUD(this);
-    updateHUD(this, this.player.status.life, this.player.status.totalCoins);
+    updateHUD(this, this.player.status.life, this.player.levelCoins);
 
     this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 10 });
     this.bulletSystem = createBulletSystem(this);
     this.damagePlayer = (damage) => damagePlayer(this, damage);
+
+    createDiamants(this);
 
     createEnemyAnimations(this)
     this.enemies = createEnemys(this);

@@ -22,15 +22,27 @@ export const MAPS = {
     tilesetImageKey: 'world_tileset_image',
     tilesetImageUrl: '/assets/tiledmap/world_tileset.png',
   },
-
-  // Exemplo de como cadastrar o próximo mapa quando ele existir:
-  // mapa_2: {
-  //   key: 'mapa_2',
-  //   tilemapUrl: '/assets/tiledmap/mapa_2.tmj',
-  //   tilesetName: 'world_tileset',
-  //   tilesetImageKey: 'world_tileset_image',
-  //   tilesetImageUrl: '/assets/tiledmap/world_tileset.png',
-  // },
+    map_2: {
+    key: 'map_2',
+    tilemapUrl: '/assets/tiledmap/map_2.tmj',
+    tilesetName: 'world_tileset', // precisa bater com o nome do tileset dentro do .tmj
+    tilesetImageKey: 'world_tileset_image',
+    tilesetImageUrl: '/assets/tiledmap/world_tileset.png',
+  },
+    map_3: {
+    key: 'map_3',
+    tilemapUrl: '/assets/tiledmap/map_1.tmj',
+    tilesetName: 'world_tileset', // precisa bater com o nome do tileset dentro do .tmj
+    tilesetImageKey: 'world_tileset_image',
+    tilesetImageUrl: '/assets/tiledmap/world_tileset.png',
+  },
+    map_4: {
+    key: 'map_4',
+    tilemapUrl: '/assets/tiledmap/map_1.tmj',
+    tilesetName: 'world_tileset', // precisa bater com o nome do tileset dentro do .tmj
+    tilesetImageKey: 'world_tileset_image',
+    tilesetImageUrl: '/assets/tiledmap/world_tileset.png',
+  },
 };
 
 export const DEFAULT_MAP_KEY = 'map_1';

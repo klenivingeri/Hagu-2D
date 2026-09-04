@@ -4,6 +4,7 @@ const COINS_LAYER_NAME = 'coins';
 const COIN_TILESET_NAME = 'coin';
 const COIN_FRAME_COUNT = 12;
 const COIN_DEPTH = 50;
+import { addGlobalCoins } from '../../state/gameState.js';
 
 export function preloadCoinAssets(scene) {
   // coin.png tem 12 frames de 16x16 lado a lado (192x16 no total).
@@ -71,10 +72,12 @@ function collectCoin(scene, player, coin) {
 
   coin.isCollecting = true;
   coin.body.enable = false;
+  player.levelCoins = (player.levelCoins || 0) + 1;
+  addGlobalCoins(1);
   player.status.totalCoins += 1;
 
   if (scene.hud?.coinTotal) {
-    scene.hud.coinTotal.textContent = String(player.status.totalCoins);
+    scene.hud.coinTotal.textContent = String(player.levelCoins);
   }
 
   // A animação da moeda continua durante o efeito de coleta.

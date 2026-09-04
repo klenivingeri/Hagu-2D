@@ -46,7 +46,11 @@ export const patrolAndShootBehavior = {
     const mustFacePlayer = enemy.bidirectional && canSeePlayer;
 
     if (mustFacePlayer) {
-      faceTowardsPlayer(scene, enemy);
+      if (enemy.isAttacking || !enemy.patrol) {
+        enemy.setVelocityX(0);
+      } else if (!isKnockedBack(scene, enemy)) {
+        turnEnemy(enemy, enemy.facingDirection * enemy.status.speed, enemy.facingDirection);
+      }
     } else if (enemy.patrol && !isKnockedBack(scene, enemy)) {
       if (enemy.body.blocked.left) {
         turnEnemy(enemy, enemy.status.speed, 1);
@@ -71,7 +75,6 @@ export const patrolAndShootBehavior = {
 // Vira o inimigo (sem se mover) na direção de onde o player está — usado
 // quando bidirectional=true detecta o player atrás ou na frente.
 function faceTowardsPlayer(scene, enemy) {
-  enemy.setVelocityX(0);
   const player = scene.player;
   if (!player || !player.body || !enemy.body) return;
 
@@ -92,6 +95,8 @@ function fireAtPlayer(scene, enemy) {
   enemy.nextAttackAt = scene.time.now + getAttackCooldown(enemy);
   if (enemy.isStomped) return;
 
+  if (enemy.bidirectional) faceTowardsPlayer(scene, enemy);
+  enemy.setVelocityX(0);
   enemy.isAttacking = true;
   const direction = enemy.facingDirection || 1;
   const bowAnimation = getEntityAnimationKey(enemy.entityKey, 'bow');
@@ -109,7 +114,11 @@ function fireAtPlayer(scene, enemy) {
     enemy.off('animationupdate', enemy._onBowFrame);
     enemy.isAttacking = false;
     if (enemy.active && !enemy.isStomped) {
-      updatePatrolAnimation(enemy);
+      if (enemy.patrol && !isKnockedBack(scene, enemy)) {
+        turnEnemy(enemy, enemy.facingDirection * enemy.status.speed, enemy.facingDirection);
+      } else {
+        updatePatrolAnimation(enemy);
+      }
     }
   });
 }

@@ -7,6 +7,7 @@ import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
 import { MAP_DEPTHS } from "../../../constants.js";
 import { emitEnemyHitBurst } from "../../commons/dustTrail.js";
+import { gameState } from '../../state/gameState.js';
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
 const STOMP_TOLERANCE_RATIO = 0.5; // "pisou" se os pés estiverem na metade de cima do inimigo
@@ -28,6 +29,7 @@ export function createPlayer(scene) {
   player.setDepth(MAP_DEPTHS.PLAYER);
   player.entityKey = key;
   player.entityConfig = config;
+  gameState.playerSpritePath = config.path;
   player.isWallSliding = false;
   player.lastGroundedAt = -Infinity;
   // Atualizado exclusivamente pelo collider da layer obstacles.
@@ -67,6 +69,8 @@ export function createPlayer(scene) {
   player.body.setOffset(offsetX+2, offsetY);
 
   player.status = createPlayerStatus(config.stats);
+  player.levelCoins = 0;
+  player.levelDiamants = 0;
 
   player.invulnerable = false;
   player.isDead = false;

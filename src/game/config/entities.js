@@ -59,7 +59,7 @@ export const MOBS_CONFIG = {
     path: 'assets/mobs/',
     stats: { life: 2, type: 'ranger', className: 'ranged', speed: 45 },
     ai: { visionRangeTilesWidth: 3, visionRangeTilesHeight: 1, bidirectional: false },
-    debug: true,
+    debug: false,
     attack: { damage: 1, cooldown: 1500 },
     projectile: { key: 'arrow', speed: 130 },
     behavior: 'patrol_and_shoot',
@@ -79,7 +79,7 @@ export const MOBS_CONFIG = {
     ai: { visionRangeTilesWidth: 7, visionRangeTilesHeight: 7, bidirectional: true },
     noGravity: true,
     behavior: 'patrol_fly',
-    debug: true,
+    debug: false,
     animations: [
       { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 5, repeat: -1 },
       { key: 'stomp', url: 'run/sprite_run_two_', frames: 3, frameRate: 5, repeat: 0 },

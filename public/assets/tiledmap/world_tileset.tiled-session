@@ -9,13 +9,14 @@
         },
         "map_1.tmj": {
             "expandedObjectLayers": [
-                24
+                24,
+                12
             ],
-            "scale": 4,
-            "selectedLayer": 16,
+            "scale": 1.5,
+            "selectedLayer": 7,
             "viewCenter": {
-                "x": 357.375,
-                "y": 65.75
+                "x": 139.66666666666666,
+                "y": 207.33333333333334
             }
         },
         "map_1.tmj#coin": {
@@ -46,9 +47,9 @@
                 24
             ],
             "scale": 1.5,
-            "selectedLayer": 4,
+            "selectedLayer": 7,
             "viewCenter": {
-                "x": 224.3333333333333,
+                "x": 224.33333333333331,
                 "y": 262
             }
         },

@@ -27,6 +27,7 @@ export const MAP_DEPTHS = {
     GROUND: 40,
     PLAYER: 45,
     COINS: 50,
+    DIAMANTS: 51,
     GROUND_FAKE: 60,
     FOREGROUND: 70,
     OBSTACLES: 80,

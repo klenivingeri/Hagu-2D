@@ -115,6 +115,49 @@ button {
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
 }
 
+.hud-resources {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+
+.hud-resources .hud-coins,
+.hud-resources .hud-diamants {
+  position: static;
+}
+
+.hud-resource-separator {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.6rem;
+  font-weight: 900;
+}
+
+.hud-diamants {
+  position: absolute;
+  top: 1.55rem;
+  right: 0.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #bfdbfe;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 16px;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
+.diamond-icon {
+  font-size: 8px;
+  line-height: 16px;
+}
+
 /* Painel Geral de Controles */
 .controls-panel {
   display: flex;
