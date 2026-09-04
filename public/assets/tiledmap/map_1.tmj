@@ -596,7 +596,7 @@
                         {
                          "name":"bidirectional",
                          "type":"bool",
-                         "value":false
+                         "value":true
                         }, 
                         {
                          "name":"direction",
@@ -626,12 +626,12 @@
                         {
                          "name":"visionRangeTilesHeight",
                          "type":"int",
-                         "value":0
+                         "value":2
                         }, 
                         {
                          "name":"visionRangeTilesWidth",
                          "type":"int",
-                         "value":0
+                         "value":2
                         }],
                  "rotation":0,
                  "type":"",
@@ -745,8 +745,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":84,
-                 "y":285.666666666667
+                 "x":25,
+                 "y":280.666666666667
                 }, 
                 {
                  "height":0,
@@ -853,8 +853,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":183.5,
-                 "y":143
+                 "x":186.166666666667,
+                 "y":155.833333333333
                 }],
          "opacity":1,
          "type":"objectgroup",

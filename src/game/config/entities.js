@@ -15,21 +15,29 @@ export const PLAYERS_CONFIG = {
 };
 
 // Cada mob define, além de assets/stats, uma "behavior": a chave que diz
-// QUAL padrão de movimento/IA ele usa (ver game/systems/upgrade/enemyBehaviors.js).
-// Pra criar um inimigo novo com um jeito de agir diferente (ex: parado
-// atirando, voador, perseguindo o player):
+// QUAL padrão de movimento/IA ele usa (ver game/entities/EnemyBehaviorFactory.js
+// e game/entities/behaviors/*.js). Pra criar um inimigo novo com um jeito
+// de agir diferente (ex: parado atirando, voador, perseguindo o player):
 //   1. Exporte os sprites em assets/mobs/<nova_key>/ (mesma estrutura do mob_1)
 //   2. Cadastre a entrada aqui embaixo com uma "key" única e a "behavior" desejada
-//   3. Se a behavior ainda não existe, implemente-a em enemyBehaviors.js e
-//      registre no objeto ENEMY_BEHAVIORS de lá
+//   3. Se a behavior ainda não existe, implemente-a em
+//      game/entities/behaviors/<novaBehavior>.js e registre no
+//      BEHAVIOR_REGISTRY de EnemyBehaviorFactory.js
 // Nada mais precisa mudar: createEnemy.js e updateEnemyMovement.js já leem
 // tudo dinamicamente a partir daqui.
+//
+// Campos "patrol" / "direction" / "ai.visionRangeTilesWidth" /
+// "ai.visionRangeTilesHeight" / "ai.bidirectional" são os DEFAULTS de cada
+// tipo — o Object Layer "enemy" do Tiled pode sobrescrever qualquer um
+// deles por instância (ver EnemyBase.resolveEnemyOverrides).
 export const MOBS_CONFIG = {
   default_mob: {
     path: 'assets/mobs/',
     animations: [],
     stats: { life: 3, speed: 50, chaseSpeed: 100 },
-    ai: { visionRangeTiles: 0 },
+    patrol: true,
+    direction: 'right',
+    ai: { visionRangeTilesWidth: 0, visionRangeTilesHeight: 0, bidirectional: false },
     attack: { damage: 1, cooldown: 900 },
     projectile: { key: 'energy_bullet', speed: 300 },
     behavior: 'patrol',
@@ -50,12 +58,11 @@ export const MOBS_CONFIG = {
   patrol_and_shoot: {
     path: 'assets/mobs/',
     stats: { life: 2, type: 'ranger', className: 'ranged', speed: 45 },
-    ai: { visionRangeTiles: 3 },
+    ai: { visionRangeTilesWidth: 3, visionRangeTilesHeight: 1, bidirectional: false },
     debug: true,
     attack: { damage: 1, cooldown: 1500 },
     projectile: { key: 'arrow', speed: 130 },
     behavior: 'patrol_and_shoot',
-    chaser: true,
     animations: [
       { key: 'run', url: 'run_bow/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
       { key: 'stomp', url: 'stomp/sprite_re_land_squash_', frames: 4, frameRate: 10, repeat: 0 },
@@ -63,12 +70,14 @@ export const MOBS_CONFIG = {
       { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 7, frameRate: 20, repeat: 0 },
     ],
   },
+  // Substitui o antigo "aggro_fly": mesma mecânica de voo, agora dentro
+  // do padrão patrol_* (patrol/direction/vision configuráveis via Tiled).
   patrol_fly: {
     path: 'assets/mobs/',
     stats: { life: 5, type: 'brute', className: 'melee', speed: 50, chaseSpeed: 50 },
-    ai: { visionRangeTiles: 7 },
-    behavior: 'aggro_fly',
-    chaser: true,
+    ai: { visionRangeTilesWidth: 7, visionRangeTilesHeight: 7, bidirectional: true },
+    noGravity: true,
+    behavior: 'patrol_fly',
     debug: true,
     animations: [
       { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 5, repeat: -1 },
