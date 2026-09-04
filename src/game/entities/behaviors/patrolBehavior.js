@@ -20,6 +20,9 @@ export const patrolBehavior = {
       turnEnemy(enemy, enemy.facingDirection * enemy.status.speed, enemy.facingDirection);
     } else {
       enemy.setVelocityX(0);
+      // Esse type não tem animação de idle própria — mantém o mesmo
+      // visual parado/andando de sempre (só a velocidade muda).
+      enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
     }
   },
 

@@ -1,6 +1,5 @@
 import { spawnEnemyBase } from './EnemyBase.js';
 import { EnemyBehaviorFactory } from './EnemyBehaviorFactory.js';
-import { getEntityAnimationKey } from '../config/entities.js';
 import { getTiledProperty } from '../commons/tiledUtils.js';
 import { DEFAULT_MOB_KEY, DEFAULT_MOB_TYPE } from '../config/entities.js';
 
@@ -47,11 +46,13 @@ export const EnemyFactory = {
     // O corpo físico só fica com posição/tamanho definitivos depois que o
     // Phaser processa esse frame (colliders ainda estão "assentando").
     // Por isso a velocidade/animação inicial (behavior.init) só é aplicada
-    // 10ms depois, e não na hora da criação.
+    // 10ms depois, e não na hora da criação. A animação inicial é
+    // responsabilidade da PRÓPRIA behavior (cada uma decide se começa
+    // parada/idle ou andando/run) — não force nada genérico aqui, senão
+    // sobrescreve o que o behavior.init acabou de decidir.
     scene.time.delayedCall(10, () => {
       if (!enemy.active) return;
       behavior.init(scene, enemy);
-      enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
     });
 
     return enemy;

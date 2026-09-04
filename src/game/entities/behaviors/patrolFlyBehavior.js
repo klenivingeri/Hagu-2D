@@ -33,6 +33,9 @@ export const patrolFlyBehavior = {
     enemy.flyState = enemy.patrol ? 'patrol' : 'idle';
     enemy.setVelocity(enemy.patrol ? enemy.flyPatrolDirection * enemy.status.speed : 0, 0);
     enemy.setFlipX(enemy.flyPatrolDirection < 0);
+    // Esse type não tem animação de idle própria — mantém o mesmo visual
+    // parado/voando de sempre (só a velocidade muda).
+    enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
   },
 
   update(scene, enemy) {
