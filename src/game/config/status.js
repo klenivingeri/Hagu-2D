@@ -38,6 +38,7 @@ export function createPlayerStatus(overrides = {}) {
     BulletSequence: gameState.BulletSequence,
     AljavaBullet: gameState.AljavaBullet,
     LoadingBullet: gameState.LoadingBullet,
+    currentAljavaBullet: gameState.AljavaBullet,
     dropDiamant: gameState.dropDiamant,
     upgrade: gameState.upgrade,
 

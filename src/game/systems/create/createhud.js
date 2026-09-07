@@ -19,22 +19,33 @@ export function createHUD(scene) {
   if (existingCoins) existingCoins.remove();
   const existingDiamants = gameScreen.querySelector('.hud-diamants');
   if (existingDiamants) existingDiamants.remove();
+  const existingAmmo = gameScreen.querySelector('.hud-ammo');
+  if (existingAmmo) existingAmmo.remove();
+  const existingLifePanel = gameScreen.querySelector('.hud-life-panel');
+  if (existingLifePanel) existingLifePanel.remove();
 
-  const maxLife = gameState.maxlife;
+  const lifePanel = document.createElement('div');
+  lifePanel.className = 'hud-life-panel';
 
-  const hearts = document.createElement('div');
-  hearts.className = 'hud-hearts';
+  const healthBar = document.createElement('div');
+  healthBar.className = 'health-bar';
+  const healthFill = document.createElement('div');
+  healthFill.className = 'health-fill';
+  healthBar.appendChild(healthFill);
+  lifePanel.appendChild(healthBar);
+  gameScreen.appendChild(lifePanel);
 
-  const heartEls = [];
-  for (let i = 0; i < maxLife; i++) {
-    const heart = document.createElement('span');
-    heart.className = 'heart';
-    heart.innerHTML = HEART_SVG;
-    hearts.appendChild(heart);
-    heartEls.push(heart);
+  const ammo = document.createElement('div');
+  ammo.className = 'hud-ammo';
+  const ammoEls = [];
+  for (let i = 0; i < (scene.player?.status?.AljavaBullet ?? 0); i += 1) {
+    const bullet = document.createElement('span');
+    bullet.className = 'ammo-slot';
+    bullet.textContent = '-';
+    ammo.appendChild(bullet);
+    ammoEls.push(bullet);
   }
-
-  gameScreen.appendChild(hearts);
+  lifePanel.appendChild(ammo);
 
   // Frame 1 da spritesheet coin.png, usando o mesmo recorte virtual do jogo.
   const coinFrame = getVirtualFrame(scene, 'coin', 1, 0, 12, 1);
@@ -66,26 +77,32 @@ export function createHUD(scene) {
   resources.append(diamants, separator, coins);
   gameScreen.appendChild(resources);
 
-  scene.hud = { container: hearts, hearts: heartEls, heartSvg: HEART_SVG, coins, coinTotal, diamants, diamondTotal, resources };
+  scene.hud = { container: lifePanel, hearts: [], heartSvg: HEART_BLOCK, healthBar, healthFill, ammo, ammoEls, lifePanel, coins, coinTotal, diamants, diamondTotal, resources };
 
   // Garante que some junto quando a cena for desligada/reiniciada
-  scene.events.once('shutdown', () => { hearts.remove(); resources.remove(); });
-  scene.events.once('destroy', () => { hearts.remove(); resources.remove(); });
+  scene.events.once('shutdown', () => { lifePanel.remove(); resources.remove(); });
+  scene.events.once('destroy', () => { lifePanel.remove(); resources.remove(); });
 }
 
 // Atualiza os corações preenchidos de acordo com a vida atual.
 export function updateHUD(scene, life, totalCoins = scene.player?.levelCoins ?? 0) {
   if (!scene.hud) return;
 
-  scene.hud.hearts.forEach((heart, index) => {
-    heart.classList.toggle('empty', index >= life);
-  });
+  const maxLife = gameState.maxlife || 1;
+  if (scene.hud.healthFill) {
+    scene.hud.healthFill.style.width = `${Math.max(0, Math.min(100, (life / maxLife) * 100))}%`;
+  }
 
   if (scene.hud.coinTotal) scene.hud.coinTotal.textContent = String(totalCoins);
   if (scene.hud.diamondTotal) scene.hud.diamondTotal.textContent = String(scene.player?.levelDiamants ?? 0);
+  updateAmmoHUD(scene);
 }
 
-const HEART_SVG = `
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <path d="M12 21s-7.5-4.6-10-9.1C0.3 8.3 2 4.5 5.7 4c2-.3 3.8.7 4.9 2.3C11.7 4.7 13.5 3.7 15.5 4c3.7.5 5.4 4.3 3.7 7.9C19.5 16.4 12 21 12 21z"/>
-</svg>`;
+export function updateAmmoHUD(scene) {
+  if (!scene.hud?.ammoEls || !scene.player?.status) return;
+  scene.hud.ammoEls.forEach((slot, index) => {
+    slot.classList.toggle('empty', index >= scene.player.status.currentAljavaBullet);
+  });
+}
+
+const HEART_BLOCK = 'aa';

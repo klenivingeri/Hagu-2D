@@ -1,6 +1,7 @@
 import { MAP_DEPTHS } from '../../../constants.js';
-import { addGlobalMaxLife, gameState } from '../../state/gameState.js';
+import { addGlobalMaxLife } from '../../state/gameState.js';
 import { animateCollectible, stopCollectibleAnimation } from '../../commons/collectibleAnimation.js';
+import { updateHUD } from './createhud.js';
 
 const LIFE_LAYER_NAME = 'life';
 const LIFE_TILESET_NAME = 'coin';
@@ -44,14 +45,5 @@ export function createLifes(scene) {
 
 function updateLifeHUD(scene) {
   if (!scene.hud) return;
-  while (scene.hud.hearts.length < gameState.maxlife) {
-    const heart = document.createElement('span');
-    heart.className = 'heart';
-    heart.innerHTML = scene.hud.heartSvg;
-    scene.hud.container.appendChild(heart);
-    scene.hud.hearts.push(heart);
-  }
-  scene.hud.hearts.forEach((heart, index) => {
-    heart.classList.toggle('empty', index >= scene.player.status.life);
-  });
+  updateHUD(scene, scene.player.status.life);
 }

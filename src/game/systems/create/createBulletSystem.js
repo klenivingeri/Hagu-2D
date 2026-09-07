@@ -1,6 +1,7 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitBulletImpactDust } from '../../commons/dustTrail.js';
 import { MAP_DEPTHS } from '../../../constants.js';
+import { updateAmmoHUD } from './createhud.js';
 
 export function createBulletSystem(scene) {
   // O tiro colide fisicamente com o cenário. Cada layer colidível usa um
@@ -23,6 +24,8 @@ export function createBulletSystem(scene) {
 
   // Cria de fato o projétil e o lança na direção que o player está olhando.
   const spawnBullet = () => {
+    const player = scene.player;
+    if (player.status.currentAljavaBullet <= 0) return;
     const bullet = scene.bullets.get(scene.player.x, scene.player.y + 5, 'bullet');
 
     if (bullet) {
@@ -37,12 +40,16 @@ export function createBulletSystem(scene) {
       // que o player vê à frente e atrás do que cobre o player.
       bullet.setDepth(scene.player.depth ?? MAP_DEPTHS.PLAYER);
       bullet.damage = scene.player.status.bulletDamage; // dano que esse tiro carrega
+      player.status.currentAljavaBullet -= 1;
+      player._nextBulletReloadAt = scene.time.now + player.status.LoadingBullet;
+      updateAmmoHUD(scene);
     }
   };
 
   const fire = () => {
     const player = scene.player;
     if (!player || player.isDead) return;
+    if (player.status.currentAljavaBullet <= 0) return;
 
     // Ainda nascendo: não deixa atirar por cima da animação de spawn.
     if (player.isSpawning) return;
@@ -102,6 +109,16 @@ export function createBulletSystem(scene) {
       bullet.setDepth(enemy.depth ?? MAP_DEPTHS.PLAYER);
     },
     update() {
+      const player = scene.player;
+      if (player && player.status.currentAljavaBullet < player.status.AljavaBullet
+        && scene.time.now >= (player._nextBulletReloadAt || Infinity)) {
+        player.status.currentAljavaBullet += 1;
+        player._nextBulletReloadAt = player.status.currentAljavaBullet < player.status.AljavaBullet
+          ? scene.time.now + player.status.LoadingBullet
+          : 0;
+        updateAmmoHUD(scene);
+      }
+
       // Usando getChildren() para retornar um array padrão do JS
       scene.bullets.getChildren().forEach((bullet) => {
         if (!bullet || !bullet.active) return;
