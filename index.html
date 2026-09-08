@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#111827" />
     <title>Phaser + Vite + Tailwind</title>
+    <!--
+      CSS crítico inline: em dev, o <script type="module"> é deferred e o
+      CSS (importado dentro do JS) só é injetado depois que o módulo roda,
+      então sem isso o HTML puro (com os botões do gameplay) pinta antes do
+      JS decidir esconder .game-layout. Isso garante que fique escondido
+      desde o primeiro paint, em dev e produção.
+    -->
+    <style>.game-layout { display: none; }</style>
   </head>
   <body>
     <div id="app" class="min-h-dvh w-full overflow-hidden bg-gray-950 text-white">

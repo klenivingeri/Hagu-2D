@@ -49,3 +49,16 @@ export const HUD_EVENTS = {
     COINS_CHANGED: 'hud:coins-changed',
     DIAMONDS_CHANGED: 'hud:diamonds-changed',
 };
+
+// XP necessário para passar de um nível pro próximo (ver
+// GameManager.getLevelInfo). Fixo por enquanto — se a progressão precisar
+// de curva, ajustar aqui.
+export const EXP_PER_LEVEL = 100;
+
+// Contrato de eventos entre o Phaser e a tela de loading em HTML (ver
+// /src/screens/LoadingScreen.js). Mesma regra do HUD: o Phaser só emite, a
+// tela de loading só escuta.
+export const LOADING_EVENTS = {
+    PROGRESS: 'loading:progress',
+    COMPLETE: 'loading:complete',
+};

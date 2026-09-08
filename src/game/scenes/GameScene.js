@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
-import { HUD_EVENTS } from '../../constants.js';
+import { HUD_EVENTS, LOADING_EVENTS } from '../../constants.js';
 import { gameState } from '../../managers/GameManager.js';
 import { getVirtualFrame } from '../commons/textureUtils.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
@@ -61,6 +61,11 @@ export class GameScene extends Phaser.Scene {
     this.load.on('loaderror', (file) => {
       console.error('[Phaser] Falha ao carregar asset:', file.key, file.src);
     });
+
+    // Progresso da tela de loading em HTML (ver /src/screens/LoadingScreen.js).
+    this.load.on('progress', (value) => {
+      this.game.events.emit(LOADING_EVENTS.PROGRESS, value);
+    });
   }
 
   create() {
@@ -104,6 +109,10 @@ export class GameScene extends Phaser.Scene {
     this.coins = createCoins(this);
 
     setupPlayerDamage(this, this.player, this.enemies);
+
+    // Fase montada: esconde a tela de loading em HTML (ver
+    // /src/screens/LoadingScreen.js).
+    this.game.events.emit(LOADING_EVENTS.COMPLETE);
   }
 
   update() {

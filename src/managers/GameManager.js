@@ -9,7 +9,17 @@
 // página) ainda não está ligada (ver item 8 de IMPLEMENTATION_PLAN.md);
 // quando for implementada, deve usar exclusivamente StorageService
 // (/src/services/StorageService.js), nunca localStorage direto.
+import { EXP_PER_LEVEL } from '../constants.js';
+import { save, load } from '../services/StorageService.js';
+
+const DEFAULT_SETTINGS = {
+  vibrationEnabled: true,
+  soundEnabled: true,
+  colorblindMode: false,
+};
+
 export const gameState = {
+  playerName: 'Jogador',
   maxlife: 3,
   // Quantidade de tiles que o player pode cair sem morrer.
   maxSafeFallTiles: 5,
@@ -17,6 +27,11 @@ export const gameState = {
   coins: 0,
   diamant: 0,
   playerSpritePath: '',
+  // Preferências do usuário (persistidas via StorageService — nunca
+  // localStorage direto, ver CLAUDE.md regra 3). Populado de verdade por
+  // loadPersistedState(), chamado na tela de loading inicial (main.js)
+  // antes da Welcome aparecer.
+  settings: { ...DEFAULT_SETTINGS },
 
   // Atributos de upgrade. Alguns ainda não possuem mecânica e são somente
   // dados disponíveis para os sistemas futuros.
@@ -32,6 +47,16 @@ export const gameState = {
   upgrade: {},
 };
 
+// Carrega o estado persistido (StorageService) por cima dos defaults.
+// `await`-ável mesmo hoje sendo síncrono (localStorage), para já ficar
+// pronto pra troca futura por IndexedDB/storage nativo (CLAUDE.md regra 3)
+// sem mudar quem chama. Deve ser chamado uma única vez, na tela de loading
+// inicial (ver main.js), antes de qualquer tela HTML ler gameState.
+export async function loadPersistedState() {
+  Object.assign(gameState.settings, await load('settings', DEFAULT_SETTINGS));
+  return gameState;
+}
+
 export function addGlobalCoins(amount = 1) {
   gameState.coins += amount;
 }
@@ -46,4 +71,22 @@ export function addGlobalMaxLife(amount = 1) {
 
 export function addGlobalExp(amount = 1) {
   gameState.exp += amount;
+}
+
+export function setPlayerName(name) {
+  gameState.playerName = String(name || '').trim() || gameState.playerName;
+}
+
+// Nível e progresso são derivados do XP total, nunca guardados à parte, pra
+// não correrem o risco de dessincronizar (ver EXP_PER_LEVEL em constants.js).
+export function getLevelInfo(exp = gameState.exp) {
+  const level = Math.floor(exp / EXP_PER_LEVEL) + 1;
+  const current = exp % EXP_PER_LEVEL;
+  return { level, current, required: EXP_PER_LEVEL, percent: (current / EXP_PER_LEVEL) * 100 };
+}
+
+export function updateSetting(key, value) {
+  if (!(key in DEFAULT_SETTINGS)) return;
+  gameState.settings[key] = value;
+  save('settings', gameState.settings);
 }

@@ -1,0 +1,92 @@
+<div class="welcome-screen fixed inset-0 z-40 flex flex-col bg-gray-950 text-white">
+  <header class="welcome-topbar flex items-center gap-3 border-b border-white/10 bg-gray-900/70 px-3 ">
+    <img
+      class="player-idle-sprite h-10 w-auto mb-2 shrink-0 [image-rendering:pixelated]"
+      src="/assets/player/idle/sprite_base_idle_0.png"
+      alt="Sprite do jogador"
+    />
+
+    <div class="welcome-player flex min-w-0 flex-1 flex-col gap-1">
+      <div class="flex items-baseline gap-2">
+        <span class="player-name truncate text-[8px] font-bold">Jogador</span>
+        <span class="player-level shrink-0 text-[8px] font-semibold text-amber-400">Lvl 1</span>
+      </div>
+      <div class="exp-bar-track h-1.5 w-full overflow-hidden rounded-full bg-gray-800">
+        <div class="exp-bar-fill h-full w-0 rounded-full bg-sky-500 transition-[width] duration-300"></div>
+      </div>
+    </div>
+
+    <div class="welcome-resources flex shrink-0 items-center gap-3 text-sm font-bold">
+      <div class="flex items-center gap-1 text-sky-300">
+        <span>💎</span>
+        <span class="diamond-total">0</span>
+      </div>
+      <div class="flex items-center gap-1 text-amber-300">
+        <span>🪙</span>
+        <span class="coin-total">0</span>
+      </div>
+    </div>
+
+    <button type="button" class="settings-gear-btn shrink-0 rounded-full p-2 text-lg leading-none transition-transform active:scale-90" aria-label="Configurações">
+      ⚙️
+    </button>
+  </header>
+
+  <main class="welcome-content flex flex-1 flex-col overflow-hidden">
+    <section class="welcome-view flex flex-1 flex-col items-center justify-center gap-6 px-4" data-view="home">
+      <div class="maps-placeholder flex w-full max-w-xs flex-col items-center gap-3 rounded-xl border border-dashed border-white/15 p-6 text-center text-gray-400">
+        <span class="text-sm">Seleção de mapas em breve</span>
+        <button type="button" class="play-btn rounded-full bg-emerald-500 px-10 py-3 text-sm font-extrabold uppercase tracking-wide text-gray-950 shadow-lg transition-transform active:scale-95">
+          Jogar
+        </button>
+      </div>
+    </section>
+
+    <section class="welcome-view hidden flex-1 flex-col items-center justify-center px-4" data-view="shop">
+      <p class="text-sm text-gray-400">Loja em construção</p>
+    </section>
+
+    <section class="welcome-view hidden flex-1 flex-col items-center justify-center px-4" data-view="collection">
+      <p class="text-sm text-gray-400">Coleção em construção</p>
+    </section>
+  </main>
+
+  <nav class="welcome-tabbar flex items-stretch border-t border-white/10 bg-gray-900/80">
+    <button type="button" class="tab-btn flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-semibold text-gray-400" data-view="shop">
+      <span class="text-lg leading-none">🛒</span>
+      Loja
+    </button>
+    <button type="button" class="tab-btn tab-active flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-semibold text-emerald-400" data-view="home">
+      <span class="text-lg leading-none">🏠</span>
+      Início
+    </button>
+    <button type="button" class="tab-btn flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-semibold text-gray-400" data-view="collection">
+      <span class="text-lg leading-none">📦</span>
+      Coleção
+    </button>
+  </nav>
+</div>
+
+<div class="settings-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
+  <div class="settings-panel w-full max-w-xs rounded-xl bg-gray-900 p-4 shadow-xl">
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="text-base font-bold">Configurações</h2>
+      <button type="button" class="settings-close-btn text-xl leading-none text-gray-400" aria-label="Fechar">×</button>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <label class="flex items-center justify-between gap-3 text-sm">
+        <span>Vibração</span>
+        <input type="checkbox" class="setting-toggle h-5 w-5 accent-emerald-500" data-setting="vibrationEnabled" />
+      </label>
+      <label class="flex items-center justify-between gap-3 text-sm">
+        <span>Som do jogo</span>
+        <input type="checkbox" class="setting-toggle h-5 w-5 accent-emerald-500" data-setting="soundEnabled" />
+      </label>
+      <label class="flex items-center justify-between gap-3 text-sm">
+        <span>Modo daltônico</span>
+        <input type="checkbox" class="setting-toggle h-5 w-5 accent-emerald-500" data-setting="colorblindMode" />
+      </label>
+    </div>
+  </div>
+</div>
