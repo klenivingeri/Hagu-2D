@@ -6,6 +6,7 @@ import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
 import { MAP_DEPTHS, HUD_EVENTS } from "../../../constants.js";
 import { emitEnemyHitBurst, emitDustTrail } from "../../commons/dustTrail.js";
+import { createJetpackFuelBar } from "../../commons/jetpackBar.js";
 import { gameState } from '../../../managers/GameManager.js';
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
@@ -72,6 +73,12 @@ export function createPlayer(scene) {
   player.status = createPlayerStatus(config.stats);
   player.levelCoins = 0;
   player.levelDiamants = 0;
+
+  // Estado do jetpack: recarrega sempre que o player toca o chão
+  // (ver updatePlayerMovement.js).
+  player.isJetpackActive = false;
+  player.jetpackFuel = player.status.jetpackFuelMs;
+  player.jetpackFuelBar = createJetpackFuelBar(scene);
 
   player.invulnerable = false;
   player.isDead = false;
@@ -205,6 +212,8 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   player.setVelocity(0, 0);
   player.body.enable = false;
   player.clearTint();
+  player.isJetpackActive = false;
+  player.jetpackFuelBar?.setVisible(false);
   // Os frames de dead_jump precisam ficar ancorados pelos pés. Sem isso,
   // cada frame é desenhado pelo centro e a animação parece subir no impacto.
   if (animation === 'dead_jump') {

@@ -6,10 +6,13 @@ export function createControls(scene) {
   scene.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
   scene.lastDirection = 1;
   
-  scene.controlState = { 
-    left: false, 
-    right: false, 
-    jump: false
+  scene.controlState = {
+    left: false,
+    right: false,
+    jump: false,
+    // Diferente de `jump` (disparo único), reflete se o botão continua
+    // pressionado. Usado por mecânicas que dependem de segurar, como o jetpack.
+    jumpHeld: false
   };
 
   const btnEsquerda = document.querySelector('#btnEsquerda');
@@ -109,9 +112,10 @@ export function createControls(scene) {
 
       // Só dispara o pulo se o dedo acabou de entrar no botão de pulo (evita pulo contínuo ao segurar)
       if (activeActionTarget !== 'jump') {
-        scene.controlState.jump = true; 
+        scene.controlState.jump = true;
         activeActionTarget = 'jump';
       }
+      scene.controlState.jumpHeld = true;
     } else if (isOverFire) {
       btnA.classList.add('pressed');
       btnB.classList.remove('pressed');
@@ -119,14 +123,16 @@ export function createControls(scene) {
       // Só dispara o tiro se o dedo acabou de entrar no botão de tiro
       if (activeActionTarget !== 'fire') {
         if (scene.bulletSystem && typeof scene.bulletSystem.fire === 'function') {
-          scene.bulletSystem.fire(); 
+          scene.bulletSystem.fire();
         }
         activeActionTarget = 'fire';
       }
+      scene.controlState.jumpHeld = false;
     } else {
       btnB.classList.remove('pressed');
       btnA.classList.remove('pressed');
       activeActionTarget = null;
+      scene.controlState.jumpHeld = false;
     }
   };
 
@@ -146,6 +152,7 @@ export function createControls(scene) {
     btnA.classList.remove('pressed');
     btnB.classList.remove('pressed');
     activeActionTarget = null;
+    scene.controlState.jumpHeld = false;
   };
 
   actionPad.addEventListener('pointerup', resetAction);

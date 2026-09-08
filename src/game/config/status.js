@@ -27,6 +27,8 @@ export function createPlayerStatus(overrides = {}) {
     // Só existem no objeto pra já ter onde guardar quando forem implementados.
     isDoubleJump: gameState.isDoubleJump,
     isJetpack: gameState.isJetpack,
+    jetpackFuelMs: 1600,           // duração total de uso do jetpack, em ms
+    jetpackFloatSpeed: 40,         // velocidade máxima de queda enquanto o jetpack está freando
     doubleJumpEnabled: gameState.isDoubleJump, // compatibilidade com o nome antigo
     jumpDamage: 1,                 // dano ao pisar em cima do inimigo (stomp)
     currentWeapon: 'bow',           // arma equipada (hoje só existe o arco)

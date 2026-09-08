@@ -22,7 +22,7 @@ export const gameState = {
   // dados disponíveis para os sistemas futuros.
   isStick: true,
   isDoubleJump: true,
-  isJetpack: false,
+  isJetpack: true,
   bulluetDistance: 450,
   BulletSequence: 1,
   AljavaBullet: 4,

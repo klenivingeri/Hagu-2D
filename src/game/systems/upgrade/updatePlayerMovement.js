@@ -1,5 +1,6 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitDustTrail } from '../../commons/dustTrail.js';
+import { updateJetpackFuelBar } from '../../commons/jetpackBar.js';
 import { killPlayer } from '../create/createPlayer.js';
 
 export const updatePlayerMovement = (scene) => {
@@ -14,6 +15,16 @@ export const updatePlayerMovement = (scene) => {
     const wasGrounded = player.body.blocked.down || player.body.touching.down;
     const wasWallSliding = player.isWallSliding;
     const now = scene.time.now;
+
+    // Enquanto o jetpack está freando a queda (estado decidido no frame
+    // anterior), a distância de queda não conta pra morte: o ponto de
+    // referência anda junto com o player a cada frame. Quando o jetpack
+    // para de ser usado (solta, acaba o combustível ou pousa), o último
+    // valor gravado aqui fica congelado e passa a valer como novo início
+    // de queda.
+    if (player.isJetpackActive) {
+      player.fallStartY = player.body.bottom;
+    }
 
     // Calcula o contato com a parede antes de iniciar o rastreamento da queda.
     // O lado precisa vir do contato real com o tile neste frame. Assim que a
@@ -141,6 +152,7 @@ export const updatePlayerMovement = (scene) => {
 
     // Um pulo extra fica disponível durante todo o período no ar: tanto faz
     // se o player saiu do chão pulando ou simplesmente caiu de uma borda.
+    // Independente do jetpack — as duas mecânicas não competem entre si.
     if (scene.controlState.jump
       && !startedJump
       && !wasGrounded
@@ -153,6 +165,38 @@ export const updatePlayerMovement = (scene) => {
       emitDustTrail(scene, player, 'horizontal', true);
       startedJump = true;
     }
+
+    // --- Jetpack: só freia a queda, não impulsiona pra cima ---
+    // Segurando o pulo enquanto está caindo no ar, a queda fica mais lenta
+    // até acabar o combustível. Não interfere no pulo normal/duplo (que usam
+    // velocidade negativa) porque só age quando o player já está caindo.
+    if (wasGrounded) {
+      player.jetpackFuel = player.status.jetpackFuelMs;
+      player.isJetpackActive = false;
+    } else {
+      const jumpHeld = scene.cursors.up?.isDown
+        || scene.keys.W.isDown
+        || scene.spaceKey.isDown
+        || scene.controlState.jumpHeld;
+      const isFalling = player.body.velocity.y > player.status.jetpackFloatSpeed;
+      // Tomar dano desliga o jetpack: enquanto durar a invulnerabilidade
+      // (mesma janela do piscar), a queda volta a ser normal.
+      const canUseJetpack = player.status.isJetpack
+        && jumpHeld
+        && isFalling
+        && player.jetpackFuel > 0
+        && !player.invulnerable;
+
+      if (canUseJetpack) {
+        player.isJetpackActive = true;
+        player.jetpackFuel = Math.max(0, player.jetpackFuel - scene.game.loop.delta);
+        player.setVelocityY(player.status.jetpackFloatSpeed);
+      } else {
+        player.isJetpackActive = false;
+      }
+    }
+
+    updateJetpackFuelBar(player);
 
     // No ar, jump tem prioridade sobre run e idle.
     if (!player.isShooting) {
