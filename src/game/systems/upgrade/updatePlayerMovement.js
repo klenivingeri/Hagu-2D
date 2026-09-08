@@ -63,6 +63,8 @@ export const updatePlayerMovement = (scene) => {
 
     if (wasGrounded) {
       player.lastGroundedAt = now;
+      // O próximo período no ar ganha novamente um pulo extra.
+      player.hasUsedDoubleJump = false;
     }
 
     const canUseCoyoteJump = !wasGrounded
@@ -91,6 +93,7 @@ export const updatePlayerMovement = (scene) => {
         player.setFlipX(wallSide === 1);
         scene.lastDirection = wallSide === -1 ? 1 : -1;
         scene.sound.play('jump');
+        emitDustTrail(scene, player, 'horizontal', true);
         startedJump = true;
     }
     
@@ -131,8 +134,24 @@ export const updatePlayerMovement = (scene) => {
       player.setVelocityY(-player.status.jumpHeight);
       player.isShooting = false; // Pulo interrompe o disparo de arco em andamento
       scene.sound.play('jump');
+      emitDustTrail(scene, player, 'horizontal', true);
       startedJump = true;
       //scene.player.setTexture('run_0'); // Define um frame estático de parado
+    }
+
+    // Um pulo extra fica disponível durante todo o período no ar: tanto faz
+    // se o player saiu do chão pulando ou simplesmente caiu de uma borda.
+    if (scene.controlState.jump
+      && !startedJump
+      && !wasGrounded
+      && player.status.isDoubleJump
+      && !player.hasUsedDoubleJump) {
+      player.setVelocityY(-player.status.jumpHeight);
+      player.hasUsedDoubleJump = true;
+      player.isShooting = false;
+      scene.sound.play('jump');
+      emitDustTrail(scene, player, 'horizontal', true);
+      startedJump = true;
     }
 
     // No ar, jump tem prioridade sobre run e idle.

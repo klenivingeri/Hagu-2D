@@ -21,14 +21,14 @@ export const gameState = {
   // Atributos de upgrade. Alguns ainda não possuem mecânica e são somente
   // dados disponíveis para os sistemas futuros.
   isStick: true,
-  isDoubleJump: false,
+  isDoubleJump: true,
   isJetpack: false,
   bulluetDistance: 450,
   BulletSequence: 1,
   AljavaBullet: 4,
   LoadingBullet: 2000,
   exp: 0,
-  dropDiamant: 0,
+  dropDiamant: 5,
   upgrade: {},
 };
 

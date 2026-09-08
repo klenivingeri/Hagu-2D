@@ -30,6 +30,8 @@ export function createPlayer(scene) {
   player.entityConfig = config;
   gameState.playerSpritePath = config.path;
   player.isWallSliding = false;
+  // Permite exatamente um pulo extra por período no ar.
+  player.hasUsedDoubleJump = false;
   player.lastGroundedAt = -Infinity;
   // Atualizado exclusivamente pelo collider da layer obstacles.
   player.stickableWallSide = 0;
@@ -265,7 +267,18 @@ function showDeathText(scene, player) {
             y: startY,
             duration: 260,
             ease: 'Sine.In',
-            onComplete: () => text.destroy(),
+            // Mantém o texto visível e estável até o player ser revivido.
+            // O restart da cena limpa este objeto junto com o restante da cena.
+            onComplete: () => {
+              scene.tweens.add({
+                targets: text,
+                y: startY - 10,
+                duration: 850,
+                ease: 'Sine.InOut',
+                yoyo: true,
+                repeat: -1,
+              });
+            },
           });
         },
       });
