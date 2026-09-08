@@ -47,6 +47,7 @@ export class GameScene extends Phaser.Scene {
 
     this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullet.png');
     this.load.audio('bullet_effect_1', 'assets/sounds/bullet_effect_6.mp3');
+    this.load.audio('dry_fire_1', 'assets/sounds/dry_fire_1.mp3');
     this.load.audio('coin', 'assets/sounds/coin.wav');
     this.load.audio('jump', 'assets/sounds/jump.wav');
     this.load.audio('tap', 'assets/sounds/tap.wav');

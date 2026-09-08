@@ -5,6 +5,7 @@ const DUST_PARTICLES_PER_EMISSION = 4;
 const DUST_EMISSION_INTERVAL = 90;
 const BULLET_IMPACT_PARTICLES = 8;
 const ENEMY_HIT_PARTICLES = 6;
+const DRY_FIRE_PARTICLES = 4;
 
 /**
  * Gera a textura de 2x2px usada pela poeira, uma única vez por jogo.
@@ -176,6 +177,46 @@ export function emitEnemyHitBurst(scene, enemy) {
         scale: Phaser.Math.FloatBetween(0.7, 1.2),
         lifespan: Phaser.Math.Between(120, 200),
         tint: 0xffd166,
+      }
+    );
+  }
+}
+
+/**
+ * Pequena faísca/poeira para indicar uma tentativa de disparo sem munição.
+ */
+export function emitDryFireBurst(scene, player) {
+  const body = player.body;
+  const direction = player.flipX ? -1 : 1;
+  const x = body?.center.x ?? player.x;
+  const y = body?.center.y ?? player.y;
+  const emitter = getDustEmitter(scene);
+
+  const flash = scene.add.circle(x + direction * 9, y - 2, 1.8, 0xfff3a3, 0.95);
+  flash.setDepth(10000);
+  scene.tweens.add({
+    targets: flash,
+    scale: 1.45,
+    alpha: 0,
+    duration: 75,
+    ease: 'Cubic.Out',
+    onComplete: () => flash.destroy(),
+  });
+
+  for (let index = 0; index < DRY_FIRE_PARTICLES; index += 1) {
+    const angle = Phaser.Math.DegToRad(Phaser.Math.Between(-65, 65));
+    const speed = Phaser.Math.Between(25, 60);
+
+    emitParticle(
+      emitter,
+      x + direction * Phaser.Math.Between(7, 10),
+      y + Phaser.Math.Between(-5, 4),
+      direction * Math.cos(angle) * speed,
+      Math.sin(angle) * speed,
+      {
+        scale: Phaser.Math.FloatBetween(0.45, 0.8),
+        lifespan: Phaser.Math.Between(90, 150),
+        tint: index % 2 === 0 ? 0xffd166 : 0xffffff,
       }
     );
   }

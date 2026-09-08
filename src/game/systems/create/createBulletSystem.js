@@ -1,5 +1,5 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
-import { emitBulletImpactDust } from '../../commons/dustTrail.js';
+import { emitBulletImpactDust, emitDryFireBurst } from '../../commons/dustTrail.js';
 import { MAP_DEPTHS } from '../../../constants.js';
 import { updateAmmoHUD } from './createhud.js';
 
@@ -26,7 +26,11 @@ export function createBulletSystem(scene) {
   // Cria de fato o projétil e o lança na direção que o player está olhando.
   const spawnBullet = () => {
     const player = scene.player;
-    if (player.status.currentAljavaBullet <= 0) return;
+    if (player.status.currentAljavaBullet <= 0) {
+      emitDryFireBurst(scene, player);
+      scene.sound.play('dry_fire_1');
+      return;
+    }
     const bullet = scene.bullets.get(scene.player.x, scene.player.y + 5, 'bullet');
 
     if (bullet) {
@@ -51,7 +55,6 @@ export function createBulletSystem(scene) {
   const fire = () => {
     const player = scene.player;
     if (!player || player.isDead) return;
-    if (player.status.currentAljavaBullet <= 0) return;
 
     // Ainda nascendo: não deixa atirar por cima da animação de spawn.
     if (player.isSpawning) return;
