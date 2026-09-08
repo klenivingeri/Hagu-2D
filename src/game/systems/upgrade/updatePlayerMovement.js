@@ -12,23 +12,46 @@ export const updatePlayerMovement = (scene) => {
     const left = scene.cursors.left.isDown || scene.keys.A.isDown || scene.controlState.left;
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
     const wasGrounded = player.body.blocked.down || player.body.touching.down;
+    const wasWallSliding = player.isWallSliding;
     const now = scene.time.now;
+
+    // Calcula o contato com a parede antes de iniciar o rastreamento da queda.
+    const wallSide = player.stickableWallSide;
+    player.stickableWallSide = 0;
+    const canStickToWall = player.status.isStick
+        && !wasGrounded
+        && wallSide !== 0
+        && (player.isWallSliding || player.lastWallSide !== wallSide);
+    const wallSlidingThisFrame = canStickToWall && !wasGrounded;
 
     // Guarda a altura do último piso. Quando o player volta a tocar no chão,
     // a diferença é usada para decidir se a queda foi fatal.
     if (wasGrounded) {
-      if (player.fallStartY !== null) {
+      if (!wasWallSliding && player.fallStartY !== null) {
         const fallDistance = player.body.bottom - player.fallStartY;
-        if (fallDistance > player.status.fatalFallDistance) {
+        const tileHeight = scene.map?.tileHeight || 16;
+        const maxSafeFallDistance = player.status.maxSafeFallTiles * tileHeight;
+        if (fallDistance > maxSafeFallDistance) {
+          const deathDirection = scene.controlState.right || scene.keys.D.isDown || scene.cursors.right.isDown
+            ? 1
+            : scene.controlState.left || scene.keys.A.isDown || scene.cursors.left.isDown
+              ? -1
+              : 0;
           // Força uma nova emissão mesmo que o último rastro tenha acabado
           // de sair, para marcar visualmente o ponto do impacto.
-          emitDustTrail(scene, player, 'horizontal', true);
-          killPlayer(scene, player, 'dead_jump');
+          emitDustTrail(scene, player, 'horizontal', true, null, deathDirection);
+          killPlayer(scene, player, 'dead_jump', deathDirection);
           return;
         }
-        player.fallStartY = null;
       }
+      player.fallStartY = null;
       player.lastGroundedBottom = player.body.bottom;
+    } else if (wasWallSliding && !wallSlidingThisFrame) {
+      // A queda só começa a ser medida depois que o player desgruda da parede.
+      // O ponto de partida é a posição atual, e não o último chão tocado.
+      player.fallStartY = player.body.bottom;
+    } else if (wallSlidingThisFrame) {
+      player.fallStartY = null;
     } else if (player.fallStartY === null) {
       // Também cobre o caso em que o player simplesmente saiu da beirada.
       player.fallStartY = player.lastGroundedBottom ?? player.body.bottom;
@@ -47,14 +70,6 @@ export const updatePlayerMovement = (scene) => {
     }
     // blocked.left/right sozinho não informa qual layer causou o contato.
     // Este valor só é preenchido pelo collider de obstacles.
-    const wallSide = player.stickableWallSide;
-    player.stickableWallSide = 0;
-    const canStickToWall = player.status.isStick
-        && !wasGrounded
-        && wallSide !== 0
-        // Durante o slide atual, continua preso na mesma parede. Depois de
-        // sair dela, só pode iniciar outro slide no lado oposto.
-        && (player.isWallSliding || player.lastWallSide !== wallSide);
     let startedJump = false;
 
     // Ao apertar pulo na parede, lança o player para o lado oposto ao contato.
@@ -64,6 +79,9 @@ export const updatePlayerMovement = (scene) => {
             wallSide === -1 ? player.status.wallJumpHorizontalSpeed : -player.status.wallJumpHorizontalSpeed,
             -player.status.jumpHeight
         );
+        // O pulo de parede já é o momento em que a queda deixa de ser
+        // protegida pela parede; a partir daqui a distância passa a contar.
+        player.fallStartY = player.body.bottom;
         player.isWallSliding = false;
         player.isShooting = false;
         player.setFlipX(wallSide === 1);

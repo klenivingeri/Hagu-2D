@@ -2,6 +2,8 @@
 // única vez pelo bundle, seus valores sobrevivem a scene.restart().
 export const gameState = {
   maxlife: 3,
+  // Quantidade de tiles que o player pode cair sem morrer.
+  maxSafeFallTiles: 5,
   gold: 0,
   coins: 0,
   diamant: 0,

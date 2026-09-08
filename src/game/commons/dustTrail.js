@@ -59,7 +59,7 @@ function getDustEmitter(scene) {
  * - 'vertical': poeira saindo da lateral durante o wall slide
  * - 'horizontal': poeira ficando para trás enquanto o player anda
  */
-export function emitDustTrail(scene, player, orientation = 'horizontal', force = false, position = null) {
+export function emitDustTrail(scene, player, orientation = 'horizontal', force = false, position = null, directionOverride = null) {
   const now = scene.time.now;
   const lastEmission = player._lastDustEmission ?? -Infinity;
 
@@ -72,7 +72,8 @@ export function emitDustTrail(scene, player, orientation = 'horizontal', force =
     x: body.center.x,
     y: body.bottom,
   };
-  const direction = player.body.velocity.x < 0 ? -1 : player.body.velocity.x > 0 ? 1 : player.flipX ? -1 : 1;
+  const direction = directionOverride
+    ?? (player.body.velocity.x < 0 ? -1 : player.body.velocity.x > 0 ? 1 : player.flipX ? -1 : 1);
   const wallSide = player.body.blocked.left || player.body.touching.left ? -1 : 1;
 
   for (let index = 0; index < DUST_PARTICLES_PER_EMISSION; index += 1) {

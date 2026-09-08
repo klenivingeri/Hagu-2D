@@ -201,7 +201,7 @@ function makePlayerInvulnerable(scene, player) {
   });
 }
 
-export function killPlayer(scene, player, animation = 'dead') {
+export function killPlayer(scene, player, animation = 'dead', deathDirection = 0) {
   if (player.isDead) return;
 
   const wasFlipped = player.flipX;
@@ -223,18 +223,17 @@ export function killPlayer(scene, player, animation = 'dead') {
   player.anims.play(getEntityAnimationKey(player.entityKey, animation));
 
   if (animation === 'dead_jump') {
-    const direction = wasFlipped ? -1 : 1;
     const dustPosition = { x: player.x, y: feetY };
 
     // Pequeno deslocamento no sentido em que o player estava andando.
     scene.tweens.add({
       targets: player,
-      x: player.x + direction * 24,
+      x: player.x + deathDirection * 24,
       duration: 360,
       ease: 'Quad.Out',
       onUpdate: () => {
         dustPosition.x = player.x;
-        emitDustTrail(scene, player, 'horizontal', false, dustPosition);
+        emitDustTrail(scene, player, 'horizontal', false, dustPosition, deathDirection);
       },
     });
   }
