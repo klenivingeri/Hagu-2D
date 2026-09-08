@@ -38,7 +38,7 @@ export function createBulletSystem(scene) {
       bullet.setVisible(true);
       bullet.body.enable = true;
       bullet.body.allowGravity = false;
-      bullet.body.setVelocityX(450 * scene.lastDirection);
+      bullet.body.setVelocityX(450 * player._shootDirection);
       bullet.owner = 'player';
       bullet.angle = 90;
       // O projétil usa a mesma camada visual do player: fica na frente do
@@ -63,7 +63,20 @@ export function createBulletSystem(scene) {
     // até a animação atual terminar (evita reiniciar e perder o bullet).
     if (player.isShooting) return;
 
-    player.setFlipX(scene.lastDirection === -1);
+    // Enquanto estiver grudado, o tiro sai para o lado oposto da parede.
+    // `lastWallSide` indica o lado para o qual o player deve se afastar:
+    // -1 = parede à direita, +1 = parede à esquerda.
+    const isGrounded = player.body.blocked.down || player.body.touching.down;
+    const attachedWallSide = player.isWallSliding
+      ? player.lastWallSide
+      : (!isGrounded ? player.stickableWallSide : 0);
+    const holdingLeft = scene.cursors.left.isDown || scene.keys.A.isDown || scene.controlState.left;
+    const holdingRight = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
+    const heldDirection = holdingLeft ? -1 : holdingRight ? 1 : 0;
+    player._shootDirection = attachedWallSide
+      ? (heldDirection ? -heldDirection : -attachedWallSide)
+      : scene.lastDirection;
+    player.setFlipX(player._shootDirection === -1);
     player.isShooting = true;
     const bowAnimation = getEntityAnimationKey(player.entityKey, 'bow');
     const bowFrame = `${bowAnimation}_3`;

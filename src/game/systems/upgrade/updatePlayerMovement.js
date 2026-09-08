@@ -16,11 +16,15 @@ export const updatePlayerMovement = (scene) => {
     const now = scene.time.now;
 
     // Calcula o contato com a parede antes de iniciar o rastreamento da queda.
+    // O lado precisa vir do contato real com o tile neste frame. Assim que a
+    // layer de parede termina, o player perde a aderência imediatamente.
     const wallSide = player.stickableWallSide;
     player.stickableWallSide = 0;
+    const isHoldingTowardWall = wallSide === -1 ? right : wallSide === 1 ? left : false;
     const canStickToWall = player.status.isStick
         && !wasGrounded
         && wallSide !== 0
+        && isHoldingTowardWall
         && (player.isWallSliding || player.lastWallSide !== wallSide);
     const wallSlidingThisFrame = canStickToWall && !wasGrounded;
 

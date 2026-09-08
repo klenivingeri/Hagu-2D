@@ -221,6 +221,7 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   // A morte não pode inverter o sentido que o player tinha no momento do impacto.
   player.setFlipX(wasFlipped);
   player.anims.play(getEntityAnimationKey(player.entityKey, animation));
+  showDeathText(scene, player);
 
   if (animation === 'dead_jump') {
     const dustPosition = { x: player.x, y: feetY };
@@ -241,6 +242,43 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   // Mantém a animação de morte visível por 2 segundos antes do respawn.
   scene.time.delayedCall(2000, () => {
     scene.scene.restart();
+  });
+}
+
+function showDeathText(scene, player) {
+  const word = 'DEAD';
+  const spacing = 7;
+  const startX = player.x - ((word.length - 1) * spacing) / 2;
+  const startY = player.body.top - 5;
+
+  [...word].forEach((letter, index) => {
+    scene.time.delayedCall(index * 110, () => {
+      const text = scene.add.text(startX + index * spacing, startY, letter, {
+        color: '#ff3b30',
+        fontFamily: 'Arial Black, sans-serif',
+        fontSize: '12px',
+        stroke: '#1b0b0b',
+        strokeThickness: 2,
+      });
+      text.setOrigin(0.5, 1);
+      text.setDepth((player.depth ?? 0) + 1);
+
+      scene.tweens.add({
+        targets: text,
+        y: startY - 18,
+        duration: 260,
+        ease: 'Sine.Out',
+        onComplete: () => {
+          scene.tweens.add({
+            targets: text,
+            y: startY,
+            duration: 260,
+            ease: 'Sine.In',
+            onComplete: () => text.destroy(),
+          });
+        },
+      });
+    });
   });
 }
 
