@@ -5,7 +5,7 @@ import { getTiledProperty } from "../commons/tiledUtils.js";
 import { MAP_DEPTHS } from "../../constants.js";
 import { showFloatingDamage } from "../commons/floatingTextPool.js";
 import { emitEnemyHitBurst } from "../commons/dustTrail.js";
-import { addGlobalExp, gameState } from "../state/gameState.js";
+import { addGlobalExp, gameState } from "../../managers/GameManager.js";
 import { spawnDroppedDiamant } from "../systems/create/createDiamants.js";
 
 // ==========================================

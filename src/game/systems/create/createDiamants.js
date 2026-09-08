@@ -1,5 +1,5 @@
 import { MAP_DEPTHS } from '../../../constants.js';
-import { addGlobalDiamant, gameState } from '../../state/gameState.js';
+import { addGlobalDiamant, gameState } from '../../../managers/GameManager.js';
 import { animateCollectible, stopCollectibleAnimation } from '../../commons/collectibleAnimation.js';
 
 const DIAMANTS_LAYER_NAME = 'diamants';

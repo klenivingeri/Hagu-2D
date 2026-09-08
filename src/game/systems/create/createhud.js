@@ -1,6 +1,6 @@
 // HUD simples em HTML/CSS (fora do canvas do Phaser) para mostrar as vidas do player.
 import { getVirtualFrame } from '../../commons/textureUtils.js';
-import { gameState } from '../../state/gameState.js';
+import { gameState } from '../../../managers/GameManager.js';
 
 // Cria os corações dinamicamente e injeta dentro do container .game-screen,
 // já que ele é a área com a mesma dimensão/posição do jogo.

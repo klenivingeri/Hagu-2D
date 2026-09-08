@@ -9,7 +9,7 @@
 // importe um objeto pronto e reaproveite ele). Cada player/enemy precisa
 // da SUA PRÓPRIA cópia do status — se todo mundo apontasse pro mesmo
 // objeto, um inimigo perdendo vida afetaria a vida de todos os outros.
-import { gameState } from '../state/gameState.js';
+import { gameState } from '../../managers/GameManager.js';
 
 export function createPlayerStatus(overrides = {}) {
   return {

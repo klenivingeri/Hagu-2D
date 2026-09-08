@@ -1,5 +1,5 @@
 import { MAP_DEPTHS } from '../../../constants.js';
-import { addGlobalMaxLife } from '../../state/gameState.js';
+import { addGlobalMaxLife } from '../../../managers/GameManager.js';
 import { animateCollectible, stopCollectibleAnimation } from '../../commons/collectibleAnimation.js';
 import { updateHUD } from './createhud.js';
 

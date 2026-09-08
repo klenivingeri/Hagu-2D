@@ -1,5 +1,14 @@
-// Estado persistente da sessão do jogo. Como este módulo é importado uma
-// única vez pelo bundle, seus valores sobrevivem a scene.restart().
+// Estado global compartilhado entre as telas HTML (fora do Phaser) e a
+// "Run" do jogo (CLAUDE.md / GUIDELINES.md). Toda leitura/escrita de dado
+// persistente (moedas, vidas, progresso, atributos de upgrade) deve passar
+// por este módulo — nunca acesse esses valores direto de dentro de uma cena
+// ou de uma tela.
+//
+// Como este módulo é importado uma única vez pelo bundle, os valores
+// sobrevivem a scene.restart(). Persistência entre sessões (reload da
+// página) ainda não está ligada (ver item 8 de IMPLEMENTATION_PLAN.md);
+// quando for implementada, deve usar exclusivamente StorageService
+// (/src/services/StorageService.js), nunca localStorage direto.
 export const gameState = {
   maxlife: 3,
   // Quantidade de tiles que o player pode cair sem morrer.

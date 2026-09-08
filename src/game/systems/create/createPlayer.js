@@ -7,7 +7,7 @@ import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
 import { MAP_DEPTHS } from "../../../constants.js";
 import { emitEnemyHitBurst, emitDustTrail } from "../../commons/dustTrail.js";
-import { gameState } from '../../state/gameState.js';
+import { gameState } from '../../../managers/GameManager.js';
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
 const STOMP_TOLERANCE_RATIO = 0.5; // "pisou" se os pés estiverem na metade de cima do inimigo
