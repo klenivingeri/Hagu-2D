@@ -1,11 +1,10 @@
 import { resizeCollider } from "./common";
-import { updateHUD } from "./createhud";
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 import { createPlayerStatus } from "../../config/status.js";
 import { PLAYERS_CONFIG, getEntityAnimationKey } from "../../config/entities.js";
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
-import { MAP_DEPTHS } from "../../../constants.js";
+import { MAP_DEPTHS, HUD_EVENTS } from "../../../constants.js";
 import { emitEnemyHitBurst, emitDustTrail } from "../../commons/dustTrail.js";
 import { gameState } from '../../../managers/GameManager.js';
 
@@ -145,15 +144,7 @@ export function damagePlayer(scene, damage = 1) {
   scene.sound.play('tap');
   emitEnemyHitBurst(scene, player);
   player.status.life -= damage;
-  updateHUD(scene, player.status.life);
-
-  if (scene.hud) {
-    const lostHeart = scene.hud.hearts[player.status.life];
-    if (lostHeart) {
-      lostHeart.classList.add('losing');
-      lostHeart.addEventListener('animationend', () => lostHeart.classList.remove('losing'), { once: true });
-    }
-  }
+  scene.game.events.emit(HUD_EVENTS.HEALTH_CHANGED, player.status.life, gameState.maxlife);
 
   if (player.status.life <= 0) {
     killPlayer(scene, player);

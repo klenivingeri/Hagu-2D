@@ -1,4 +1,4 @@
-import { MAP_DEPTHS } from '../../../constants.js';
+import { MAP_DEPTHS, HUD_EVENTS } from '../../../constants.js';
 import { addGlobalDiamant, gameState } from '../../../managers/GameManager.js';
 import { animateCollectible, stopCollectibleAnimation } from '../../commons/collectibleAnimation.js';
 
@@ -38,7 +38,7 @@ export function createDiamants(scene) {
     addGlobalDiamant(1);
     scene.player.status.diamant = gameState.diamant;
     scene.sound.play('coin');
-    if (scene.hud?.diamondTotal) scene.hud.diamondTotal.textContent = String(scene.player.levelDiamants);
+    scene.game.events.emit(HUD_EVENTS.DIAMONDS_CHANGED, scene.player.levelDiamants);
     scene.tweens.add({ targets: diamant, y: diamant.y - 24, alpha: 0, duration: 360, onComplete: () => diamant.destroy() });
   });
 

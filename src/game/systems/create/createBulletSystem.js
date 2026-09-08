@@ -1,7 +1,6 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitBulletImpactDust, emitDryFireBurst } from '../../commons/dustTrail.js';
-import { MAP_DEPTHS } from '../../../constants.js';
-import { updateAmmoHUD } from './createhud.js';
+import { MAP_DEPTHS, HUD_EVENTS } from '../../../constants.js';
 
 export function createBulletSystem(scene) {
   // O tiro colide fisicamente com o cenário. Cada layer colidível usa um
@@ -47,7 +46,7 @@ export function createBulletSystem(scene) {
       bullet.damage = scene.player.status.bulletDamage; // dano que esse tiro carrega
       player.status.currentAljavaBullet -= 1;
       player._nextBulletReloadAt = scene.time.now + player.status.LoadingBullet;
-      updateAmmoHUD(scene);
+      scene.game.events.emit(HUD_EVENTS.AMMO_CHANGED, player.status.currentAljavaBullet, player.status.AljavaBullet);
       scene.sound.play('bullet_effect_1');
     }
   };
@@ -134,7 +133,7 @@ export function createBulletSystem(scene) {
         player._nextBulletReloadAt = player.status.currentAljavaBullet < player.status.AljavaBullet
           ? scene.time.now + player.status.LoadingBullet
           : 0;
-        updateAmmoHUD(scene);
+        scene.game.events.emit(HUD_EVENTS.AMMO_CHANGED, player.status.currentAljavaBullet, player.status.AljavaBullet);
       }
 
       // Usando getChildren() para retornar um array padrão do JS

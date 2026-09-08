@@ -38,3 +38,14 @@ export const MAP_DEPTHS = {
     LIMITS: 120,
     PORTAL: 35,
 };
+
+// Contrato de eventos entre o Phaser e o HUD em HTML (ver
+// /src/components/ui/Hud.js). O Phaser só emite (scene.game.events.emit),
+// o HUD só escuta — nenhum dos dois lados importa código do outro.
+export const HUD_EVENTS = {
+    RESET: 'hud:reset',
+    HEALTH_CHANGED: 'hud:health-changed',
+    AMMO_CHANGED: 'hud:ammo-changed',
+    COINS_CHANGED: 'hud:coins-changed',
+    DIAMONDS_CHANGED: 'hud:diamonds-changed',
+};

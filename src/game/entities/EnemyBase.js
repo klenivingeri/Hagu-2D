@@ -221,7 +221,6 @@ function playStompAnimation(enemy) {
 function killEnemy(enemy) {
   addGlobalExp(1);
   if (enemy.scene.player?.status) enemy.scene.player.status.exp = gameState.exp;
-  if (enemy.scene.hud?.expTotal) enemy.scene.hud.expTotal.textContent = String(gameState.exp);
   if (Math.random() * 100 < Math.max(0, Math.min(100, Number(gameState.dropDiamant) || 0))) {
     spawnDroppedDiamant(enemy.scene, enemy.x, enemy.y);
   }

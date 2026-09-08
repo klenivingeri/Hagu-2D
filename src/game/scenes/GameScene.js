@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
+import { HUD_EVENTS } from '../../constants.js';
+import { gameState } from '../../managers/GameManager.js';
+import { getVirtualFrame } from '../commons/textureUtils.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
-import { createHUD, updateHUD } from '../systems/create/createhud.js';
 import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
 import { createControls } from '../systems/create/createControls.js';
 import { createWorld } from '../systems/create/createWorld.js';
@@ -72,8 +74,13 @@ export class GameScene extends Phaser.Scene {
     createPlayerAnimations(this);
     this.player = createPlayer(this);
 
-    createHUD(this);
-    updateHUD(this, this.player.status.life, this.player.levelCoins);
+    this.game.events.emit(HUD_EVENTS.RESET, {
+      coinFrame: getVirtualFrame(this, 'coin', 1, 0, 12, 1),
+      initialCoins: this.player.levelCoins,
+      initialDiamonds: this.player.levelDiamants,
+    });
+    this.game.events.emit(HUD_EVENTS.HEALTH_CHANGED, this.player.status.life, gameState.maxlife);
+    this.game.events.emit(HUD_EVENTS.AMMO_CHANGED, this.player.status.currentAljavaBullet, this.player.status.AljavaBullet);
 
     this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 10 });
     this.bulletSystem = createBulletSystem(this);

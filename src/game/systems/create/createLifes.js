@@ -1,7 +1,6 @@
-import { MAP_DEPTHS } from '../../../constants.js';
-import { addGlobalMaxLife } from '../../../managers/GameManager.js';
+import { MAP_DEPTHS, HUD_EVENTS } from '../../../constants.js';
+import { addGlobalMaxLife, gameState } from '../../../managers/GameManager.js';
 import { animateCollectible, stopCollectibleAnimation } from '../../commons/collectibleAnimation.js';
-import { updateHUD } from './createhud.js';
 
 const LIFE_LAYER_NAME = 'life';
 const LIFE_TILESET_NAME = 'coin';
@@ -35,16 +34,11 @@ export function createLifes(scene) {
     addGlobalMaxLife(1);
     scene.player.status.life += 1;
     scene.sound.play('coin');
-    updateLifeHUD(scene);
+    scene.game.events.emit(HUD_EVENTS.HEALTH_CHANGED, scene.player.status.life, gameState.maxlife);
     scene.tweens.add({ targets: life, y: life.y - 24, scaleX: 1.25, scaleY: 1.25, alpha: 0,
       duration: 360, onComplete: () => life.destroy() });
   });
 
   scene.lifes = lifes;
   return lifes;
-}
-
-function updateLifeHUD(scene) {
-  if (!scene.hud) return;
-  updateHUD(scene, scene.player.status.life);
 }
