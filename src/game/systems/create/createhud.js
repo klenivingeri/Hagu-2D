@@ -19,7 +19,7 @@ export function createHUD(scene) {
   if (existingCoins) existingCoins.remove();
   const existingDiamants = gameScreen.querySelector('.hud-diamants');
   if (existingDiamants) existingDiamants.remove();
-  const existingAmmo = gameScreen.querySelector('.hud-ammo');
+  const existingAmmo = gameScreen.querySelector('.ammo-bar');
   if (existingAmmo) existingAmmo.remove();
   const existingLifePanel = gameScreen.querySelector('.hud-life-panel');
   if (existingLifePanel) existingLifePanel.remove();
@@ -36,15 +36,10 @@ export function createHUD(scene) {
   gameScreen.appendChild(lifePanel);
 
   const ammo = document.createElement('div');
-  ammo.className = 'hud-ammo';
-  const ammoEls = [];
-  for (let i = 0; i < (scene.player?.status?.AljavaBullet ?? 0); i += 1) {
-    const bullet = document.createElement('span');
-    bullet.className = 'ammo-slot';
-    bullet.textContent = '-';
-    ammo.appendChild(bullet);
-    ammoEls.push(bullet);
-  }
+  ammo.className = 'ammo-bar';
+  const ammoFill = document.createElement('div');
+  ammoFill.className = 'ammo-fill';
+  ammo.appendChild(ammoFill);
   lifePanel.appendChild(ammo);
 
   // Frame 1 da spritesheet coin.png, usando o mesmo recorte virtual do jogo.
@@ -77,7 +72,8 @@ export function createHUD(scene) {
   resources.append(diamants, separator, coins);
   gameScreen.appendChild(resources);
 
-  scene.hud = { container: lifePanel, hearts: [], heartSvg: HEART_BLOCK, healthBar, healthFill, ammo, ammoEls, lifePanel, coins, coinTotal, diamants, diamondTotal, resources };
+  scene.hud = { container: lifePanel, hearts: [], heartSvg: HEART_BLOCK, healthBar, healthFill, ammo, ammoFill, lifePanel, coins, coinTotal, diamants, diamondTotal, resources };
+  updateAmmoHUD(scene);
 
   // Garante que some junto quando a cena for desligada/reiniciada
   scene.events.once('shutdown', () => { lifePanel.remove(); resources.remove(); });
@@ -99,10 +95,12 @@ export function updateHUD(scene, life, totalCoins = scene.player?.levelCoins ?? 
 }
 
 export function updateAmmoHUD(scene) {
-  if (!scene.hud?.ammoEls || !scene.player?.status) return;
-  scene.hud.ammoEls.forEach((slot, index) => {
-    slot.classList.toggle('empty', index >= scene.player.status.currentAljavaBullet);
-  });
+  if (!scene.hud?.ammoFill || !scene.player?.status) return;
+
+  const maxAmmo = Number(scene.player.status.AljavaBullet) || 1;
+  const currentAmmo = Number(scene.player.status.currentAljavaBullet) || 0;
+  const percentage = Math.max(0, Math.min(100, (currentAmmo / maxAmmo) * 100));
+  scene.hud.ammoFill.style.width = `${percentage}%`;
 }
 
 const HEART_BLOCK = 'aa';
