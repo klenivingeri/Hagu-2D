@@ -6,7 +6,7 @@ import { PLAYERS_CONFIG, getEntityAnimationKey } from "../../config/entities.js"
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
 import { MAP_DEPTHS } from "../../../constants.js";
-import { emitEnemyHitBurst } from "../../commons/dustTrail.js";
+import { emitEnemyHitBurst, emitDustTrail } from "../../commons/dustTrail.js";
 import { gameState } from '../../state/gameState.js';
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
@@ -75,6 +75,9 @@ export function createPlayer(scene) {
   player.invulnerable = false;
   player.isDead = false;
   player.isShooting = false;
+  // Usados para medir a distância vertical entre o último piso e o próximo pouso.
+  player.fallStartY = null;
+  player.lastGroundedBottom = player.body.bottom;
 
   playSpawnAnimation(scene, player);
 
@@ -198,16 +201,43 @@ function makePlayerInvulnerable(scene, player) {
   });
 }
 
-function killPlayer(scene, player) {
+export function killPlayer(scene, player, animation = 'dead') {
   if (player.isDead) return;
 
+  const wasFlipped = player.flipX;
+  const feetY = player.body.bottom;
   player.isDead = true;
   player.status.life = 0;
 
   player.setVelocity(0, 0);
   player.body.enable = false;
   player.clearTint();
-  player.anims.play(getEntityAnimationKey(player.entityKey, 'dead'), true);
+  // Os frames de dead_jump precisam ficar ancorados pelos pés. Sem isso,
+  // cada frame é desenhado pelo centro e a animação parece subir no impacto.
+  if (animation === 'dead_jump') {
+    player.setOrigin(0.5, 1);
+    player.y = feetY;
+  }
+  // A morte não pode inverter o sentido que o player tinha no momento do impacto.
+  player.setFlipX(wasFlipped);
+  player.anims.play(getEntityAnimationKey(player.entityKey, animation));
+
+  if (animation === 'dead_jump') {
+    const direction = wasFlipped ? -1 : 1;
+    const dustPosition = { x: player.x, y: feetY };
+
+    // Pequeno deslocamento no sentido em que o player estava andando.
+    scene.tweens.add({
+      targets: player,
+      x: player.x + direction * 24,
+      duration: 360,
+      ease: 'Quad.Out',
+      onUpdate: () => {
+        dustPosition.x = player.x;
+        emitDustTrail(scene, player, 'horizontal', false, dustPosition);
+      },
+    });
+  }
 
   // Mantém a animação de morte visível por 2 segundos antes do respawn.
   scene.time.delayedCall(2000, () => {

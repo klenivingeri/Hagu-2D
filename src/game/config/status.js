@@ -17,6 +17,7 @@ export function createPlayerStatus(overrides = {}) {
     coyoteTimeMs: 65,
     speed: 110,                // velocidade horizontal (px/s) - já usado em updatePlayerMovement
     jumpHeight: 200,            // força do pulo (velocidade vertical, px/s) - já usado em updatePlayerMovement
+    fatalFallDistance: 16 * 5,  // queda fatal ao pousar mais de 5 tiles abaixo (tiles do mapa = 16px)
     isStick: gameState.isStick, // habilidade já usada pela mecânica de parede
     wallSlideSpeed: 45,         // velocidade máxima de descida ao grudar na parede
     wallJumpHorizontalSpeed: 180, // impulso horizontal do pulo de parede

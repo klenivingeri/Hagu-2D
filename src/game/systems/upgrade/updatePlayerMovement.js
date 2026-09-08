@@ -1,5 +1,6 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitDustTrail } from '../../commons/dustTrail.js';
+import { killPlayer } from '../create/createPlayer.js';
 
 export const updatePlayerMovement = (scene) => {
     const player = scene.player;
@@ -12,6 +13,26 @@ export const updatePlayerMovement = (scene) => {
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
     const wasGrounded = player.body.blocked.down || player.body.touching.down;
     const now = scene.time.now;
+
+    // Guarda a altura do último piso. Quando o player volta a tocar no chão,
+    // a diferença é usada para decidir se a queda foi fatal.
+    if (wasGrounded) {
+      if (player.fallStartY !== null) {
+        const fallDistance = player.body.bottom - player.fallStartY;
+        if (fallDistance > player.status.fatalFallDistance) {
+          // Força uma nova emissão mesmo que o último rastro tenha acabado
+          // de sair, para marcar visualmente o ponto do impacto.
+          emitDustTrail(scene, player, 'horizontal', true);
+          killPlayer(scene, player, 'dead_jump');
+          return;
+        }
+        player.fallStartY = null;
+      }
+      player.lastGroundedBottom = player.body.bottom;
+    } else if (player.fallStartY === null) {
+      // Também cobre o caso em que o player simplesmente saiu da beirada.
+      player.fallStartY = player.lastGroundedBottom ?? player.body.bottom;
+    }
 
     if (wasGrounded) {
       player.lastGroundedAt = now;

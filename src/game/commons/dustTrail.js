@@ -59,15 +59,19 @@ function getDustEmitter(scene) {
  * - 'vertical': poeira saindo da lateral durante o wall slide
  * - 'horizontal': poeira ficando para trás enquanto o player anda
  */
-export function emitDustTrail(scene, player, orientation = 'horizontal') {
+export function emitDustTrail(scene, player, orientation = 'horizontal', force = false, position = null) {
   const now = scene.time.now;
   const lastEmission = player._lastDustEmission ?? -Infinity;
 
-  if (now - lastEmission < DUST_EMISSION_INTERVAL) return;
+  if (!force && now - lastEmission < DUST_EMISSION_INTERVAL) return;
   player._lastDustEmission = now;
 
   const emitter = getDustEmitter(scene);
   const body = player.body;
+  const dustPosition = position || {
+    x: body.center.x,
+    y: body.bottom,
+  };
   const direction = player.body.velocity.x < 0 ? -1 : player.body.velocity.x > 0 ? 1 : player.flipX ? -1 : 1;
   const wallSide = player.body.blocked.left || player.body.touching.left ? -1 : 1;
 
@@ -86,8 +90,8 @@ export function emitDustTrail(scene, player, orientation = 'horizontal') {
     vy = Phaser.Math.Between(0, 30);
     } else {
       // Nasce perto dos pés e fica para trás em relação ao movimento.
-    x = body.center.x - direction * Phaser.Math.Between(0, 2);
-    y = body.bottom - Phaser.Math.Between(0, 1);
+      x = dustPosition.x - direction * Phaser.Math.Between(0, 2);
+      y = dustPosition.y - Phaser.Math.Between(0, 1);
     vx = -direction * Phaser.Math.Between(5, 20);
     vy = Phaser.Math.Between(-15, -5);
     }
