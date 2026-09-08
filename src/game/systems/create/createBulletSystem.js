@@ -12,6 +12,7 @@ export function createBulletSystem(scene) {
       if (!bullet?.active) return;
 
       emitBulletImpactDust(scene, bullet, Math.sign(bullet.body?.velocity.x || scene.lastDirection));
+      scene.sound.play('tap');
       destroyBullet(bullet);
     });
   });
@@ -43,6 +44,7 @@ export function createBulletSystem(scene) {
       player.status.currentAljavaBullet -= 1;
       player._nextBulletReloadAt = scene.time.now + player.status.LoadingBullet;
       updateAmmoHUD(scene);
+      scene.sound.play('bullet_effect_1');
     }
   };
 

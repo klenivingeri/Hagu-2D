@@ -139,6 +139,7 @@ export function damagePlayer(scene, damage = 1) {
   const player = scene.player;
   if (!player || player.invulnerable || player.isDead) return;
 
+  scene.sound.play('tap');
   emitEnemyHitBurst(scene, player);
   player.status.life -= damage;
   updateHUD(scene, player.status.life);

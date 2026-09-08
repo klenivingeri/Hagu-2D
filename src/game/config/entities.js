@@ -46,7 +46,7 @@ export const MOBS_CONFIG = {
     path: 'assets/mobs/',
     behavior: 'patrol',
     stats: { life: 3, type: 'commun', className: 'melee', speed: 50, chaseSpeed: 100 },
-    attack: { damage: 1, rangePx: 2, cooldown: 90 },
+    attack: { damage: 1, rangePx: 6, cooldown: 90 },
     animations: [
       { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
       { key: 'stomp', url: 'stomp/sprite_re_land_squash_', frames: 4, frameRate: 10, repeat: 0 },

@@ -18,8 +18,12 @@ const {
     // O primeiro argumento é o nome do tileset lá no Tiled.
     // O segundo argumento é a chave da imagem que você definiu no preload.
     const worldTileset = map.addTilesetImage('world_tileset', 'tileset_image');
+    const backgroundTileset = map.addTilesetImage(
+      'world_tileset_background',
+      'background_tileset_image'
+    );
     const platformsTileset = map.addTilesetImage('platforms', 'platforms_image');
-    const tilesets = [worldTileset, platformsTileset].filter(Boolean);
+    const tilesets = [worldTileset, backgroundTileset, platformsTileset].filter(Boolean);
   
     // Cria a camada ('ground' é o nome da camada no seu JSON)
 

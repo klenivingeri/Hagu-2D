@@ -146,6 +146,7 @@ function applyDamage(enemy, damage, source, bulletDirection = 0) {
   if (enemy.invulnerable) return;  // ainda no cooldown do último hit
 
   enemy.status.life -= damage;
+  enemy.scene.sound.play('tap');
   playHitFeedback(enemy, damage, source, bulletDirection);
 
   enemy.invulnerable = true;

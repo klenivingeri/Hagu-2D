@@ -30,6 +30,7 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.image('tileset_image', 'assets/tiledmap/world_tileset.png');
+    this.load.image('background_tileset_image', 'assets/tiledmap/world_tileset_background.png');
     this.load.image('platforms_image', 'assets/tiledmap/platforms.png');
     this.load.tilemapTiledJSON('mapa_json', 'assets/tiledmap/map_1.tmj');
 
@@ -45,6 +46,10 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullet.png');
+    this.load.audio('bullet_effect_1', 'assets/sounds/bullet_effect_6.mp3');
+    this.load.audio('coin', 'assets/sounds/coin.wav');
+    this.load.audio('jump', 'assets/sounds/jump.wav');
+    this.load.audio('tap', 'assets/sounds/tap.wav');
 
     preloadPlayerAssets(this)
     preloadCoinAssets(this)

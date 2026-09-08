@@ -9,9 +9,9 @@ import { turnEnemy, isAboutToFall, isKnockedBack } from '../EnemyBase.js';
 // Layer: "patrol": false), fica parado no lugar, só olhando pra
 // `enemy.direction`.
 // Ataque corpo-a-corpo: dispara a animação de ataque quando o player
-// chega a `attack.rangePx` (default 2px) de colidir.
+// chega a `attack.rangePx` (default 6px) de colidir.
 
-const DEFAULT_MELEE_ATTACK_DISTANCE = 2;
+const DEFAULT_MELEE_ATTACK_DISTANCE = 6;
 const DEFAULT_MELEE_ATTACK_COOLDOWN = 900;
 
 export const patrolBehavior = {

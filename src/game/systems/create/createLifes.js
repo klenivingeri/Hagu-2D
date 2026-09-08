@@ -34,6 +34,7 @@ export function createLifes(scene) {
     stopCollectibleAnimation(life);
     addGlobalMaxLife(1);
     scene.player.status.life += 1;
+    scene.sound.play('coin');
     updateLifeHUD(scene);
     scene.tweens.add({ targets: life, y: life.y - 24, scaleX: 1.25, scaleY: 1.25, alpha: 0,
       duration: 360, onComplete: () => life.destroy() });

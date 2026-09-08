@@ -46,6 +46,7 @@ export const updatePlayerMovement = (scene) => {
         player.isShooting = false;
         player.setFlipX(wallSide === 1);
         scene.lastDirection = wallSide === -1 ? 1 : -1;
+        scene.sound.play('jump');
         startedJump = true;
     }
     
@@ -85,6 +86,7 @@ export const updatePlayerMovement = (scene) => {
     if (scene.controlState.jump && (wasGrounded || canUseCoyoteJump)) {
       player.setVelocityY(-player.status.jumpHeight);
       player.isShooting = false; // Pulo interrompe o disparo de arco em andamento
+      scene.sound.play('jump');
       startedJump = true;
       //scene.player.setTexture('run_0'); // Define um frame estático de parado
     }

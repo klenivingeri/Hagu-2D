@@ -75,6 +75,7 @@ function collectCoin(scene, player, coin) {
   player.levelCoins = (player.levelCoins || 0) + 1;
   addGlobalCoins(1);
   player.status.totalCoins += 1;
+  scene.sound.play('coin');
 
   if (scene.hud?.coinTotal) {
     scene.hud.coinTotal.textContent = String(player.levelCoins);
