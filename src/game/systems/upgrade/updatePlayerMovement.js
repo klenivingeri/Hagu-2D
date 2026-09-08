@@ -2,11 +2,12 @@ import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitDustTrail } from '../../commons/dustTrail.js';
 
 export const updatePlayerMovement = (scene) => {
+    const player = scene.player;
+
     // Enquanto o player está nascendo (animação "spawn"), ele fica travado:
     // sem correr, pular ou ter o frame trocado por baixo da animação.
-    if (scene.player.isSpawning) return;
+    if (!player || player.isDead || player.isSpawning) return;
 
-    const player = scene.player;
     const left = scene.cursors.left.isDown || scene.keys.A.isDown || scene.controlState.left;
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
     const wasGrounded = player.body.blocked.down || player.body.touching.down;

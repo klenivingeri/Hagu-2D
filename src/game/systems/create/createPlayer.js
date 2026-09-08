@@ -206,10 +206,11 @@ function killPlayer(scene, player) {
 
   player.setVelocity(0, 0);
   player.body.enable = false;
-  player.setTint(0xff0000);
+  player.clearTint();
+  player.anims.play(getEntityAnimationKey(player.entityKey, 'dead'), true);
 
-  // TODO: troque por sua tela de game over / respawn de verdade.
-  scene.time.delayedCall(500, () => {
+  // Mantém a animação de morte visível por 2 segundos antes do respawn.
+  scene.time.delayedCall(2000, () => {
     scene.scene.restart();
   });
 }

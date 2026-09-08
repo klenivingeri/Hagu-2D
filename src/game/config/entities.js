@@ -9,6 +9,7 @@ export const PLAYERS_CONFIG = {
       { key: 'bow', url: 'bow/sprite_weapon_bow_short_fire_slow_', frames: 5, frameRate: 20, repeat: 0 },
       // Pose usada enquanto o player está encostado lateralmente em uma parede.
       { key: 'stick', url: 'stick/sprite_stick_two_', frames: 0, frameRate: 1, repeat: -1 },
+      { key: 'dead', url: 'dead/sprite_z_die_skull_', frames: 7, frameRate: 10, repeat: 0 },
     ],
     stats: {},
   },
