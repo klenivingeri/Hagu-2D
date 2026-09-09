@@ -2,6 +2,11 @@ import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitBulletImpactDust, emitDryFireBurst } from '../../commons/dustTrail.js';
 import { MAP_DEPTHS, HUD_EVENTS } from '../../../constants.js';
 
+// Intervalo entre cada flecha de uma mesma "sequência de disparo" (upgrade
+// 'sequence' da loja, ver game/config/upgrades.js). Curto o bastante pra
+// parecer uma rajada, não disparos separados.
+const SEQUENCE_SHOT_DELAY_MS = 70;
+
 export function createBulletSystem(scene) {
   // O tiro colide fisicamente com o cenário. Cada layer colidível usa um
   // callback próprio para garantir que o efeito aconteça somente em tiles,
@@ -45,6 +50,11 @@ export function createBulletSystem(scene) {
       // que o player vê à frente e atrás do que cobre o player.
       bullet.setDepth(scene.player.depth ?? MAP_DEPTHS.PLAYER);
       bullet.damage = scene.player.status.bulletDamage; // dano que esse tiro carrega
+      // Alcance máximo (upgrade 'bulletRange' da loja): guarda o ponto de
+      // origem pra medir a distância percorrida a cada frame em update().
+      bullet.spawnX = bullet.x;
+      const tileWidth = scene.map?.tileWidth || 16;
+      bullet.maxRangePx = tileWidth * (player.status.bulletRangeTiles || 4);
       // Carrega o progresso que já tinha sido acumulado pra próxima flecha
       // (ex: barra em 3/4 quase completando a 4ª) pro slot que acabou de
       // esvaziar, em vez de descartar e recomeçar o carregamento do zero —
@@ -56,6 +66,20 @@ export function createBulletSystem(scene) {
       // update() assume e faz ela subir suavemente até a próxima flecha.
       emitAmmoHud(scene, player);
       scene.sound.play('bullet_effect_1');
+    }
+  };
+
+  // Dispara `player.status.BulletSequence` flechas em rajada (upgrade
+  // 'sequence' da loja) — cada uma reusa spawnBullet(), então respeita
+  // munição/recarga normalmente e para cedo se a aljava esvaziar no meio.
+  const spawnBulletSequence = () => {
+    const player = scene.player;
+    const shotCount = Math.max(1, player.status.BulletSequence || 1);
+    for (let i = 0; i < shotCount; i += 1) {
+      scene.time.delayedCall(i * SEQUENCE_SHOT_DELAY_MS, () => {
+        if (!player.active || player.isDead) return;
+        spawnBullet();
+      });
     }
   };
 
@@ -101,8 +125,8 @@ export function createBulletSystem(scene) {
     // evento genérico "animationupdate" e filtramos pela animação atual.
     player._onBowFrame = (anim, frame) => {
       if (anim.key === bowAnimation && frame.textureKey === bowFrame) {
-        spawnBullet();
-        player.off('animationupdate', player._onBowFrame); // um disparo por animação
+        spawnBulletSequence();
+        player.off('animationupdate', player._onBowFrame); // uma sequência por animação
       }
     };
     player.on('animationupdate', player._onBowFrame);
@@ -152,9 +176,18 @@ export function createBulletSystem(scene) {
       // Usando getChildren() para retornar um array padrão do JS
       scene.bullets.getChildren().forEach((bullet) => {
         if (!bullet || !bullet.active) return;
-        
+
         // Se o tiro passar da borda direita da tela, esconde e desativa o corpo
         if (bullet.x > scene.scale.width) {
+          destroyBullet(bullet);
+          return;
+        }
+
+        // Alcance máximo do tiro do player (upgrade 'bulletRange' da loja).
+        // Tiros de inimigo não têm limite de alcance.
+        if (bullet.owner === 'player' && bullet.maxRangePx
+          && Math.abs(bullet.x - bullet.spawnX) >= bullet.maxRangePx) {
+          emitBulletImpactDust(scene, bullet, Math.sign(bullet.body?.velocity.x || 1));
           destroyBullet(bullet);
         }
       });

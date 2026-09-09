@@ -12,6 +12,14 @@
 import { EXP_PER_LEVEL } from '../constants.js';
 import { save, load, clearAll } from '../services/StorageService.js';
 import { DEFAULT_MAP_KEY } from '../game/config/maps.js';
+import {
+  UPGRADES_CATALOG,
+  findUpgradeDef,
+  getUpgradeCost,
+  getUpgradeCurrency,
+  getUpgradeValue,
+  isUpgradeMaxed,
+} from '../game/config/upgrades.js';
 
 const DEFAULT_SETTINGS = {
   vibrationEnabled: true,
@@ -28,11 +36,23 @@ const DEFAULT_SETTINGS = {
 // correspondente dentro do jogo.
 const DEFAULT_UNLOCKED_MAPS = [DEFAULT_MAP_KEY];
 
+// Valor "base" (nível 0) de vida e chance de drop, usado tanto no gameState
+// inicial quanto no reset — precisa bater com os defs 'life'/'dropChance'
+// do catálogo (ver game/config/upgrades.js) pra loja e HUD começarem iguais.
+const DEFAULT_MAX_LIFE = getUpgradeValue(findUpgradeDef('life'), 0);
+const DEFAULT_DROP_DIAMANT = getUpgradeValue(findUpgradeDef('dropChance'), 0);
+
+// Nível 0 (ainda não comprado) pra cada upgrade do catálogo. Sempre uma
+// cópia nova (buildDefaultUpgradeLevels()) — nunca reutilize este objeto
+// como referência direta, senão resetProgress() e o gameState inicial
+// passariam a compartilhar o mesmo objeto mutável.
+function buildDefaultUpgradeLevels() {
+  return Object.fromEntries(UPGRADES_CATALOG.map((def) => [def.id, 0]));
+}
+
 export const gameState = {
   playerName: 'Jogador',
-  maxlife: 3,
-  // Quantidade de tiles que o player pode cair sem morrer.
-  maxSafeFallTiles: 5,
+  maxlife: DEFAULT_MAX_LIFE,
   gold: 0,
   coins: 0,
   diamant: 0,
@@ -47,18 +67,19 @@ export const gameState = {
   // loadPersistedState().
   unlockedMaps: [...DEFAULT_UNLOCKED_MAPS],
 
-  // Atributos de upgrade. Alguns ainda não possuem mecânica e são somente
-  // dados disponíveis para os sistemas futuros.
   isStick: true,
-  isDoubleJump: true,
-  isJetpack: false,
-  bulluetDistance: 450,
-  BulletSequence: 1,
+  // Capacidade da aljava (munição máxima). A velocidade de recarga de cada
+  // flecha é o upgrade 'reloadSpeed' (ver createPlayerStatus).
   AljavaBullet: 4,
-  LoadingBullet: 2000,
   exp: 0,
-  dropDiamant: 5,
-  upgrade: {},
+  // Espelha o nível do upgrade 'dropChance' — EnemyBase.js lê direto daqui
+  // (fora do player.status) na hora de decidir se o inimigo solta diamante.
+  dropDiamant: DEFAULT_DROP_DIAMANT,
+  // Nível comprado de cada upgrade da loja (ver game/config/upgrades.js).
+  // createPlayerStatus() deriva todos os stats de upgrade a partir daqui;
+  // as únicas exceções são vida máxima e chance de drop acima, que também
+  // são lidas fora do player (HUD/EnemyBase) e por isso ficam espelhadas.
+  upgrade: buildDefaultUpgradeLevels(),
 };
 
 // Carrega o estado persistido (StorageService) por cima dos defaults.
@@ -70,6 +91,15 @@ export async function loadPersistedState() {
   Object.assign(gameState.settings, await load('settings', DEFAULT_SETTINGS));
   const unlockedMaps = await load('unlockedMaps', DEFAULT_UNLOCKED_MAPS);
   gameState.unlockedMaps = Array.from(new Set([...unlockedMaps, DEFAULT_MAP_KEY]));
+
+  // Moedas/diamantes/upgrades precisam sobreviver ao reload da página pra
+  // uma compra na loja valer a pena (senão o player perderia as moedas
+  // gastas E o upgrade comprado no próximo F5).
+  gameState.coins = await load('coins', gameState.coins);
+  gameState.diamant = await load('diamant', gameState.diamant);
+  gameState.upgrade = { ...gameState.upgrade, ...(await load('upgrade', gameState.upgrade)) };
+  gameState.maxlife = await load('maxlife', gameState.maxlife);
+  gameState.dropDiamant = await load('dropDiamant', gameState.dropDiamant);
   return gameState;
 }
 
@@ -88,10 +118,70 @@ export function isMapUnlocked(mapKey) {
 
 export function addGlobalCoins(amount = 1) {
   gameState.coins += amount;
+  save('coins', gameState.coins);
 }
 
 export function addGlobalDiamant(amount = 1) {
   gameState.diamant += amount;
+  save('diamant', gameState.diamant);
+}
+
+// ==========================================
+// LOJA (UPGRADES)
+// ==========================================
+export function getUpgradeLevel(id) {
+  return gameState.upgrade[id] || 0;
+}
+
+export function getUpgradeState(id) {
+  const def = findUpgradeDef(id);
+  if (!def) return null;
+  const level = getUpgradeLevel(id);
+  const currency = getUpgradeCurrency(def);
+  return {
+    def,
+    level,
+    currency,
+    value: getUpgradeValue(def, level),
+    nextValue: isUpgradeMaxed(def, level) ? null : getUpgradeValue(def, level + 1),
+    cost: isUpgradeMaxed(def, level) ? null : getUpgradeCost(def, level),
+    isMaxed: isUpgradeMaxed(def, level),
+  };
+}
+
+// Compra 1 nível do upgrade `id`, descontando moedas ou diamantes globais
+// conforme a `currency` do upgrade (ver game/config/upgrades.js). Retorna
+// false (sem cobrar nada) se o upgrade não existir, já estiver no nível
+// máximo ou não houver saldo suficiente.
+export function purchaseUpgrade(id) {
+  const def = findUpgradeDef(id);
+  if (!def) return false;
+
+  const level = getUpgradeLevel(id);
+  if (isUpgradeMaxed(def, level)) return false;
+
+  const cost = getUpgradeCost(def, level);
+  const currency = getUpgradeCurrency(def);
+  if (gameState[currency] < cost) return false;
+
+  gameState[currency] -= cost;
+  gameState.upgrade[id] = level + 1;
+  save(currency, gameState[currency]);
+  save('upgrade', gameState.upgrade);
+
+  // 'life' e 'dropChance' também são lidos fora de createPlayerStatus()
+  // (HUD e EnemyBase.js respectivamente) — por isso precisam ficar
+  // espelhados direto no gameState, não só no nível do upgrade.
+  if (id === 'life') {
+    gameState.maxlife = getUpgradeValue(def, gameState.upgrade[id]);
+    save('maxlife', gameState.maxlife);
+  }
+  if (id === 'dropChance') {
+    gameState.dropDiamant = getUpgradeValue(def, gameState.upgrade[id]);
+    save('dropDiamant', gameState.dropDiamant);
+  }
+
+  return true;
 }
 
 export function addGlobalMaxLife(amount = 1) {
@@ -132,4 +222,7 @@ export function resetProgress() {
   gameState.exp = 0;
   gameState.unlockedMaps = [...DEFAULT_UNLOCKED_MAPS];
   gameState.settings = { ...DEFAULT_SETTINGS };
+  gameState.upgrade = buildDefaultUpgradeLevels();
+  gameState.maxlife = DEFAULT_MAX_LIFE;
+  gameState.dropDiamant = DEFAULT_DROP_DIAMANT;
 }

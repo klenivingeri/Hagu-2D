@@ -3,6 +3,9 @@ import { emitDustTrail } from '../../commons/dustTrail.js';
 import { updateJetpackFuelBar } from '../../commons/jetpackBar.js';
 import { killPlayer } from '../create/createPlayer.js';
 
+// Folga (px/s) em torno de velocity.y=0 considerada "ápice" do pulo.
+const JUMP_APEX_THRESHOLD = 20;
+
 export const updatePlayerMovement = (scene) => {
     const player = scene.player;
 
@@ -208,10 +211,16 @@ export const updatePlayerMovement = (scene) => {
           player.anims.play(stickAnimation, true);
         }
       } else if (isAirborne) {
-        // Evita reiniciar jump a cada frame depois que a animação terminar.
-        const jumpAnimation = getEntityAnimationKey(player.entityKey, 'jump');
-        if (player.anims.currentAnim?.key !== jumpAnimation) {
-          player.anims.play(jumpAnimation, true);
+        // Frame do pulo é escolhido pela velocidade vertical, não por uma
+        // animação tocando sozinha: hop_0 subindo, hop_1 no ápice (perto de
+        // vy=0) e hop_2 caindo. JUMP_APEX_THRESHOLD é a folga em torno de
+        // vy=0 considerada "ápice", pra não piscar hop_0/hop_2 num único frame.
+        const velocityY = player.body.velocity.y;
+        const hopFrame = velocityY < -JUMP_APEX_THRESHOLD ? 0 : velocityY > JUMP_APEX_THRESHOLD ? 2 : 1;
+        const jumpTextureKey = `${getEntityAnimationKey(player.entityKey, 'jump')}_${hopFrame}`;
+        if (player.anims.isPlaying) player.anims.stop();
+        if (player.texture.key !== jumpTextureKey) {
+          player.setTexture(jumpTextureKey);
         }
       } else if (left || right) {
         if (wasGrounded) {

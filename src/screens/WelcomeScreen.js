@@ -5,7 +5,16 @@
 // do Phaser ativa. O botão "Jogar" delega pra quem chamou ShowWelcomeScreen
 // decidir quando instanciar o Phaser.Game (ver main.js).
 import welcomeTemplate from './welcomeScreen.html?raw';
-import { gameState, getLevelInfo, updateSetting, isMapUnlocked, resetProgress } from '../managers/GameManager.js';
+import {
+  gameState,
+  getLevelInfo,
+  updateSetting,
+  isMapUnlocked,
+  resetProgress,
+  getUpgradeState,
+  purchaseUpgrade,
+} from '../managers/GameManager.js';
+import { UPGRADES_CATALOG } from '../game/config/upgrades.js';
 import { MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
 import { getStageLabel, getStageNumber } from './mapLabels.js';
 import { showMapPreview, updateMapPreview, destroyMapPreview } from './mapPreview.js';
@@ -473,6 +482,75 @@ function setupGridInteractions(viewport) {
   }, { passive: false });
 }
 
+// Barrinha de "pips" (um quadradinho por nível) usada nos upgrades da loja
+// que têm mais de 1 nível — os upgrades booleanos (pulo duplo, jetpack) não
+// chamam esta função, eles só mostram um badge de bloqueado/comprado.
+function renderUpgradePips(maxLevel, level) {
+  return Array.from({ length: maxLevel }, (_, index) => {
+    const filled = index < level;
+    return `<span class="h-2 flex-1 rounded-sm ${filled ? 'bg-emerald-400' : 'bg-gray-700'}"></span>`;
+  }).join('');
+}
+
+function renderShop() {
+  if (!elements) return;
+
+  elements.shopList.innerHTML = '';
+
+  UPGRADES_CATALOG.forEach((def) => {
+    const state = getUpgradeState(def.id);
+    const canAfford = !state.isMaxed && gameState[state.currency] >= state.cost;
+    const currencyIcon = state.currency === 'diamant' ? '💎' : '🪙';
+
+    const row = document.createElement('div');
+    row.className = 'shop-item flex items-center gap-3 rounded-xl border border-white/10 bg-gray-900/60 px-3 py-2';
+
+    const statusLine = def.boolean
+      ? (state.isMaxed ? 'Comprado' : 'Bloqueado')
+      : `Nível ${state.level}/${def.maxLevel} · ${state.value}${def.unit ? ` ${def.unit}` : ''}`;
+
+    const bar = def.boolean
+      ? ''
+      : `<div class="shop-item-pips mt-1.5 flex gap-0.5">${renderUpgradePips(def.maxLevel, state.level)}</div>`;
+
+    const buttonLabel = state.isMaxed ? 'Máximo' : `${state.cost} ${currencyIcon}`;
+
+    row.innerHTML = `
+      <span class="text-xl leading-none shrink-0">${def.icon}</span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-xs font-bold">${def.label}</p>
+        <p class="truncate text-[10px] text-gray-400">${statusLine}</p>
+        ${bar}
+      </div>
+      <button
+        type="button"
+        data-upgrade-id="${def.id}"
+        class="shop-buy-btn shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide transition-transform active:scale-95 ${
+          state.isMaxed
+            ? 'cursor-not-allowed bg-gray-800 text-gray-500'
+            : canAfford
+              ? 'bg-emerald-500 text-gray-950'
+              : 'cursor-not-allowed bg-gray-800 text-gray-500'
+        }"
+        ${state.isMaxed || !canAfford ? 'disabled' : ''}
+      >${buttonLabel}</button>
+    `;
+
+    elements.shopList.append(row);
+  });
+}
+
+function handleShopBuyClick(event) {
+  const button = event.target.closest('.shop-buy-btn');
+  if (!button || button.disabled) return;
+
+  const bought = purchaseUpgrade(button.dataset.upgradeId);
+  if (!bought) return;
+
+  renderPlayerInfo();
+  renderShop();
+}
+
 function renderSettings() {
   if (!elements) return;
   elements.settingToggles.forEach((toggle) => {
@@ -526,6 +604,7 @@ function handleResetStorage() {
   renderPlayerInfo();
   renderSettings();
   renderStages();
+  renderShop();
   applyStageZoom();
   closeSettings();
   showMapPreview(selectedMapKey, elements.stagePreviewViewport);
@@ -533,8 +612,10 @@ function handleResetStorage() {
 
 // Loja/Coleção ainda não têm tela própria (ver IMPLEMENTATION_PLAN.md) —
 // por enquanto só trocam qual <section> fica visível dentro do shell da
-// Welcome. Quando cada uma virar uma tela de verdade, isso vira navegação
-// real entre módulos de /src/screens/.
+// Welcome (header e tabbar continuam fixos, só o miolo do <main> muda). O
+// preview do mapa e o botão de zoom ficam DENTRO da <section data-view="home">
+// de propósito: assim eles somem junto com a aba, em vez de vazar por cima
+// das outras (ver welcomeScreen.html).
 function switchView(view) {
   if (!elements) return;
   elements.views.forEach((section) => {
@@ -546,6 +627,7 @@ function switchView(view) {
     button.classList.toggle('text-emerald-400', active);
     button.classList.toggle('text-gray-400', !active);
   });
+  if (view === 'shop') renderShop();
 }
 
 export function ShowWelcomeScreen({ onPlay } = {}) {
@@ -583,6 +665,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     cameraZoomButtons: [...modalRoot.querySelectorAll('.camera-zoom-btn')],
     views: [...screenRoot.querySelectorAll('.welcome-view')],
     tabButtons: [...screenRoot.querySelectorAll('.tab-btn')],
+    shopList: screenRoot.querySelector('.shop-list'),
   };
 
   elements.gearBtn.addEventListener('click', openSettings);
@@ -597,6 +680,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     button.addEventListener('click', handleCameraZoomChange);
   });
   elements.resetStorageBtn.addEventListener('click', handleResetStorage);
+  elements.shopList.addEventListener('click', handleShopBuyClick);
   elements.tabButtons.forEach((button) => {
     button.addEventListener('click', () => switchView(button.dataset.view));
   });
@@ -615,6 +699,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   renderPlayerInfo();
   renderSettings();
   renderStages();
+  renderShop();
   applyStageZoom();
   startIdleAnimation();
   startRunnerFrames(IDLE_SPRITE_FRAMES, IDLE_SPRITE_FRAME_RATE);

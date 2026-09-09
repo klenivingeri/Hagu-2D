@@ -73,9 +73,11 @@ function collectCoin(scene, player, coin) {
 
   coin.isCollecting = true;
   coin.body.enable = false;
-  player.levelCoins = (player.levelCoins || 0) + 1;
-  addGlobalCoins(1);
-  player.status.totalCoins += 1;
+  // Upgrade 'coinValue' da loja multiplica quantas moedas cada coleta vale.
+  const value = player.status.coinValue || 1;
+  player.levelCoins = (player.levelCoins || 0) + value;
+  addGlobalCoins(value);
+  player.status.totalCoins += value;
   scene.sound.play('coin');
   scene.game.events.emit(HUD_EVENTS.COINS_CHANGED, player.levelCoins);
 

@@ -160,6 +160,23 @@
         },
         "map_forest_1.tmj#world_tileset_shadow_32": {
             "scaleInDock": 1
+        },
+        "map_ice_1.tmj": {
+            "scale": 1.891517857142857,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 223.8942648100071,
+                "y": 224.1586027849894
+            }
+        },
+        "map_ice_1.tmj#coin": {
+            "scaleInDock": 1
+        },
+        "map_ice_1.tmj#platforms": {
+            "scaleInDock": 1
+        },
+        "map_ice_1.tmj#world_tileset": {
+            "scaleInDock": 1
         }
     },
     "last.exportedFilePath": "C:/Projetos/phaser/vite/public/assets/tiledmap",
