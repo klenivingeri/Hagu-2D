@@ -24,7 +24,17 @@ const {
       'background_tileset_image'
     );
     const platformsTileset = map.addTilesetImage('platforms', 'platforms_image');
-    const tilesets = [worldTileset, backgroundTileset, platformsTileset].filter(Boolean);
+    const shadow16Tileset = map.addTilesetImage('world_tileset_shadow_16', 'world_tileset_shadow_16_image');
+    const shadow32Tileset = map.addTilesetImage('world_tileset_shadow_32', 'world_tileset_shadow_32_image');
+    const tileset32 = map.addTilesetImage('world_tileset_32', 'world_tileset_32_image');
+    const tilesets = [
+      worldTileset,
+      backgroundTileset,
+      platformsTileset,
+      shadow16Tileset,
+      shadow32Tileset,
+      tileset32,
+    ].filter(Boolean);
   
     // Cria a camada ('ground' é o nome da camada no seu JSON)
 

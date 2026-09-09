@@ -45,6 +45,16 @@ export const MAPS = {
     tilemapUrl: '/assets/tiledmap/map_forest_2.tmj',
     ...TILESET_DEFAULTS,
   },
+  map_forest_3: {
+    key: 'map_forest_3',
+    tilemapUrl: '/assets/tiledmap/map_forest_3.tmj',
+    ...TILESET_DEFAULTS,
+  },
+  map_forest_4: {
+    key: 'map_forest_3',
+    tilemapUrl: '/assets/tiledmap/map_forest_3.tmj',
+    ...TILESET_DEFAULTS,
+  },
   map_desert_1: {
     key: 'map_desert_1',
     tilemapUrl: '/assets/tiledmap/map_desert_1.tmj',
@@ -85,8 +95,8 @@ export const MAPS = {
 // linha = "down", andar uma coluna = "left"/"right". map_0 é o hub central;
 // gelo/fogo esticam pra cima/baixo, floresta/deserto esticam pros lados.
 export const MAP_GRID = [
-  [null,           null,           'map_ice_2',    null,            null],
-  [null,           null,           'map_ice_1',    null,            null],
+  ['map_forest_4',           null,           'map_ice_2',    null,            null],
+  ['map_forest_3',           null,           'map_ice_1',    null,            null],
   ['map_forest_2', 'map_forest_1', 'map_0',        'map_desert_1',  'map_desert_2'],
   [null,           null,           'map_fire_1',   null,            null],
   [null,           null,           'map_fire_2',   null,            null],

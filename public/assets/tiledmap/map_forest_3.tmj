@@ -1531,14 +1531,14 @@
                         {
                          "name":"key",
                          "type":"string",
-                         "value":"map_forest_2"
+                         "value":"map_forest_4"
                         }],
                  "rotation":0,
                  "type":"",
                  "visible":true,
                  "width":15,
-                 "x":432.361851939265,
-                 "y":40.9395995594368
+                 "x":126.361851939265,
+                 "y":392.939599559437
                 }],
          "opacity":1,
          "type":"objectgroup",

@@ -27,8 +27,12 @@ export const patrolFlyBehavior = {
     enemy.body.setAllowGravity(false);
     enemy.body.setGravityY(0);
 
-    enemy.flyOriginX = enemy.x;
-    enemy.flyOriginY = enemy.y;
+    // Usa a posição crua do Object Layer (enemy.spawnX/Y, ver EnemyBase),
+    // não enemy.x/y "ao vivo" — entre a criação do sprite e este init()
+    // rodar (delay de 10ms na EnemyFactory) o corpo físico pode ter sido
+    // empurrado por colisão, e isso não pode virar a origem da patrulha.
+    enemy.flyOriginX = enemy.spawnX;
+    enemy.flyOriginY = enemy.spawnY;
     enemy.flyPatrolDirection = enemy.facingDirection || 1;
     enemy.flyState = enemy.patrol ? 'patrol' : 'idle';
     enemy.setVelocity(enemy.patrol ? enemy.flyPatrolDirection * enemy.status.speed : 0, 0);
@@ -39,7 +43,13 @@ export const patrolFlyBehavior = {
   },
 
   update(scene, enemy) {
-    if (!enemy.body) return;
+    // EnemyFactory.create() só chama init() 10ms depois de criar o sprite
+    // (dá tempo dos colliders assentarem), mas o update() da cena já roda
+    // no frame seguinte à criação. Sem essa trava, esse update pode
+    // executar antes do init() ter setado flyOriginY/flyState, caindo no
+    // ramo patrol/idle com enemy.setY(undefined) — o inimigo "somem" pra
+    // y=0. Só processa depois que init() já rodou.
+    if (!enemy.body || !enemy.flyState) return;
 
     // Enquanto o knockback do hit estiver ativo, deixa a velocidade
     // aplicada pelo EnemyBase em paz (senão o "espantar" nunca aparece,

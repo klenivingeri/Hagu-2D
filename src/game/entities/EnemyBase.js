@@ -88,6 +88,13 @@ export function spawnEnemyBase(scene, x, y, { key, path = '', type, properties }
 
   const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
   enemy.setDepth(MAP_DEPTHS.PLAYER);
+  // Posição crua vinda do Object Layer do Tiled — nunca deve ser
+  // sobrescrita depois. behaviors que precisam "voltar pra origem" (ex:
+  // patrolFlyBehavior) devem ler daqui, e não de enemy.x/y no momento do
+  // init (que já pode ter sido alterado por colisão/knockback/race com o
+  // update, ver EnemyFactory.create).
+  enemy.spawnX = x;
+  enemy.spawnY = y;
   enemy.entityKey = key;
   enemy.entityPath = path;
   enemy.entityType = type;

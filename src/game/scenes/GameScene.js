@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { MAPS, DEFAULT_MAP_KEY, getMapNeighbors } from '../config/maps.js';
+import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
 import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS } from '../../constants.js';
-import { gameState, isMapUnlocked, unlockMap } from '../../managers/GameManager.js';
+import { gameState, unlockMap } from '../../managers/GameManager.js';
 import { getVirtualFrame } from '../commons/textureUtils.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
 import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
@@ -14,7 +14,7 @@ import { updateEnemyMovement } from '../systems/upgrade/updateEnemyMovement.js'
 import { createRails } from '../systems/create/createRails.js';
 import { updateRailMovement } from '../systems/upgrade/updateRailMovement.js';
 import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems/create/createCoins.js';
-import { createDiamants } from '../systems/create/createDiamants.js';
+import { preloadDiamantAssets, createDiamantAnimations, createDiamants } from '../systems/create/createDiamants.js';
 import { createLifes } from '../systems/create/createLifes.js';
 import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeVisibility.js';
 import { preloadDustTexture } from '../commons/dustTrail.js';
@@ -39,6 +39,9 @@ export class GameScene extends Phaser.Scene {
     this.load.image(this.mapConfig.tilesetImageKey, this.mapConfig.tilesetImageUrl);
     this.load.image('background_tileset_image', 'assets/tiledmap/world_tileset_background.png');
     this.load.image('platforms_image', 'assets/tiledmap/platforms.png');
+    this.load.image('world_tileset_shadow_16_image', 'assets/tiledmap/world_tileset_shadow_16.png');
+    this.load.image('world_tileset_shadow_32_image', 'assets/tiledmap/world_tileset_shadow_32.png');
+    this.load.image('world_tileset_32_image', 'assets/tiledmap/world_tileset_32.png');
     this.load.tilemapTiledJSON(this.tilemapCacheKey, this.mapConfig.tilemapUrl);
 
     // O mapa precisa carregar primeiro para descobrirmos quais mobs existem.
@@ -61,6 +64,7 @@ export class GameScene extends Phaser.Scene {
 
     preloadPlayerAssets(this)
     preloadCoinAssets(this)
+    preloadDiamantAssets(this)
 
     // Log de qualquer asset que falhar ao carregar (ajuda a depurar caminhos errados)
     this.load.on('loaderror', (file) => {
@@ -74,6 +78,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // scene.restart() (respawn via killPlayer) REAPROVEITA esta mesma
+    // instância de GameScene — não cria
+    // uma nova. Qualquer propriedade que não seja reatribuída aqui em
+    // create() sobrevive de um mapa pro outro como "vestígio". runCompleted
+    // é a única flag que create() não recria do zero (tudo mais já é
+    // reatribuído por createWorld/createPlayer/createPortals/etc. abaixo),
+    // então ela precisa ser resetada explicitamente.
+    this.runCompleted = false;
+
     // Gera a textura de 2x2px da poeira uma única vez, antes de qualquer
     // emitDustTrail/emitBulletImpactDust ser chamado.
     preloadDustTexture(this);
@@ -96,6 +109,7 @@ export class GameScene extends Phaser.Scene {
     this.bulletSystem = createBulletSystem(this);
     this.damagePlayer = (damage) => damagePlayer(this, damage);
 
+    createDiamantAnimations(this);
     createDiamants(this);
     createLifes(this);
 
@@ -118,14 +132,6 @@ export class GameScene extends Phaser.Scene {
 
     setupPlayerDamage(this, this.player, this.enemies);
     this.gates = createGates(this);
-    this.mapNeighbors = getMapNeighbors(this.mapKey);
-
-    // "worldbounds" só dispara quando o body bate na borda do MUNDO, ao
-    // contrário de body.blocked (que fica true encostando em qualquer tile
-    // sólido, inclusive o chão no meio do mapa — não dá pra usar isso pra
-    // detectar borda de mapa).
-    this.player.body.onWorldBounds = true;
-    this.physics.world.on('worldbounds', this.handleWorldBounds, this);
 
     // Fase montada: esconde a tela de loading em HTML (ver
     // /src/screens/LoadingScreen.js).
@@ -151,30 +157,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
     this.bulletSystem.update();
-  }
-
-  // Só dispara quando o player bate mesmo na borda do mundo (ver o
-  // this.physics.world.on('worldbounds', ...) lá no create()). Se a
-  // direção tiver um mapa vizinho já desbloqueado (ver createGates.js /
-  // GameManager.unlockMap), troca de mapa; senão o próprio
-  // collideWorldBounds do player já bloqueia a passagem.
-  handleWorldBounds(body, up, down, left, right) {
-    if (body.gameObject !== this.player || this.player.isDead) return;
-
-    const neighbors = this.mapNeighbors;
-    if (!neighbors) return;
-
-    let direction = null;
-    if (up && neighbors.up) direction = 'up';
-    else if (down && neighbors.down) direction = 'down';
-    else if (left && neighbors.left) direction = 'left';
-    else if (right && neighbors.right) direction = 'right';
-    if (!direction) return;
-
-    const nextMapKey = neighbors[direction];
-    if (!isMapUnlocked(nextMapKey)) return;
-
-    this.scene.restart({ mapKey: nextMapKey });
   }
 
   // Chamado quando o player encosta num portal com "key" (ver

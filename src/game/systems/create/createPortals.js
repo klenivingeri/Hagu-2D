@@ -54,6 +54,12 @@ export function createPortals(scene, portalLayer) {
     portal.setDepth(MAP_DEPTHS.PORTAL);
     portal.play(PORTAL_ANIMATION_KEY);
 
+    // maskArea não é adicionado à display list (add: false), então o
+    // shutdown automático da cena não o destrói sozinho — sem isso, cada
+    // troca de mapa (scene.restart reaproveita a MESMA instância da cena)
+    // deixava esses Graphics órfãos acumulando na memória.
+    portal.once(Phaser.GameObjects.Events.DESTROY, () => maskArea.destroy());
+
     // "key" (propriedade customizada do objeto no Tiled) é a map key que
     // esse portal libera na Welcome ao terminar a run — ver
     // GameScene.completeRun() e GameManager.unlockMap(). Sem "key" o portal
