@@ -17,6 +17,10 @@ const DEFAULT_SETTINGS = {
   vibrationEnabled: true,
   soundEnabled: true,
   colorblindMode: false,
+  // Quantas fatias (NxN) a fase é dividida pra câmera da Run seguir o
+  // player (ver GameScene.js) — 1 = mapa inteiro visível, sem zoom nem
+  // follow, é o comportamento original.
+  cameraZoom: 1,
 };
 
 // O mapa inicial já nasce liberado; todo o resto do grid (ver

@@ -97,6 +97,19 @@ export class GameScene extends Phaser.Scene {
     createPlayerAnimations(this);
     this.player = createPlayer(this);
 
+    // Cada fase (ver createWorld.js) tem exatamente o tamanho da resolução
+    // lógica do jogo (448x448 — ver gameConfig.js), então zoom 1 (default)
+    // mostra o mapa inteiro parado, sem follow. Zoom 2 (Configurações, ver
+    // WelcomeScreen.js) mostra só 1/4 da fase, e a câmera passa a seguir o
+    // player em vez de ficar estática enquadrando tudo.
+    const cameraZoom = gameState.settings.cameraZoom || 1;
+    this.cameras.main.setZoom(cameraZoom);
+    if (cameraZoom > 1) {
+      this.cameras.main.startFollow(this.player, true);
+    } else {
+      this.cameras.main.stopFollow();
+    }
+
     this.game.events.emit(HUD_EVENTS.RESET, {
       coinFrame: getVirtualFrame(this, 'coin', 1, 0, 12, 1),
       initialCoins: this.player.levelCoins,

@@ -75,6 +75,156 @@ function stopIdleAnimation() {
   idleAnimationTimer = null;
 }
 
+// Mesmos frames/frameRate do run do player dentro do Phaser (ver
+// PLAYERS_CONFIG.animations em /src/game/config/entities.js) — tocado como
+// <img> comum enquanto o "boneco" do grid corre de uma fase pra outra.
+const RUN_SPRITE_FRAMES = [0, 1, 2, 3].map(
+  (frame) => `/assets/player/run/sprite_run_two_${frame}.png`
+);
+const RUN_SPRITE_FRAME_RATE = 10;
+const RUNNER_MOVE_MS = 500; // precisa bater com a duration da transition no CSS
+
+let runnerEl = null;
+let runnerFrameTimer = null;
+let runnerRow = 0;
+let runnerCol = 0;
+let runnerMoving = false;
+
+function findMapGridPosition(mapKey) {
+  for (let row = 0; row < MAP_GRID.length; row += 1) {
+    const col = MAP_GRID[row].indexOf(mapKey);
+    if (col !== -1) return { row, col };
+  }
+  return { row: 0, col: 0 };
+}
+
+function createRunnerElement() {
+  const img = document.createElement('img');
+  img.className = 'stage-runner-sprite pointer-events-none absolute z-20 h-10 w-auto [image-rendering:pixelated]';
+  img.style.transitionProperty = 'left, top';
+  img.style.transitionDuration = `${RUNNER_MOVE_MS}ms`;
+  img.style.transitionTimingFunction = 'linear';
+  img.src = IDLE_SPRITE_FRAMES[0];
+  return img;
+}
+
+function startRunnerFrames(frames, frameRate) {
+  if (!runnerEl) return;
+  window.clearInterval(runnerFrameTimer);
+  let frameIndex = 0;
+  runnerEl.src = frames[0];
+  runnerFrameTimer = window.setInterval(() => {
+    frameIndex = (frameIndex + 1) % frames.length;
+    runnerEl.src = frames[frameIndex];
+  }, 1000 / frameRate);
+}
+
+// Posiciona o runner no centro da célula (row, col), passando por cima do
+// número/estrelas — é o mesmo ponto usado pelas trilhas de conexão (ver
+// getStageCellCenter), então o boneco corre exatamente em cima da trilha.
+// `animate = false` corta a transition pra teleportar sem correr (mount
+// inicial e reset de storage).
+function setRunnerCell(row, col, animate) {
+  if (!runnerEl) return;
+  const { x, y } = getStageCellCenter(row, col);
+  const facingLeft = col < runnerCol;
+  const facingRight = col > runnerCol;
+  if (facingLeft) runnerEl.dataset.facing = 'left';
+  else if (facingRight) runnerEl.dataset.facing = 'right';
+  const flip = runnerEl.dataset.facing === 'left' ? -1 : 1;
+
+  if (!animate) runnerEl.style.transitionDuration = '0ms';
+  runnerEl.style.left = `${x}px`;
+  runnerEl.style.top = `${y-14}px`;
+  runnerEl.style.transform = `translate(-50%, -50%) scaleX(${flip})`;
+  if (!animate) {
+    void runnerEl.offsetWidth; // força reflow antes de religar a transition
+    runnerEl.style.transitionDuration = `${RUNNER_MOVE_MS}ms`;
+  }
+}
+
+// Mapa "row,col" -> mapKey só das fases desbloqueadas — o mesmo conjunto de
+// nós que renderStageConnections usa pra desenhar as trilhas tracejadas, e é
+// por essas trilhas que o boneco deve correr (nunca cortando célula bloqueada
+// ou "no vazio" fora do grid).
+function buildStageGraph(cells) {
+  const grid = new Map();
+  cells.forEach(({ mapKey, row, col }) => grid.set(`${row},${col}`, mapKey));
+  return grid;
+}
+
+const STAGE_PATH_DELTAS = [
+  [0, 1],
+  [0, -1],
+  [1, 0],
+  [-1, 0],
+];
+
+// BFS sobre o grafo de fases desbloqueadas — acha o caminho mais curto de
+// `from` até `to` andando só por células vizinhas (ortogonais) que existem
+// no grid. Sem caminho conectado (não deveria acontecer, já que o grid é
+// sempre uma cruz contínua), cai pra um "salto" direto.
+function findStagePath(grid, from, to) {
+  const key = ({ row, col }) => `${row},${col}`;
+  const startKey = key(from);
+  const targetKey = key(to);
+  if (startKey === targetKey) return [from];
+  if (!grid.has(startKey) || !grid.has(targetKey)) return [from, to];
+
+  const visited = new Set([startKey]);
+  const queue = [[from]];
+  while (queue.length) {
+    const path = queue.shift();
+    const current = path[path.length - 1];
+    if (key(current) === targetKey) return path;
+
+    for (const [dRow, dCol] of STAGE_PATH_DELTAS) {
+      const next = { row: current.row + dRow, col: current.col + dCol };
+      const nextKey = key(next);
+      if (visited.has(nextKey) || !grid.has(nextKey)) continue;
+      visited.add(nextKey);
+      queue.push([...path, next]);
+    }
+  }
+  return [from, to];
+}
+
+// Faz o boneco "correr" (troca de sprite + desliza) por cada célula do
+// `path` (ver findStagePath), uma de cada vez, e só chama onArrive depois
+// que a última corrida termina — simula o deslocamento pelas trilhas do
+// grid até a fase escolhida, em vez de pular direto pra ela.
+function moveRunnerAlongPath(path, onArrive) {
+  if (!runnerEl || path.length <= 1) {
+    onArrive();
+    return;
+  }
+
+  runnerMoving = true;
+  startRunnerFrames(RUN_SPRITE_FRAMES, RUN_SPRITE_FRAME_RATE);
+
+  let stepIndex = 1;
+  const runStep = () => {
+    const { row, col } = path[stepIndex];
+    setRunnerCell(row, col, true);
+
+    const handleStepArrive = () => {
+      runnerEl.removeEventListener('transitionend', handleStepArrive);
+      runnerRow = row;
+      runnerCol = col;
+      stepIndex += 1;
+      if (stepIndex < path.length) {
+        runStep();
+        return;
+      }
+      runnerMoving = false;
+      startRunnerFrames(IDLE_SPRITE_FRAMES, IDLE_SPRITE_FRAME_RATE);
+      onArrive();
+    };
+    runnerEl.addEventListener('transitionend', handleStepArrive, { once: true });
+  };
+  runStep();
+}
+
 function parseTemplate(html) {
   const template = document.createElement('template');
   template.innerHTML = html.trim();
@@ -204,13 +354,25 @@ function renderStages() {
       cell.addEventListener('animationend', () => cell.classList.remove('stage-cell-unlock'), { once: true });
     }
     cell.addEventListener('click', () => {
-      selectedMapKey = mapKey;
-      renderStages();
-      updateMapPreview(mapKey, elements.stagePreviewViewport);
+      if (mapKey === selectedMapKey || runnerMoving) return;
+      const path = findStagePath(buildStageGraph(cells), { row: runnerRow, col: runnerCol }, { row, col });
+      moveRunnerAlongPath(path, () => {
+        selectedMapKey = mapKey;
+        renderStages();
+        updateMapPreview(mapKey, elements.stagePreviewViewport);
+      });
     });
     elements.stageGrid.append(cell);
     if (isSelected) selectedCell = cell;
   });
+
+  // innerHTML = '' acima já removeu o runner da árvore — reanexa e
+  // reposiciona sem transition (o teleporte só "corre" via moveRunnerAlongPath,
+  // disparado pelo clique, nunca por um re-render).
+  if (runnerEl) {
+    elements.stageGrid.append(runnerEl);
+    setRunnerCell(runnerRow, runnerCol, false);
+  }
 
   // Só centraliza no mapa selecionado na primeira renderização (troca de
   // seleção depois disso não deve "puxar" o scroll debaixo do dedo do
@@ -316,6 +478,12 @@ function renderSettings() {
   elements.settingToggles.forEach((toggle) => {
     toggle.checked = Boolean(gameState.settings[toggle.dataset.setting]);
   });
+  elements.cameraZoomButtons.forEach((button) => {
+    const isActive = Number(button.dataset.zoom) === gameState.settings.cameraZoom;
+    button.classList.toggle('bg-emerald-500', isActive);
+    button.classList.toggle('text-gray-950', isActive);
+    button.classList.toggle('text-gray-300', !isActive);
+  });
 }
 
 function openSettings() {
@@ -333,6 +501,11 @@ function handleSettingChange(event) {
   updateSetting(setting, event.target.checked);
 }
 
+function handleCameraZoomChange(event) {
+  updateSetting('cameraZoom', Number(event.currentTarget.dataset.zoom));
+  renderSettings();
+}
+
 // Destrutivo e sem undo — por isso o confirm nativo antes de mexer em
 // qualquer coisa (StorageService.clearAll() + reset do gameState em
 // memória, ver GameManager.resetProgress()).
@@ -347,6 +520,9 @@ function handleResetStorage() {
   hasCenteredStageGrid = false;
   knownUnlockedMapKeys = null;
   stageZoom = STAGE_ZOOM_DEFAULT;
+  runnerMoving = false;
+  ({ row: runnerRow, col: runnerCol } = findMapGridPosition(DEFAULT_MAP_KEY));
+  startRunnerFrames(IDLE_SPRITE_FRAMES, IDLE_SPRITE_FRAME_RATE);
   renderPlayerInfo();
   renderSettings();
   renderStages();
@@ -404,6 +580,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     closeBtn: modalRoot.querySelector('.settings-close-btn'),
     resetStorageBtn: modalRoot.querySelector('.reset-storage-btn'),
     settingToggles: [...modalRoot.querySelectorAll('.setting-toggle')],
+    cameraZoomButtons: [...modalRoot.querySelectorAll('.camera-zoom-btn')],
     views: [...screenRoot.querySelectorAll('.welcome-view')],
     tabButtons: [...screenRoot.querySelectorAll('.tab-btn')],
   };
@@ -416,6 +593,9 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   elements.settingToggles.forEach((toggle) => {
     toggle.addEventListener('change', handleSettingChange);
   });
+  elements.cameraZoomButtons.forEach((button) => {
+    button.addEventListener('click', handleCameraZoomChange);
+  });
   elements.resetStorageBtn.addEventListener('click', handleResetStorage);
   elements.tabButtons.forEach((button) => {
     button.addEventListener('click', () => switchView(button.dataset.view));
@@ -427,17 +607,27 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   });
   setupGridInteractions(elements.stageGridViewport);
 
+  // O boneco sempre "começa" no hub (fase 0) parado, idle — a corrida só
+  // acontece de novo se o player clicar numa fase.
+  ({ row: runnerRow, col: runnerCol } = findMapGridPosition(DEFAULT_MAP_KEY));
+  runnerEl = createRunnerElement();
+
   renderPlayerInfo();
   renderSettings();
   renderStages();
   applyStageZoom();
   startIdleAnimation();
+  startRunnerFrames(IDLE_SPRITE_FRAMES, IDLE_SPRITE_FRAME_RATE);
   showMapPreview(selectedMapKey, elements.stagePreviewViewport);
 }
 
 export function HideWelcomeScreen() {
   if (!elements) return;
   stopIdleAnimation();
+  window.clearInterval(runnerFrameTimer);
+  runnerFrameTimer = null;
+  runnerEl = null;
+  runnerMoving = false;
   destroyMapPreview(elements.stagePreviewViewport);
   elements.screenRoot.remove();
   elements.modalRoot.remove();
