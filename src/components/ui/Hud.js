@@ -8,7 +8,11 @@ import hudTemplate from './hud.html?raw';
 import { HUD_EVENTS } from '../../constants.js';
 
 let hud = null;
-let bound = false;
+// Cada partida cria um Phaser.Game novo (ver main.js/startMatch) — precisa
+// ser um WeakSet por instância, e não um boolean único: um boolean fixo
+// faria só o primeiro Game da sessão ganhar os listeners, deixando o HUD
+// mudo (vida/munição/moedas nunca atualizam) em toda troca de mapa seguinte.
+const boundGames = new WeakSet();
 
 function parseTemplate(html) {
   const template = document.createElement('template');
@@ -72,12 +76,12 @@ function updateHudDiamonds(totalDiamonds) {
   hud.diamondTotal.textContent = String(totalDiamonds);
 }
 
-// Liga o HUD ao EventEmitter global do jogo. Chame uma única vez, assim que
-// o Phaser.Game for instanciado (ver main.js). Idempotente: chamar de novo
-// com o mesmo `game` não duplica listeners.
+// Liga o HUD ao EventEmitter global do jogo. Chame uma vez por Phaser.Game
+// (main.js chama a cada startMatch, um Game novo por partida). Idempotente:
+// chamar de novo com o mesmo `game` não duplica listeners.
 export function BindHudEvents(game) {
-  if (bound) return;
-  bound = true;
+  if (boundGames.has(game)) return;
+  boundGames.add(game);
 
   game.events.on(HUD_EVENTS.RESET, CreateHud);
   game.events.on(HUD_EVENTS.HEALTH_CHANGED, updateHudHealth);

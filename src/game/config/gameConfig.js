@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { GameScene } from '../scenes/GameScene.js';
 
 // Configuração central do Phaser.
 // O jogo usa uma resolução lógica quadrada de 480x480 e o CSS decide o tamanho visual.
@@ -36,5 +35,11 @@ export const gameConfig = {
       debug: false, // <-- Isso faz a borda de colisão aparecer em volta de todos os sprites
     },
   },
-  scene: [GameScene],
+  // GameScene não sobe sozinha: ela precisa da mapKey escolhida no grid da
+  // Welcome (ver main.js/startMatch), que chama
+  // `game.scene.add('GameScene', GameScene, true, { mapKey })` depois de
+  // criar o Phaser.Game. Deixar ela aqui faria o Phaser auto-iniciá-la sem
+  // dados e, no frame seguinte, o restart com a mapKey certa corromperia o
+  // loader (dois preload() concorrentes na mesma cena).
+  scene: [],
 };

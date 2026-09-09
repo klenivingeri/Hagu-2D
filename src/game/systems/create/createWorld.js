@@ -2,7 +2,7 @@ import { MAP_LAYERS, MAP_DEPTHS } from '../../../constants'
 import { getTiledProperty } from '../../commons/tiledUtils.js';
 
 export function createWorld(scene) {
-const map = scene.make.tilemap({ key: 'mapa_json' });
+const map = scene.make.tilemap({ key: scene.tilemapCacheKey });
 const { 
   GROUND,
   GROUND_FAKE,
@@ -13,11 +13,12 @@ const {
   LIMITS,
   PLAYER,
   ENEMY,
-  RAIL
+  RAIL,
+  GATE
 } = MAP_LAYERS
     // O primeiro argumento é o nome do tileset lá no Tiled.
     // O segundo argumento é a chave da imagem que você definiu no preload.
-    const worldTileset = map.addTilesetImage('world_tileset', 'tileset_image');
+    const worldTileset = map.addTilesetImage(scene.mapConfig.tilesetName, scene.mapConfig.tilesetImageKey);
     const backgroundTileset = map.addTilesetImage(
       'world_tileset_background',
       'background_tileset_image'
@@ -39,6 +40,7 @@ const {
   const playerObjectLayer = map.getObjectLayer(PLAYER);
   const railObjectLayer = map.getObjectLayer(RAIL);
   const portalObjectLayer = map.getObjectLayer(MAP_LAYERS.PORTAL);
+  const gateObjectLayer = map.getObjectLayer(GATE);
 
   // Camadas que servem de chão/plataforma. Ative a colisão nelas por
   // "tudo que não é o tile vazio (-1)".
@@ -83,6 +85,7 @@ const {
   }
   scene.railLayer = railObjectLayer
   scene.portalLayer = portalObjectLayer
+  scene.gateLayer = gateObjectLayer
 
   scene.map = map;
 }

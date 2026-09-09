@@ -34,3 +34,20 @@ export function remove(key) {
     console.warn(`[StorageService] Falha ao remover "${key}":`, error);
   }
 }
+
+// Apaga só as chaves deste jogo (prefixadas com STORAGE_PREFIX) — nunca
+// localStorage.clear(), que apagaria dados de outros sites/apps que
+// dividem o mesmo domínio. Usado pelo botão de reset em Configurações (ver
+// GameManager.resetProgress()).
+export function clearAll() {
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const key = window.localStorage.key(i);
+      if (key?.startsWith(STORAGE_PREFIX)) keysToRemove.push(key);
+    }
+    keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+  } catch (error) {
+    console.warn('[StorageService] Falha ao limpar armazenamento:', error);
+  }
+}

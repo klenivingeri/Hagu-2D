@@ -14,7 +14,8 @@ export const MAP_LAYERS = {
     PLAYER: 'player',
     ENEMY: 'enemy',
     RAIL: 'rail',
-    PORTAL: 'portal'
+    PORTAL: 'portal',
+    GATE: 'gate'
 };
 
 // Depths explícitos: no Phaser, layers e sprites criados depois podem ficar
@@ -61,4 +62,11 @@ export const EXP_PER_LEVEL = 100;
 export const LOADING_EVENTS = {
     PROGRESS: 'loading:progress',
     COMPLETE: 'loading:complete',
+};
+
+// Contrato de eventos entre o Phaser e a tela de resumo da run em HTML (ver
+// /src/screens/RunSummaryScreen.js). Disparado quando o player colide com um
+// portal (ver game/systems/create/createPortals.js) que encerra a fase.
+export const RUN_EVENTS = {
+    COMPLETE: 'run:complete',
 };

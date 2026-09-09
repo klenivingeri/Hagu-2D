@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
 import './styles/main.css';
 import { gameConfig } from './game/config/gameConfig.js';
+import { GameScene } from './game/scenes/GameScene.js';
+import { RUN_EVENTS } from './constants.js';
 import { BindHudEvents } from './components/ui/Hud.js';
 import { ShowLoadingScreen, HideLoadingScreen, BindLoadingEvents } from './screens/LoadingScreen.js';
 import { ShowWelcomeScreen, HideWelcomeScreen } from './screens/WelcomeScreen.js';
+import { ShowRunSummaryScreen, HideRunSummaryScreen } from './screens/RunSummaryScreen.js';
 import { loadPersistedState } from './managers/GameManager.js';
 
 // O Phaser só é instanciado quando a partida realmente começa (CLAUDE.md
@@ -11,15 +14,39 @@ import { loadPersistedState } from './managers/GameManager.js';
 // HTML inicial, evitando o flash da tela de jogo) enquanto a tela de
 // Welcome está ativa.
 const gameLayout = document.querySelector('.game-layout');
+let activeGame = null;
 
-function startMatch() {
+function startMatch(mapKey) {
   HideWelcomeScreen();
   if (gameLayout) gameLayout.classList.add('is-active');
   ShowLoadingScreen();
 
   const game = new Phaser.Game(gameConfig);
+  activeGame = game;
   BindHudEvents(game);
   BindLoadingEvents(game);
+  // gameConfig não lista nenhuma cena (ver game/config/gameConfig.js) — é
+  // aqui que a GameScene sobe pela primeira vez, já com a fase escolhida no
+  // grid de mapas da Welcome (ver WelcomeScreen.js).
+  game.scene.add('GameScene', GameScene, true, { mapKey });
+
+  // Disparado por GameScene.completeRun() quando o player passa por um
+  // portal que encerra a fase (ver constants.js). O Phaser só emite os
+  // dados; quem decide o que mostrar é a tela de HTML (CLAUDE.md regra 1).
+  game.events.once(RUN_EVENTS.COMPLETE, (summary) => {
+    ShowRunSummaryScreen({ ...summary, onBack: backToWelcome });
+  });
+}
+
+// Ciclo de vida do Phaser (CLAUDE.md regra 4): destrói o Game e some com o
+// canvas assim que o player volta pros menus, evitando vazamento de memória
+// entre runs.
+function backToWelcome() {
+  HideRunSummaryScreen();
+  activeGame?.destroy(true);
+  activeGame = null;
+  if (gameLayout) gameLayout.classList.remove('is-active');
+  ShowWelcomeScreen({ onPlay: startMatch });
 }
 
 // Boot inicial: loading primeiro (aqui entra qualquer leitura de dado

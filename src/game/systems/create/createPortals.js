@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { MAP_DEPTHS } from '../../../constants.js';
+import { getTiledProperty } from '../../commons/tiledUtils.js';
 
 const PORTAL_FRAME_COUNT = 6;
 const PORTAL_FRAME_SIZE = 32;
@@ -52,6 +53,18 @@ export function createPortals(scene, portalLayer) {
     portal.setMask(new Phaser.Display.Masks.GeometryMask(scene, maskArea));
     portal.setDepth(MAP_DEPTHS.PORTAL);
     portal.play(PORTAL_ANIMATION_KEY);
+
+    // "key" (propriedade customizada do objeto no Tiled) é a map key que
+    // esse portal libera na Welcome ao terminar a run — ver
+    // GameScene.completeRun() e GameManager.unlockMap(). Sem "key" o portal
+    // só é decorativo (não encerra a run).
+    portal.unlockMapKey = getTiledProperty(objectData.properties, 'key') || null;
+    if (portal.unlockMapKey) {
+      scene.physics.add.existing(portal, true);
+      portal.body.setSize(width, height);
+      portal.body.setOffset((spriteWidth - width) / 2, (spriteHeight - height) / 2);
+    }
+
     portals.push(portal);
   });
 

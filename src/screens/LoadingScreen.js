@@ -12,7 +12,11 @@ import loadingTemplate from './loadingScreen.html?raw';
 import { LOADING_EVENTS } from '../constants.js';
 
 let screen = null;
-let bound = false;
+// Cada partida cria um Phaser.Game novo (ver main.js/startMatch) — precisa
+// ser um WeakSet por instância, e não um boolean único: um boolean fixo
+// faria só o primeiro Game da sessão nunca ganhar os listeners, deixando a
+// tela de loading presa pra sempre em toda troca de mapa seguinte.
+const boundGames = new WeakSet();
 
 function parseTemplate(html) {
   const template = document.createElement('template');
@@ -51,16 +55,23 @@ export function HideLoadingScreen() {
   const { root } = screen;
   screen = null;
 
-  root.classList.add('opacity-0');
+  // pointer-events-none já tira a tela do caminho dos cliques mesmo que o
+  // transitionend nunca dispare (acontece se a aba perde foco durante a
+  // transição, ou em contextos sem compositor de verdade como headless) —
+  // sem isso, um elemento fixed inset-0 invisível ainda intercepta cliques
+  // por baixo dele indefinidamente.
+  root.classList.add('opacity-0', 'pointer-events-none');
   root.addEventListener('transitionend', () => root.remove(), { once: true });
+  // Fallback: garante que o node some mesmo sem transitionend.
+  window.setTimeout(() => root.remove(), 600);
 }
 
-// Liga a tela de loading ao EventEmitter global do jogo. Chame uma única
-// vez, assim que o Phaser.Game for instanciado (ver main.js). Idempotente:
-// chamar de novo com o mesmo `game` não duplica listeners.
+// Liga a tela de loading ao EventEmitter global do jogo. Chame uma vez por
+// Phaser.Game (main.js chama a cada startMatch, um Game novo por partida).
+// Idempotente: chamar de novo com o mesmo `game` não duplica listeners.
 export function BindLoadingEvents(game) {
-  if (bound) return;
-  bound = true;
+  if (boundGames.has(game)) return;
+  boundGames.add(game);
 
   game.events.on(LOADING_EVENTS.PROGRESS, updateLoadingProgress);
   game.events.on(LOADING_EVENTS.COMPLETE, HideLoadingScreen);

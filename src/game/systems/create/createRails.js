@@ -10,7 +10,7 @@ export function createRails(scene) {
   if (!scene.railLayer?.objects) return rails;
 
   const layerProperties = scene.railLayer.properties;
-  const mapData = scene.cache.tilemap.get('mapa_json')?.data;
+  const mapData = scene.cache.tilemap.get(scene.tilemapCacheKey)?.data;
 
   scene.railLayer.objects.forEach((objectData) => {
     // Permite configurar cada rail separadamente. Se o objeto não tiver a
