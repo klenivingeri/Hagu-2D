@@ -375,6 +375,57 @@ button {
   background: linear-gradient(180deg, rgba(239, 68, 68, 0.6) 0%, rgba(185, 28, 28, 0.8) 100%);
 }
 
+/* Toda section da Welcome (home/shop/collection) precisa ser "positioned"
+   pra pintar por cima do .stage-preview-viewport (ver welcomeScreen.html):
+   ele é absolute dentro do mesmo <main>, e um elemento posicionado sempre
+   pinta acima de um estático, não importa a ordem no DOM. */
+.welcome-view {
+  position: relative;
+}
+
+/* Trilha entre fases na tela de Welcome (ver renderStageConnections em
+   WelcomeScreen.js) — linha tracejada com efeito de "fluxo" pra sugerir
+   caminho percorrível entre os mapas, sem competir visualmente com as
+   células (ficam abaixo delas, graças ao z-10 nas células). */
+.stage-connection-line {
+  stroke: rgba(255, 255, 255, 0.25);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-dasharray: 6 10;
+  animation: stage-connection-flow 1.4s linear infinite;
+}
+
+@keyframes stage-connection-flow {
+  to {
+    stroke-dashoffset: 32;
+  }
+}
+
+/* Pop + brilho quando uma fase acabou de ser desbloqueada (ver
+   isNewlyUnlocked em WelcomeScreen.js). A classe é removida sozinha ao fim
+   da animação (animationend), então não repete em re-renderizações. */
+@keyframes stage-unlock-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0);
+  }
+  55% {
+    transform: scale(1.18);
+    opacity: 1;
+    box-shadow: 0 0 18px 4px rgba(16, 185, 129, 0.65);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.stage-cell-unlock {
+  animation: stage-unlock-pop 900ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Responsividade: Portrait (Vertical) */
 @media (orientation: portrait) {
   .game-layout {

@@ -7,13 +7,20 @@
 import welcomeTemplate from './welcomeScreen.html?raw';
 import { gameState, getLevelInfo, updateSetting, isMapUnlocked, resetProgress } from '../managers/GameManager.js';
 import { MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
-import { getStageLabel } from './mapLabels.js';
+import { getStageLabel, getStageNumber } from './mapLabels.js';
+import { showMapPreview, updateMapPreview, destroyMapPreview } from './mapPreview.js';
 
 let elements = null;
 let idleAnimationTimer = null;
 let selectedMapKey = DEFAULT_MAP_KEY;
 let hasCenteredStageGrid = false;
 let stageZoom = 1;
+// Baseline pra detectar fases que acabaram de ser desbloqueadas (ver
+// renderStages). Começa null: a primeira renderização da sessão só define a
+// baseline, nunca anima — só a partir da segunda é que uma key nova nesse
+// conjunto significa "acabou de desbloquear" (voltou da Run que liberou
+// uma gate/portal).
+let knownUnlockedMapKeys = null;
 
 const STAGE_ZOOM_MIN = 0.5;
 const STAGE_ZOOM_MAX = 1.8;
@@ -85,6 +92,65 @@ function renderPlayerInfo() {
 }
 
 const STAGE_CELL_PX = 76; // tamanho de cada célula do grid, em px (ver grid-template no renderStages)
+// Espaçamento generoso entre células (era só 8px de gap-2) pra dar a sensação
+// de "trilha" entre fases distantes, com espaço pra linha de conexão.
+const STAGE_GAP_PX = 40;
+// Precisa bater com o padding real do container (classe "p-8" no
+// welcomeScreen.html) — usado pra alinhar as linhas de conexão em cima das
+// células de verdade.
+const STAGE_GRID_PADDING_PX = 32;
+
+function getStageCellCenter(row, col) {
+  const step = STAGE_CELL_PX + STAGE_GAP_PX;
+  return {
+    x: STAGE_GRID_PADDING_PX + col * step + STAGE_CELL_PX / 2,
+    y: STAGE_GRID_PADDING_PX + row * step + STAGE_CELL_PX / 2,
+  };
+}
+
+// Desenha uma linha entre cada par de células ADJACENTES no MAP_GRID que
+// estejam as duas desbloqueadas (fases ainda bloqueadas não aparecem, então
+// não fica trilha "no vazio" apontando pra célula que nem existe na tela).
+function renderStageConnections(cells) {
+  const unlockedKeys = new Set(cells.map((cell) => cell.mapKey));
+  const rows = MAP_GRID.length;
+  const cols = Math.max(...MAP_GRID.map((row) => row.length));
+  const step = STAGE_CELL_PX + STAGE_GAP_PX;
+  const width = STAGE_GRID_PADDING_PX * 2 + cols * STAGE_CELL_PX + (cols - 1) * STAGE_GAP_PX;
+  const height = STAGE_GRID_PADDING_PX * 2 + rows * STAGE_CELL_PX + (rows - 1) * STAGE_GAP_PX;
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('class', 'stage-connections pointer-events-none absolute left-0 top-0');
+  svg.setAttribute('width', String(width));
+  svg.setAttribute('height', String(height));
+
+  cells.forEach(({ mapKey, row, col }) => {
+    const rightKey = MAP_GRID[row]?.[col + 1];
+    const downKey = MAP_GRID[row + 1]?.[col];
+    const from = getStageCellCenter(row, col);
+
+    if (rightKey && unlockedKeys.has(rightKey)) {
+      drawStageConnectionLine(svg, from, getStageCellCenter(row, col + 1));
+    }
+    if (downKey && unlockedKeys.has(downKey)) {
+      drawStageConnectionLine(svg, from, getStageCellCenter(row + 1, col));
+    }
+  });
+
+  return svg;
+}
+
+function drawStageConnectionLine(svg, from, to) {
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const line = document.createElementNS(svgNS, 'line');
+  line.setAttribute('class', 'stage-connection-line');
+  line.setAttribute('x1', String(from.x));
+  line.setAttribute('y1', String(from.y));
+  line.setAttribute('x2', String(to.x));
+  line.setAttribute('y2', String(to.y));
+  svg.append(line);
+}
 
 function renderStages() {
   if (!elements) return;
@@ -97,15 +163,27 @@ function renderStages() {
     selectedMapKey = stageKeys[0] || DEFAULT_MAP_KEY;
   }
 
+  // Compara com a última leva conhecida pra saber quais células acabaram de
+  // ser desbloqueadas (ver knownUnlockedMapKeys). null = primeira
+  // renderização da sessão: só define a baseline, sem animar nada.
+  const newlyUnlockedKeys = knownUnlockedMapKeys
+    ? stageKeys.filter((mapKey) => !knownUnlockedMapKeys.has(mapKey))
+    : [];
+  knownUnlockedMapKeys = new Set(stageKeys);
+
   const rows = MAP_GRID.length;
   const cols = Math.max(...MAP_GRID.map((row) => row.length));
   elements.stageGrid.style.gridTemplateRows = `repeat(${rows}, ${STAGE_CELL_PX}px)`;
   elements.stageGrid.style.gridTemplateColumns = `repeat(${cols}, ${STAGE_CELL_PX}px)`;
+  elements.stageGrid.style.gap = `${STAGE_GAP_PX}px`;
 
   elements.stageGrid.innerHTML = '';
+  elements.stageGrid.append(renderStageConnections(cells));
+
   let selectedCell = null;
   cells.forEach(({ mapKey, row, col }) => {
     const isSelected = mapKey === selectedMapKey;
+    const isNewlyUnlocked = newlyUnlockedKeys.includes(mapKey);
 
     const cell = document.createElement('button');
     cell.type = 'button';
@@ -113,16 +191,22 @@ function renderStages() {
     cell.style.gridRow = String(row + 1);
     cell.style.gridColumn = String(col + 1);
     cell.className = [
-      'stage-cell flex flex-col items-center justify-center gap-1 rounded-xl border-2 text-xs font-bold text-white transition-colors',
+      'stage-cell relative z-10 flex flex-col items-center justify-center gap-1 rounded-xl border-2 text-xs font-bold text-white transition-colors',
       isSelected ? 'border-emerald-400 bg-emerald-500/10' : 'border-white/15 bg-gray-900/60',
+      isNewlyUnlocked ? 'stage-cell-unlock' : '',
     ].join(' ');
     cell.innerHTML = `
-      <span class="text-2xl leading-none">🗺️</span>
-      <span class="px-1 text-center leading-tight">${getStageLabel(mapKey)}</span>
+      <span class="stage-cell-number text-lg font-black leading-none">${getStageNumber(mapKey)}</span>
+      <span class="stage-cell-stars flex gap-0.5 text-[10px] leading-none text-gray-400" aria-hidden="true">☆☆☆</span>
+      <span class="stage-cell-label absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold leading-none text-gray-300">${getStageLabel(mapKey)}</span>
     `;
+    if (isNewlyUnlocked) {
+      cell.addEventListener('animationend', () => cell.classList.remove('stage-cell-unlock'), { once: true });
+    }
     cell.addEventListener('click', () => {
       selectedMapKey = mapKey;
       renderStages();
+      updateMapPreview(mapKey, elements.stagePreviewViewport);
     });
     elements.stageGrid.append(cell);
     if (isSelected) selectedCell = cell;
@@ -261,12 +345,14 @@ function handleResetStorage() {
   resetProgress();
   selectedMapKey = DEFAULT_MAP_KEY;
   hasCenteredStageGrid = false;
+  knownUnlockedMapKeys = null;
   stageZoom = STAGE_ZOOM_DEFAULT;
   renderPlayerInfo();
   renderSettings();
   renderStages();
   applyStageZoom();
   closeSettings();
+  showMapPreview(selectedMapKey, elements.stagePreviewViewport);
 }
 
 // Loja/Coleção ainda não têm tela própria (ver IMPLEMENTATION_PLAN.md) —
@@ -308,6 +394,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     diamondTotal: screenRoot.querySelector('.diamond-total'),
     coinTotal: screenRoot.querySelector('.coin-total'),
     gearBtn: screenRoot.querySelector('.settings-gear-btn'),
+    stagePreviewViewport: screenRoot.querySelector('.stage-preview-viewport'),
     stageGridViewport: screenRoot.querySelector('.stage-grid-viewport'),
     stageGrid: screenRoot.querySelector('.stage-grid'),
     zoomResetBtn: screenRoot.querySelector('.zoom-reset-btn'),
@@ -345,11 +432,13 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   renderStages();
   applyStageZoom();
   startIdleAnimation();
+  showMapPreview(selectedMapKey, elements.stagePreviewViewport);
 }
 
 export function HideWelcomeScreen() {
   if (!elements) return;
   stopIdleAnimation();
+  destroyMapPreview(elements.stagePreviewViewport);
   elements.screenRoot.remove();
   elements.modalRoot.remove();
   elements = null;
