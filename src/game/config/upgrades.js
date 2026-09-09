@@ -118,6 +118,69 @@ export const UPGRADES_CATALOG = [
     boolean: true,
   },
   {
+    id: 'isStick',
+    label: 'Grudar na parede',
+    icon: '🧗',
+    tier: 'S', // transformador: mesma categoria do pulo duplo/jetpack (habilidade equipável)
+    maxLevel: 1,
+    baseCost: 8,
+    costGrowth: 1,
+    currency: 'diamant',
+    boolean: true,
+  },
+  // Armas (ver ACCESSORY_UPGRADE_IDS): equipáveis na aba "Equip. >
+  // Acessório", mesmo esquema de "compra depois equipa" das habilidades
+  // acima — só uma arma fica ativa por vez. Ainda sem mecânica de gameplay
+  // ligada (nenhuma muda dano/alcance/comportamento de verdade ainda), só
+  // o catálogo + a equipagem em si.
+  {
+    id: 'defaultWeapon',
+    label: 'Arma',
+    icon: '🔫',
+    description: 'Arma atual do player (arco).',
+    tier: 'S',
+    maxLevel: 1,
+    baseCost: 0,
+    costGrowth: 1,
+    boolean: true,
+  },
+  {
+    id: 'sword',
+    label: 'Espada',
+    icon: '🗡️',
+    description: 'Alcance de 2 tiles, causa dano crítico.',
+    tier: 'S',
+    maxLevel: 1,
+    baseCost: 10,
+    costGrowth: 1,
+    currency: 'diamant',
+    boolean: true,
+  },
+  {
+    id: 'bowWeapon',
+    label: 'Arco',
+    icon: '🏹',
+    description: 'Metade do dano, mas atravessa o inimigo.',
+    tier: 'S',
+    maxLevel: 1,
+    baseCost: 10,
+    costGrowth: 1,
+    currency: 'diamant',
+    boolean: true,
+  },
+  {
+    id: 'staff',
+    label: 'Cajado',
+    icon: '🪄',
+    description: 'Bolinhas mágicas: transformam o inimigo em moeda ao matar.',
+    tier: 'S',
+    maxLevel: 1,
+    baseCost: 14,
+    costGrowth: 1,
+    currency: 'diamant',
+    boolean: true,
+  },
+  {
     id: 'sequence',
     label: 'Sequência de disparo',
     icon: '🏹',
@@ -168,6 +231,18 @@ export const UPGRADES_CATALOG = [
     unit: 'ms',
   },
 ];
+
+// Upgrades comprados na Loja mas equipados na aba "Equip. > Habilidade" (ver
+// WelcomeScreen.js) em vez de aparecerem na Loja normal — só uma habilidade
+// fica ativa por vez (ver GameManager.equipAbility).
+export const ABILITY_UPGRADE_IDS = ['doubleJump', 'jetpack', 'isStick'];
+
+// Mesmo esquema acima, só que pra aba "Equip. > Acessório" — só uma arma
+// fica equipada por vez (ver GameManager.equipAccessory). 'defaultWeapon' é
+// a única que já nasce comprada e equipada (ver DEFAULT_EQUIPPED_ACCESSORY),
+// já que é a arma atual do player.
+export const ACCESSORY_UPGRADE_IDS = ['defaultWeapon', 'sword', 'bowWeapon', 'staff'];
+export const DEFAULT_EQUIPPED_ACCESSORY = 'defaultWeapon';
 
 export function findUpgradeDef(id) {
   return UPGRADES_CATALOG.find((def) => def.id === id) || null;

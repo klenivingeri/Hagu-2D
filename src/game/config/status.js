@@ -26,17 +26,20 @@ export function createPlayerStatus(overrides = {}) {
     speed: 110,                // velocidade horizontal (px/s) - já usado em updatePlayerMovement
     jumpHeight: 200,            // força do pulo (velocidade vertical, px/s) - já usado em updatePlayerMovement
     maxSafeFallTiles: upgradeValue('fallResistance'), // tiles de queda seguros antes de morrer
-    isStick: gameState.isStick, // habilidade já usada pela mecânica de parede
+    // Pulo duplo/jetpack/parede são comprados na Loja mas só um fica ATIVO
+    // por vez (ver GameManager.equipAbility) — por isso checam
+    // gameState.equippedAbility, nunca o nível do upgrade direto.
+    isStick: gameState.equippedAbility === 'isStick', // habilidade equipada de grudar na parede
     wallSlideSpeed: 45,         // velocidade máxima de descida ao grudar na parede
     wallJumpHorizontalSpeed: 180, // impulso horizontal do pulo de parede
     bulletDamage: upgradeValue('damage'),     // dano de cada tiro - já usado em createBulletSystem/createEnemy (overlap bullet x enemy)
     bulletRangeTiles: upgradeValue('bulletRange'), // alcance do tiro do player, em tiles (ver createBulletSystem)
 
-    isDoubleJump: upgradeValue('doubleJump'),
-    isJetpack: upgradeValue('jetpack'),
+    isDoubleJump: gameState.equippedAbility === 'doubleJump',
+    isJetpack: gameState.equippedAbility === 'jetpack',
     jetpackFuelMs: upgradeValue('energy'),   // duração total de uso do jetpack, em ms
     jetpackFloatSpeed: 40,         // velocidade máxima de queda enquanto o jetpack está freando
-    doubleJumpEnabled: upgradeValue('doubleJump'), // compatibilidade com o nome antigo
+    doubleJumpEnabled: gameState.equippedAbility === 'doubleJump', // compatibilidade com o nome antigo
     jumpDamage: 1,                 // dano ao pisar em cima do inimigo (stomp)
     currentWeapon: 'bow',           // arma equipada (hoje só existe o arco)
     totalGold: gameState.gold,

@@ -14,8 +14,12 @@ import {
   getUpgradeState,
   purchaseUpgrade,
   getMapStars,
+  isAbilityEquipped,
+  equipAbility,
+  isAccessoryEquipped,
+  equipAccessory,
 } from '../managers/GameManager.js';
-import { UPGRADES_CATALOG } from '../game/config/upgrades.js';
+import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '../game/config/upgrades.js';
 import { MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
 import { getStageLabel, getStageNumber } from './mapLabels.js';
 import { showMapPreview, updateMapPreview, destroyMapPreview } from './mapPreview.js';
@@ -505,7 +509,12 @@ function renderShop() {
 
   elements.shopList.innerHTML = '';
 
-  UPGRADES_CATALOG.forEach((def) => {
+  // Pulo duplo/jetpack/parede/armas saíram da Loja pra aba "Equip." (ver
+  // renderEquipmentAbilities/renderEquipmentAccessories) — só um item de
+  // cada grupo fica ativo por vez, então usam o fluxo comprar-depois-equipar,
+  // não o botão de compra normal.
+  const EXCLUDED_FROM_SHOP = new Set([...ABILITY_UPGRADE_IDS, ...ACCESSORY_UPGRADE_IDS]);
+  UPGRADES_CATALOG.filter((def) => !EXCLUDED_FROM_SHOP.has(def.id)).forEach((def) => {
     const state = getUpgradeState(def.id);
     const canAfford = !state.isMaxed && gameState[state.currency] >= state.cost;
     const currencyIcon = state.currency === 'diamant' ? '💎' : '🪙';
@@ -557,6 +566,146 @@ function handleShopBuyClick(event) {
 
   renderPlayerInfo();
   renderShop();
+}
+
+// Habilidades (ver ABILITY_UPGRADE_IDS) têm 3 estados na aba Equip.:
+// bloqueada (ainda não comprada, mostra o botão de compra igual à Loja),
+// comprada-mas-guardada (mostra "Equipar") e equipada (mostra badge
+// desabilitado, destacada com borda verde) — só uma fica equipada por vez
+// (ver GameManager.equipAbility).
+function renderEquipmentAbilities() {
+  if (!elements) return;
+
+  elements.abilityList.innerHTML = '';
+
+  ABILITY_UPGRADE_IDS.forEach((id) => {
+    const state = getUpgradeState(id);
+    const owned = state.level > 0;
+    const equipped = isAbilityEquipped(id);
+    const canAfford = !owned && gameState[state.currency] >= state.cost;
+    const currencyIcon = state.currency === 'diamant' ? '💎' : '🪙';
+
+    const statusLine = !owned ? 'Bloqueado' : equipped ? 'Equipado' : 'No inventário';
+
+    const actionHtml = !owned
+      ? `<button type="button" data-buy-ability-id="${id}" class="shop-buy-btn shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide transition-transform active:scale-95 ${
+          canAfford ? 'bg-emerald-500 text-gray-950' : 'cursor-not-allowed bg-gray-800 text-gray-500'
+        }" ${canAfford ? '' : 'disabled'}>${state.cost} ${currencyIcon}</button>`
+      : equipped
+        ? `<button type="button" class="ability-equip-btn shrink-0 cursor-not-allowed rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-white" disabled>Equipado</button>`
+        : `<button type="button" data-equip-ability-id="${id}" class="ability-equip-btn shrink-0 rounded-lg bg-sky-500 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-gray-950 transition-transform active:scale-95">Equipar</button>`;
+
+    const row = document.createElement('div');
+    row.className = [
+      'shop-item flex items-center gap-3 rounded-xl border-2 bg-gray-900/60 px-3 py-2',
+      equipped ? 'border-emerald-400 bg-emerald-500/10' : 'border-white/10',
+    ].join(' ');
+    row.innerHTML = `
+      <span class="text-xl leading-none shrink-0">${state.def.icon}</span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-xs font-bold">${state.def.label}</p>
+        <p class="truncate text-[10px] text-gray-400">${statusLine}</p>
+      </div>
+      ${actionHtml}
+    `;
+    elements.abilityList.append(row);
+  });
+}
+
+function handleAbilityListClick(event) {
+  const buyBtn = event.target.closest('[data-buy-ability-id]');
+  if (buyBtn && !buyBtn.disabled) {
+    const bought = purchaseUpgrade(buyBtn.dataset.buyAbilityId);
+    if (bought) {
+      renderPlayerInfo();
+      renderEquipmentAbilities();
+    }
+    return;
+  }
+
+  const equipBtn = event.target.closest('[data-equip-ability-id]');
+  if (equipBtn) {
+    equipAbility(equipBtn.dataset.equipAbilityId);
+    renderEquipmentAbilities();
+  }
+}
+
+// Armas (ver ACCESSORY_UPGRADE_IDS): mesmos 3 estados das habilidades acima,
+// só que a já equipada nunca aparece "desequipável" (sempre tem uma arma
+// ativa — ver GameManager.equipAccessory) e cada linha mostra a descrição
+// do efeito (ainda sem mecânica de gameplay ligada, só o catálogo).
+function renderEquipmentAccessories() {
+  if (!elements) return;
+
+  elements.accessoryList.innerHTML = '';
+
+  ACCESSORY_UPGRADE_IDS.forEach((id) => {
+    const state = getUpgradeState(id);
+    const owned = state.level > 0;
+    const equipped = isAccessoryEquipped(id);
+    const canAfford = !owned && gameState[state.currency] >= state.cost;
+    const currencyIcon = state.currency === 'diamant' ? '💎' : '🪙';
+
+    const statusLine = !owned ? 'Bloqueado' : equipped ? 'Equipado' : 'No inventário';
+
+    const actionHtml = !owned
+      ? `<button type="button" data-buy-accessory-id="${id}" class="shop-buy-btn shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide transition-transform active:scale-95 ${
+          canAfford ? 'bg-emerald-500 text-gray-950' : 'cursor-not-allowed bg-gray-800 text-gray-500'
+        }" ${canAfford ? '' : 'disabled'}>${state.cost} ${currencyIcon}</button>`
+      : equipped
+        ? `<button type="button" class="ability-equip-btn shrink-0 cursor-not-allowed rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-white" disabled>Equipado</button>`
+        : `<button type="button" data-equip-accessory-id="${id}" class="ability-equip-btn shrink-0 rounded-lg bg-sky-500 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-gray-950 transition-transform active:scale-95">Equipar</button>`;
+
+    const row = document.createElement('div');
+    row.className = [
+      'shop-item flex items-center gap-3 rounded-xl border-2 bg-gray-900/60 px-3 py-2',
+      equipped ? 'border-emerald-400 bg-emerald-500/10' : 'border-white/10',
+    ].join(' ');
+    row.innerHTML = `
+      <span class="text-xl leading-none shrink-0">${state.def.icon}</span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-xs font-bold">${state.def.label}</p>
+        <p class="truncate text-[10px] text-gray-400">${statusLine}${state.def.description ? ` · ${state.def.description}` : ''}</p>
+      </div>
+      ${actionHtml}
+    `;
+    elements.accessoryList.append(row);
+  });
+}
+
+function handleAccessoryListClick(event) {
+  const buyBtn = event.target.closest('[data-buy-accessory-id]');
+  if (buyBtn && !buyBtn.disabled) {
+    const bought = purchaseUpgrade(buyBtn.dataset.buyAccessoryId);
+    if (bought) {
+      renderPlayerInfo();
+      renderEquipmentAccessories();
+    }
+    return;
+  }
+
+  const equipBtn = event.target.closest('[data-equip-accessory-id]');
+  if (equipBtn) {
+    equipAccessory(equipBtn.dataset.equipAccessoryId);
+    renderEquipmentAccessories();
+  }
+}
+
+function switchEquipmentSubview(subview) {
+  if (!elements) return;
+  elements.equipmentSubviews.forEach((panel) => {
+    panel.classList.toggle('hidden', panel.dataset.subview !== subview);
+  });
+  elements.equipmentSubtabButtons.forEach((button) => {
+    const active = button.dataset.subview === subview;
+    button.classList.toggle('equipment-subtab-active', active);
+    button.classList.toggle('border-emerald-400', active);
+    button.classList.toggle('bg-emerald-500/10', active);
+    button.classList.toggle('text-emerald-400', active);
+    button.classList.toggle('border-white/15', !active);
+    button.classList.toggle('bg-gray-900/60', !active);
+    button.classList.toggle('text-gray-400', !active);
+  });
 }
 
 function renderSettings() {
@@ -613,6 +762,8 @@ function handleResetStorage() {
   renderSettings();
   renderStages();
   renderShop();
+  renderEquipmentAbilities();
+  renderEquipmentAccessories();
   applyStageZoom();
   closeSettings();
   showMapPreview(selectedMapKey, elements.stagePreviewViewport);
@@ -636,6 +787,10 @@ function switchView(view) {
     button.classList.toggle('text-gray-400', !active);
   });
   if (view === 'shop') renderShop();
+  if (view === 'equipment') {
+    renderEquipmentAbilities();
+    renderEquipmentAccessories();
+  }
 }
 
 export function ShowWelcomeScreen({ onPlay } = {}) {
@@ -674,6 +829,10 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     views: [...screenRoot.querySelectorAll('.welcome-view')],
     tabButtons: [...screenRoot.querySelectorAll('.tab-btn')],
     shopList: screenRoot.querySelector('.shop-list'),
+    abilityList: screenRoot.querySelector('.equipment-ability-list'),
+    accessoryList: screenRoot.querySelector('.equipment-accessory-list'),
+    equipmentSubviews: [...screenRoot.querySelectorAll('.equipment-subview')],
+    equipmentSubtabButtons: [...screenRoot.querySelectorAll('.equipment-subtab-btn')],
   };
 
   elements.gearBtn.addEventListener('click', openSettings);
@@ -689,6 +848,11 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   });
   elements.resetStorageBtn.addEventListener('click', handleResetStorage);
   elements.shopList.addEventListener('click', handleShopBuyClick);
+  elements.abilityList.addEventListener('click', handleAbilityListClick);
+  elements.accessoryList.addEventListener('click', handleAccessoryListClick);
+  elements.equipmentSubtabButtons.forEach((button) => {
+    button.addEventListener('click', () => switchEquipmentSubview(button.dataset.subview));
+  });
   elements.tabButtons.forEach((button) => {
     button.addEventListener('click', () => switchView(button.dataset.view));
   });

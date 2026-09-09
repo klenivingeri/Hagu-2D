@@ -14,6 +14,9 @@ import { save, load, clearAll } from '../services/StorageService.js';
 import { DEFAULT_MAP_KEY } from '../game/config/maps.js';
 import {
   UPGRADES_CATALOG,
+  ABILITY_UPGRADE_IDS,
+  ACCESSORY_UPGRADE_IDS,
+  DEFAULT_EQUIPPED_ACCESSORY,
   findUpgradeDef,
   getUpgradeCost,
   getUpgradeCurrency,
@@ -47,7 +50,11 @@ const DEFAULT_DROP_DIAMANT = getUpgradeValue(findUpgradeDef('dropChance'), 0);
 // como referência direta, senão resetProgress() e o gameState inicial
 // passariam a compartilhar o mesmo objeto mutável.
 function buildDefaultUpgradeLevels() {
-  return Object.fromEntries(UPGRADES_CATALOG.map((def) => [def.id, 0]));
+  // 'defaultWeapon' já nasce comprado (nível 1) — é a arma atual do player,
+  // não algo que precise ser adquirido na loja (ver DEFAULT_EQUIPPED_ACCESSORY).
+  return Object.fromEntries(
+    UPGRADES_CATALOG.map((def) => [def.id, def.id === DEFAULT_EQUIPPED_ACCESSORY ? 1 : 0])
+  );
 }
 
 export const gameState = {
@@ -71,7 +78,13 @@ export const gameState = {
   // as estrelas preenchidas. Populado de verdade por loadPersistedState().
   mapStars: {},
 
-  isStick: true,
+  // Habilidade ativa entre pulo duplo/jetpack/grudar na parede (ver
+  // ABILITY_UPGRADE_IDS) — null = nenhuma equipada ainda. Só uma fica ativa
+  // por vez, mesmo com mais de uma comprada (ver equipAbility()).
+  equippedAbility: null,
+  // Arma ativa entre espada/arco/arma atual/cajado (ver ACCESSORY_UPGRADE_IDS)
+  // — mesmo esquema de equippedAbility, só uma por vez (ver equipAccessory()).
+  equippedAccessory: DEFAULT_EQUIPPED_ACCESSORY,
   // Capacidade da aljava (munição máxima). A velocidade de recarga de cada
   // flecha é o upgrade 'reloadSpeed' (ver createPlayerStatus).
   AljavaBullet: 4,
@@ -106,6 +119,8 @@ export async function loadPersistedState() {
   gameState.upgrade = { ...gameState.upgrade, ...(await load('upgrade', gameState.upgrade)) };
   gameState.maxlife = await load('maxlife', gameState.maxlife);
   gameState.dropDiamant = await load('dropDiamant', gameState.dropDiamant);
+  gameState.equippedAbility = await load('equippedAbility', gameState.equippedAbility);
+  gameState.equippedAccessory = await load('equippedAccessory', gameState.equippedAccessory);
   return gameState;
 }
 
@@ -203,6 +218,61 @@ export function purchaseUpgrade(id) {
   return true;
 }
 
+// ==========================================
+// EQUIPAMENTO (HABILIDADES)
+// ==========================================
+// Pulo duplo/jetpack/grudar na parede (ver ABILITY_UPGRADE_IDS) são
+// comprados como upgrade normal, mas só um fica ATIVO por vez — equipar um
+// desequipa automaticamente o anterior (ver aba "Equip. > Habilidade" em
+// WelcomeScreen.js). createPlayerStatus() lê gameState.equippedAbility
+// direto, nunca o nível do upgrade, pra decidir o que o player pode usar.
+export function getEquippedAbility() {
+  return gameState.equippedAbility;
+}
+
+export function isAbilityEquipped(id) {
+  return gameState.equippedAbility === id;
+}
+
+// Alterna a habilidade `id`: precisa já ter sido comprada (nível > 0).
+// Clicar na habilidade já equipada desequipa (fica sem nenhuma ativa);
+// clicar em outra comprada troca, sem nunca deixar duas ativas ao mesmo
+// tempo. Retorna false se `id` não for uma habilidade equipável ou ainda
+// não tiver sido comprada.
+export function equipAbility(id) {
+  if (!ABILITY_UPGRADE_IDS.includes(id) || getUpgradeLevel(id) <= 0) return false;
+
+  gameState.equippedAbility = isAbilityEquipped(id) ? null : id;
+  save('equippedAbility', gameState.equippedAbility);
+  return true;
+}
+
+// ==========================================
+// EQUIPAMENTO (ACESSÓRIOS / ARMAS)
+// ==========================================
+// Espada/arco/arma atual/cajado (ver ACCESSORY_UPGRADE_IDS) — mesmo esquema
+// das habilidades acima, só que sempre com uma arma equipada (nunca fica
+// "sem nenhuma", já que 'defaultWeapon' nasce comprada e equipada).
+export function getEquippedAccessory() {
+  return gameState.equippedAccessory;
+}
+
+export function isAccessoryEquipped(id) {
+  return gameState.equippedAccessory === id;
+}
+
+// Troca a arma equipada pra `id`: precisa já ter sido comprada (nível > 0).
+// Diferente de equipAbility(), clicar na arma já equipada não desequipa
+// (sempre fica com uma arma ativa). Retorna false se `id` não for uma arma
+// equipável ou ainda não tiver sido comprada.
+export function equipAccessory(id) {
+  if (!ACCESSORY_UPGRADE_IDS.includes(id) || getUpgradeLevel(id) <= 0) return false;
+
+  gameState.equippedAccessory = id;
+  save('equippedAccessory', gameState.equippedAccessory);
+  return true;
+}
+
 export function addGlobalMaxLife(amount = 1) {
   gameState.maxlife = Math.max(0, gameState.maxlife + amount);
 }
@@ -246,4 +316,6 @@ export function resetProgress() {
   gameState.upgrade = buildDefaultUpgradeLevels();
   gameState.maxlife = DEFAULT_MAX_LIFE;
   gameState.dropDiamant = DEFAULT_DROP_DIAMANT;
+  gameState.equippedAbility = null;
+  gameState.equippedAccessory = DEFAULT_EQUIPPED_ACCESSORY;
 }
