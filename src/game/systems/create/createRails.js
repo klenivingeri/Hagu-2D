@@ -23,11 +23,16 @@ export function createRails(scene) {
       : 'left-right';
     const imageName = getRailProperty('tile');
     // O tileset dos rails é carregado com uma chave própria no preload.
-    // Mantemos esse mapeamento explícito porque o Phaser pode não expor o
-    // nome original do arquivo em texture.source[].image.
+    // Mantemos esse mapeamento explícito porque o Phaser carrega as imagens
+    // como blob: URLs — texture.source[].image.src nunca bate com o nome de
+    // arquivo original, então getTextureKeyByImageName não consegue casar
+    // "world_tileset.png" e cai no fallback, virando a textura __MISSING.
+    const tilesetImageName = scene.mapConfig?.tilesetImageUrl?.split('/').pop();
     const textureKey = imageName === 'platforms.png'
       ? 'platforms_image'
-      : getTextureKeyByImageName(scene, imageName, 'tileset_image');
+      : imageName === tilesetImageName
+        ? scene.mapConfig.tilesetImageKey
+        : getTextureKeyByImageName(scene, imageName, 'tileset_image');
     const texture = scene.textures.get(textureKey);
     const tileset = scene.map?.tilesets?.find(({ name, image }) =>
       name === imageName || image === imageName

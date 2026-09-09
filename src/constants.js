@@ -47,6 +47,7 @@ export const HUD_EVENTS = {
     RESET: 'hud:reset',
     HEALTH_CHANGED: 'hud:health-changed',
     AMMO_CHANGED: 'hud:ammo-changed',
+    AMMO_EMPTY: 'hud:ammo-empty',
     COINS_CHANGED: 'hud:coins-changed',
     DIAMONDS_CHANGED: 'hud:diamonds-changed',
 };
@@ -69,4 +70,18 @@ export const LOADING_EVENTS = {
 // portal (ver game/systems/create/createPortals.js) que encerra a fase.
 export const RUN_EVENTS = {
     COMPLETE: 'run:complete',
+};
+
+// Contrato de eventos entre o Phaser e o modal de pausa em HTML (ver
+// /src/screens/PauseScreen.js). Disparado quando o player aperta START ou
+// SELECT (ver game/systems/create/createControls.js) durante a run.
+export const PAUSE_EVENTS = {
+    OPEN: 'pause:open',
+};
+
+// Contrato de eventos entre o Phaser e o modal de configurações em HTML (ver
+// /src/screens/SettingsScreen.js). Disparado quando o player aperta SELECT
+// (ver game/systems/create/createControls.js) durante a run.
+export const SETTINGS_EVENTS = {
+    OPEN: 'settings:open',
 };

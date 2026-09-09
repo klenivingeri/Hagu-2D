@@ -87,9 +87,24 @@ export function createPlayer(scene) {
   player.fallStartY = null;
   player.lastGroundedBottom = player.body.bottom;
 
+  setupWorldBoundsDeath(scene, player);
+
   playSpawnAnimation(scene, player);
 
   return player;
+}
+
+// Sem isso, cair fora de qualquer plataforma faz o player ficar preso
+// (empurrado pra dentro) na borda inferior do mundo, vivo, pra sempre.
+// Tocar a borda de baixo do mundo mata na hora, igual a um poço sem fundo.
+function setupWorldBoundsDeath(scene, player) {
+  player.body.onWorldBounds = true;
+  scene.physics.world.on('worldbounds', (body, up, down) => {
+    if (body.gameObject !== player || !down || player.isDead) return;
+
+    const deathDirection = player.flipX ? -1 : 1;
+    killPlayer(scene, player, 'dead_jump', deathDirection);
+  });
 }
 
 // Toca a animação de "spawn" assim que o player é criado. Enquanto ela
@@ -125,7 +140,7 @@ export function setupPlayerDamage(scene, player, enemies) {
 }
 
 function hitByEnemy(scene, player, enemy) {
-  if (player.invulnerable || player.isDead) return; // ainda no cooldown, ignora o toque
+  if (player.isDead) return;
   if (!enemy || !enemy.active) return;
 
   // Estilo Mario: caiu de cima em cima do inimigo -> quica e dá dano nele,
@@ -135,10 +150,15 @@ function hitByEnemy(scene, player, enemy) {
   // cooldown de invulnerabilidade do PRÓPRIO inimigo (300ms, ver
   // applyDamage em createEnemy.js) — aqui só detectamos a geometria e
   // despachamos, sem duplicar essa regra.
+  // Checado antes do invulnerable: dano de SAÍDA (o player pisando no
+  // inimigo) nunca deve ser bloqueado pelo i-frame, que só protege o
+  // player de dano de ENTRADA.
   if (isStomp(player, enemy)) {
     stompEnemy(scene, player, enemy);
     return;
   }
+
+  if (player.invulnerable) return; // ainda no cooldown, ignora o toque
 
   const damage = enemy?.entityConfig?.attack?.damage
     ?? enemy?.status?.contactDamage
@@ -182,21 +202,41 @@ function stompEnemy(scene, player, enemy) {
   stompDamageEnemy(enemy, player.status.jumpDamage);
 }
 
+const BLINK_SLOW_DURATION_MS = 100; // ritmo normal da piscada
+const BLINK_FAST_DURATION_MS = 50; // ritmo acelerado no fim, avisando que a invulnerabilidade tá acabando
+const BLINK_FAST_WINDOW_MS = 300; // últimos X ms do cooldown com piscada rápida
+
 function makePlayerInvulnerable(scene, player) {
   player.invulnerable = true;
 
-  const blinkTween = scene.tweens.add({
+  const fastPhaseStart = DAMAGE_COOLDOWN_MS - BLINK_FAST_WINDOW_MS;
+
+  const slowBlink = scene.tweens.add({
     targets: player,
     alpha: 0.2,
-    duration: 100,
+    duration: BLINK_SLOW_DURATION_MS,
     ease: 'Linear',
     yoyo: true,
-    repeat: Math.round(DAMAGE_COOLDOWN_MS / 200) - 1, // preenche ~1s piscando
+    repeat: Math.round(fastPhaseStart / (BLINK_SLOW_DURATION_MS * 2)) - 1,
+  });
+
+  const fastBlinkTimer = scene.time.delayedCall(fastPhaseStart, () => {
+    slowBlink.stop();
+    scene.tweens.add({
+      targets: player,
+      alpha: 0.2,
+      duration: BLINK_FAST_DURATION_MS,
+      ease: 'Linear',
+      yoyo: true,
+      repeat: -1,
+    });
   });
 
   scene.time.delayedCall(DAMAGE_COOLDOWN_MS, () => {
     player.invulnerable = false;
-    blinkTween.stop();
+    slowBlink.stop();
+    fastBlinkTimer.remove();
+    scene.tweens.killTweensOf(player);
     player.setAlpha(1);
   });
 }
@@ -209,8 +249,10 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   player.isDead = true;
   player.status.life = 0;
 
-  player.setVelocity(0, 0);
-  player.body.enable = false;
+  // O corpo físico continua ativo (gravidade + colliders) para que o player
+  // caia até encontrar um collider, mesmo tendo morrido no ar (queda ou
+  // bullet). Só zeramos a velocidade horizontal: a vertical segue livre.
+  player.setVelocityX(0);
   player.clearTint();
   player.isJetpackActive = false;
   player.jetpackFuelBar?.setVisible(false);
@@ -226,17 +268,24 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   showDeathText(scene, player);
 
   if (animation === 'dead_jump') {
-    const dustPosition = { x: player.x, y: feetY };
-
     // Pequeno deslocamento no sentido em que o player estava andando.
-    scene.tweens.add({
-      targets: player,
-      x: player.x + deathDirection * 24,
-      duration: 360,
-      ease: 'Quad.Out',
-      onUpdate: () => {
-        dustPosition.x = player.x;
-        emitDustTrail(scene, player, 'horizontal', false, dustPosition, deathDirection);
+    // Usa velocidade (não tween em x) para não brigar com o corpo físico,
+    // que continua ativo e sincroniza a posição a cada passo da física.
+    const SLIDE_DURATION_MS = 360;
+    player.setVelocityX(deathDirection * 70);
+    scene.time.delayedCall(SLIDE_DURATION_MS, () => {
+      if (player.body) player.setVelocityX(0);
+    });
+
+    const dustEvent = scene.time.addEvent({
+      delay: 16,
+      repeat: Math.floor(SLIDE_DURATION_MS / 16) - 1,
+      callback: () => {
+        if (!player.body) {
+          dustEvent.remove();
+          return;
+        }
+        emitDustTrail(scene, player, 'horizontal', false, { x: player.x, y: player.body.bottom }, deathDirection);
       },
     });
   }
@@ -263,7 +312,7 @@ function showDeathText(scene, player) {
         strokeThickness: 2,
       });
       text.setOrigin(0.5, 1);
-      text.setDepth((player.depth ?? 0) + 1);
+      text.setDepth(MAP_DEPTHS.LIMITS + 1); // acima de todas as layers do mapa
 
       scene.tweens.add({
         targets: text,

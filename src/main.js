@@ -7,6 +7,8 @@ import { BindHudEvents } from './components/ui/Hud.js';
 import { ShowLoadingScreen, HideLoadingScreen, BindLoadingEvents } from './screens/LoadingScreen.js';
 import { ShowWelcomeScreen, HideWelcomeScreen } from './screens/WelcomeScreen.js';
 import { ShowRunSummaryScreen, HideRunSummaryScreen } from './screens/RunSummaryScreen.js';
+import { BindPauseEvents, HidePauseScreen } from './screens/PauseScreen.js';
+import { BindSettingsEvents, HideSettingsScreen } from './screens/SettingsScreen.js';
 import { loadPersistedState } from './managers/GameManager.js';
 
 // O Phaser só é instanciado quando a partida realmente começa (CLAUDE.md
@@ -25,6 +27,25 @@ function startMatch(mapKey) {
   activeGame = game;
   BindHudEvents(game);
   BindLoadingEvents(game);
+  BindPauseEvents(game, {
+    onResume: () => {
+      HidePauseScreen();
+      game.scene.resume('GameScene');
+    },
+    onBackToMap: () => {
+      HidePauseScreen();
+      backToWelcome();
+    },
+  });
+  BindSettingsEvents(game, {
+    onClose: () => {
+      HideSettingsScreen();
+      game.scene.resume('GameScene');
+    },
+    onCameraZoomChange: (zoom) => {
+      game.scene.getScene('GameScene')?.applyCameraZoom(zoom);
+    },
+  });
   // gameConfig não lista nenhuma cena (ver game/config/gameConfig.js) — é
   // aqui que a GameScene sobe pela primeira vez, já com a fase escolhida no
   // grid de mapas da Welcome (ver WelcomeScreen.js).

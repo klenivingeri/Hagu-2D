@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
-import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS } from '../../constants.js';
+import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS, PAUSE_EVENTS, SETTINGS_EVENTS } from '../../constants.js';
 import { gameState, unlockMap } from '../../managers/GameManager.js';
 import { getVirtualFrame } from '../commons/textureUtils.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
@@ -105,7 +105,9 @@ export class GameScene extends Phaser.Scene {
     const cameraZoom = gameState.settings.cameraZoom || 1;
     this.cameras.main.setZoom(cameraZoom);
     if (cameraZoom > 1) {
-      this.cameras.main.startFollow(this.player, true);
+      // lerp < 1 faz a câmera "atrasar" atrás do player em vez de grudar
+      // nele a cada frame (comportamento seco/instantâneo do default 1).
+      this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     } else {
       this.cameras.main.stopFollow();
     }
@@ -188,6 +190,40 @@ export class GameScene extends Phaser.Scene {
       coins: this.player.levelCoins,
       diamonds: this.player.levelDiamants,
     });
+  }
+
+  // Chamado pelos botões START/SELECT (ver createControls.js). Pausa a
+  // "Run" e delega a exibição do modal de pausa pra tela de HTML (ver
+  // PauseScreen.js) — o Phaser só emite o evento, nunca mexe em DOM
+  // (CLAUDE.md regra 1).
+  openPauseMenu() {
+    if (this.scene.isPaused()) return;
+
+    this.scene.pause();
+    this.game.events.emit(PAUSE_EVENTS.OPEN, { mapKey: this.mapKey });
+  }
+
+  // Chamado pelo botão SELECT (ver createControls.js). Pausa a "Run" e
+  // delega a exibição do modal de configurações (som/vibração/daltonismo/
+  // câmera) pra tela de HTML (ver SettingsScreen.js).
+  openSettingsMenu() {
+    if (this.scene.isPaused()) return;
+
+    this.scene.pause();
+    this.game.events.emit(SETTINGS_EVENTS.OPEN, { mapKey: this.mapKey });
+  }
+
+  // Chamado pelo SettingsScreen (ver main.js) quando o player muda o zoom da
+  // câmera com a Run em andamento — sem isso, a escolha só valeria a partir
+  // da próxima partida (ver create(), que só lê gameState.settings.cameraZoom
+  // uma vez).
+  applyCameraZoom(zoom) {
+    this.cameras.main.setZoom(zoom);
+    if (zoom > 1) {
+      this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+    } else {
+      this.cameras.main.stopFollow();
+    }
   }
 }
 

@@ -23,6 +23,12 @@ export function createControls(scene) {
   const btnB = document.querySelector('#btnB');
   const actionPad = document.querySelector('#actionPad');
 
+  const btnStart = document.querySelector('#btnStart');
+  const btnSelect = document.querySelector('#btnSelect');
+
+  btnStart.addEventListener('click', () => scene.openPauseMenu());
+  btnSelect.addEventListener('click', () => scene.openSettingsMenu());
+
   // --- Sistema de Teclado com Disparo Único (Evita pulo infinito ao segurar W/Espaço/Seta) ---
   const triggerJumpOnce = () => {
     scene.controlState.jump = true;

@@ -65,6 +65,14 @@ button {
   display: block;
 }
 
+/* Container do HUD: irmão de .game-screen no grid do .game-layout.
+   Landscape (media query abaixo) o sobrepõe ao canvas via grid-area
+   compartilhada; portrait vira uma faixa própria acima do canvas. */
+.hud-bar {
+  z-index: 10;
+  pointer-events: none;
+}
+
 /* HUD de vidas (corações) */
 .hud-hearts {
   display: flex;
@@ -74,9 +82,6 @@ button {
 }
 
 .hud-life-panel {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
   z-index: 10;
   width: 18%;
   display: flex;
@@ -129,12 +134,27 @@ button {
   pointer-events: none;
 }
 
+@keyframes ammo-bar-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+}
+
+.ammo-bar--shake {
+  animation: ammo-bar-shake 0.3s ease-in-out;
+}
+
 .ammo-fill {
   width: 100%;
   height: 100%;
   border-radius: 1px;
   background: linear-gradient(0deg, #5200d5 80%, #9f47fd 30%);
-  transition: width 0.2s ease, background 0.2s ease;
+  /* Sem transition no width: a barra já é atualizada a cada frame em
+     createBulletSystem.update(), então a própria cadência do jogo é quem
+     dá a suavidade do carregamento (uma transition aqui só atrasaria). */
+  transition: background 0.2s ease;
 }
 
 @keyframes heart-lose {
@@ -172,9 +192,6 @@ button {
 }
 
 .hud-resources {
-  position: absolute;
-  top: 0.35rem;
-  right: 0.5rem;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -430,15 +447,36 @@ button {
 @media (orientation: portrait) {
   .game-layout {
     grid-template-columns: 100vw;
-    grid-template-rows: min(100vw, 100dvh) 1fr;
+    grid-template-rows: auto min(100vw, 100dvh) 1fr;
+    grid-template-areas:
+      "hud"
+      "game"
+      "controls";
+  }
+
+  .hud-bar {
+    grid-area: hud;
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .hud-life-panel,
+  .hud-resources {
+    position: static;
   }
 
   .game-screen {
+    grid-area: game;
     width: 100vw;
     height: min(100vw, 100dvh);
   }
 
   .controls-panel {
+    grid-area: controls;
     min-height: 0;
   }
 }
@@ -449,6 +487,28 @@ button {
     grid-template-columns: 1fr 100dvh 1fr;
     grid-template-rows: 100dvh;
     grid-template-areas: "left game right";
+  }
+
+  /* Compartilha a mesma grid-area do canvas: sobrepõe o HUD ao jogo,
+     como sempre foi (diferente do portrait, onde vira uma faixa própria). */
+  .hud-bar {
+    grid-area: game;
+    position: relative;
+    align-self: start;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hud-life-panel {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .hud-resources {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.5rem;
   }
 
   .game-screen {

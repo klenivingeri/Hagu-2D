@@ -28,6 +28,7 @@ export function createBulletSystem(scene) {
     if (player.status.currentAljavaBullet <= 0) {
       emitDryFireBurst(scene, player);
       scene.sound.play('dry_fire_1');
+      scene.game.events.emit(HUD_EVENTS.AMMO_EMPTY);
       return;
     }
     const bullet = scene.bullets.get(scene.player.x, scene.player.y + 5, 'bullet');
@@ -44,9 +45,16 @@ export function createBulletSystem(scene) {
       // que o player vê à frente e atrás do que cobre o player.
       bullet.setDepth(scene.player.depth ?? MAP_DEPTHS.PLAYER);
       bullet.damage = scene.player.status.bulletDamage; // dano que esse tiro carrega
+      // Carrega o progresso que já tinha sido acumulado pra próxima flecha
+      // (ex: barra em 3/4 quase completando a 4ª) pro slot que acabou de
+      // esvaziar, em vez de descartar e recomeçar o carregamento do zero —
+      // senão o disparo parece "gastar 2 flechas" na barra.
+      const carriedProgress = reloadProgressOf(player, scene);
       player.status.currentAljavaBullet -= 1;
-      player._nextBulletReloadAt = scene.time.now + player.status.LoadingBullet;
-      scene.game.events.emit(HUD_EVENTS.AMMO_CHANGED, player.status.currentAljavaBullet, player.status.AljavaBullet);
+      player._nextBulletReloadAt = scene.time.now + player.status.LoadingBullet * (1 - carriedProgress);
+      // Emite de imediato pra barra cair na hora do disparo; a partir daqui
+      // update() assume e faz ela subir suavemente até a próxima flecha.
+      emitAmmoHud(scene, player);
       scene.sound.play('bullet_effect_1');
     }
   };
@@ -127,13 +135,18 @@ export function createBulletSystem(scene) {
     },
     update() {
       const player = scene.player;
-      if (player && player.status.currentAljavaBullet < player.status.AljavaBullet
-        && scene.time.now >= (player._nextBulletReloadAt || Infinity)) {
-        player.status.currentAljavaBullet += 1;
-        player._nextBulletReloadAt = player.status.currentAljavaBullet < player.status.AljavaBullet
-          ? scene.time.now + player.status.LoadingBullet
-          : 0;
-        scene.game.events.emit(HUD_EVENTS.AMMO_CHANGED, player.status.currentAljavaBullet, player.status.AljavaBullet);
+      if (player) {
+        if (player.status.currentAljavaBullet < player.status.AljavaBullet
+          && scene.time.now >= (player._nextBulletReloadAt || Infinity)) {
+          player.status.currentAljavaBullet += 1;
+          player._nextBulletReloadAt = player.status.currentAljavaBullet < player.status.AljavaBullet
+            ? scene.time.now + player.status.LoadingBullet
+            : 0;
+        }
+        // A cada frame reemite a munição somando a fração já carregada da
+        // próxima flecha, pra barra encher continuamente em vez de saltar
+        // só quando a flecha inteira termina de carregar.
+        emitAmmoHud(scene, player);
       }
 
       // Usando getChildren() para retornar um array padrão do JS
@@ -147,6 +160,26 @@ export function createBulletSystem(scene) {
       });
     },
   };
+}
+
+// Progresso (0..1) já carregado da flecha que está recarregando agora.
+function reloadProgressOf(player, scene) {
+  const isReloading = player.status.currentAljavaBullet < player.status.AljavaBullet && player._nextBulletReloadAt;
+  if (!isReloading) return 0;
+  return 1 - Math.min(1, Math.max(0, (player._nextBulletReloadAt - scene.time.now) / player.status.LoadingBullet));
+}
+
+// Munição exibida no HUD como fração contínua: munição inteira + progresso
+// (0..1) da flecha que está carregando no momento, pra barra encher aos
+// poucos em vez de pular só quando uma flecha inteira termina de recarregar.
+function emitAmmoHud(scene, player) {
+  const maxAmmo = player.status.AljavaBullet;
+  const displayAmmo = player.status.currentAljavaBullet + reloadProgressOf(player, scene);
+
+  // Evita reemitir (e reescrever o DOM) quando o valor não mudou de forma perceptível.
+  if (player._lastHudAmmo !== undefined && Math.abs(player._lastHudAmmo - displayAmmo) < 0.001) return;
+  player._lastHudAmmo = displayAmmo;
+  scene.game.events.emit(HUD_EVENTS.AMMO_CHANGED, displayAmmo, maxAmmo);
 }
 
 function destroyBullet(bullet) {
