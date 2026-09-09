@@ -13,6 +13,7 @@ import {
   resetProgress,
   getUpgradeState,
   purchaseUpgrade,
+  getMapStars,
 } from '../managers/GameManager.js';
 import { UPGRADES_CATALOG } from '../game/config/upgrades.js';
 import { MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
@@ -311,6 +312,13 @@ function drawStageConnectionLine(svg, from, to) {
   svg.append(line);
 }
 
+// Reaproveita a mesma escala 1-3 de GameScene.completeRun()/GameManager.
+// getMapStars() — ⭐ preenchida pra cada estrela já conquistada, ☆ vazia pro
+// resto, igual ao critério usado em RunSummaryScreen.js.
+function renderStageStars(stars) {
+  return Array.from({ length: 3 }, (_, index) => (index < stars ? '⭐' : '☆')).join('');
+}
+
 function renderStages() {
   if (!elements) return;
   // Só mostra mapas já desbloqueados (ver GameManager.isMapUnlocked): o
@@ -356,7 +364,7 @@ function renderStages() {
     ].join(' ');
     cell.innerHTML = `
       <span class="stage-cell-number text-lg font-black leading-none">${getStageNumber(mapKey)}</span>
-      <span class="stage-cell-stars flex gap-0.5 text-[10px] leading-none text-gray-400" aria-hidden="true">☆☆☆</span>
+      <span class="stage-cell-stars flex gap-0.5 text-[10px] leading-none text-gray-400" aria-hidden="true">${renderStageStars(getMapStars(mapKey))}</span>
       <span class="stage-cell-label absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold leading-none text-gray-300">${getStageLabel(mapKey)}</span>
     `;
     if (isNewlyUnlocked) {

@@ -36,9 +36,16 @@ export function createDiamants(scene) {
   const layer = map.createLayer(DIAMANTS_LAYER_NAME, tileset, 0, 0);
   const diamants = scene.physics.add.group({ allowGravity: false, immovable: true });
 
+  // Total de diamantes da própria layer do Tiled (fixos no mapa) — usado
+  // pelo GameScene.completeRun() pra saber se o player coletou 100% deles
+  // (critério de 3 estrelas). Não conta os que caem de inimigos mortos
+  // (spawnDroppedDiamant), só os desenhados na fase.
+  let total = 0;
+
   if (layer) {
     layer.forEachTile((tile) => {
       if (tile.index === -1) return;
+      total += 1;
 
       const diamant = diamants.create(tile.getCenterX(), tile.getCenterY(), 'diamant');
       diamant.setDepth(MAP_DEPTHS.DIAMANTS);
@@ -48,6 +55,8 @@ export function createDiamants(scene) {
     });
     layer.setVisible(false);
   }
+
+  scene.totalDiamants = total;
 
   scene.physics.add.overlap(scene.player, diamants, (_player, diamant) => {
     if (!diamant.active || diamant.isCollecting) return;

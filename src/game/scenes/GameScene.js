@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { MAPS, DEFAULT_MAP_KEY } from '../config/maps.js';
+import { MAPS, DEFAULT_MAP_KEY, DEFAULT_STAR_TIME_LIMIT_MS } from '../config/maps.js';
 import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS, PAUSE_EVENTS, SETTINGS_EVENTS } from '../../constants.js';
-import { gameState, unlockMap } from '../../managers/GameManager.js';
+import { gameState, unlockMap, recordMapStars } from '../../managers/GameManager.js';
 import { getVirtualFrame } from '../commons/textureUtils.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
 import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
@@ -86,6 +86,14 @@ export class GameScene extends Phaser.Scene {
     // reatribuído por createWorld/createPlayer/createPortals/etc. abaixo),
     // então ela precisa ser resetada explicitamente.
     this.runCompleted = false;
+
+    // Estado da run atual, usado só pro resumo em RunSummaryScreen.js
+    // (tempo de fase, dano recebido, monstros derrotados). Reatribuído do
+    // zero aqui pelo mesmo motivo do runCompleted acima: create() reaproveita
+    // a instância em scene.restart().
+    this.runStartTime = this.time.now;
+    this.runDamageTaken = false;
+    this.enemyKills = new Map();
 
     // Gera a textura de 2x2px da poeira uma única vez, antes de qualquer
     // emitDustTrail/emitBulletImpactDust ser chamado.
@@ -184,11 +192,39 @@ export class GameScene extends Phaser.Scene {
 
     unlockMap(unlockMapKey);
     this.scene.pause();
+
+    const timeMs = this.time.now - this.runStartTime;
+    const totalMonsters = (this.enemyDefinitions || []).length;
+    const monsterKills = Array.from(this.enemyKills.values());
+    const totalMonstersKilled = monsterKills.reduce((sum, entry) => sum + entry.count, 0);
+    const totalDiamants = this.totalDiamants || 0;
+
+    // Critérios de 3 estrelas (ver ShowRunSummaryScreen): derrotou todo
+    // mundo, coletou 100% dos diamantes da layer, não levou dano e terminou
+    // dentro do tempo-alvo do mapa. Mapa sem inimigo/diamante nenhum não
+    // pode travar o critério em falso — conta como "cumprido".
+    const allMonstersDefeated = totalMonsters === 0 || totalMonstersKilled >= totalMonsters;
+    const allDiamantsCollected = totalDiamants === 0 || (this.player.levelDiamants || 0) >= totalDiamants;
+    const noDamageTaken = !this.runDamageTaken;
+    const timeLimitMs = this.mapConfig.starTimeLimitMs || DEFAULT_STAR_TIME_LIMIT_MS;
+    const withinTimeLimit = timeMs <= timeLimitMs;
+    const stars = computeStars({ allMonstersDefeated, allDiamantsCollected, noDamageTaken, withinTimeLimit });
+    // Registra no mapa que ACABOU de ser jogado (this.mapKey), não no que a
+    // gate liberou (unlockMapKey) — são fases diferentes.
+    recordMapStars(this.mapKey, stars);
+
     this.game.events.emit(RUN_EVENTS.COMPLETE, {
       mapKey: this.mapKey,
       unlockedMapKey: unlockMapKey,
       coins: this.player.levelCoins,
       diamonds: this.player.levelDiamants,
+      diamondsTotal: totalDiamants,
+      exp: this.player.levelExp || 0,
+      timeMs,
+      monsterKills,
+      totalMonsters,
+      totalMonstersKilled,
+      stars,
     });
   }
 
@@ -225,6 +261,16 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.stopFollow();
     }
   }
+}
+
+// 3 estrelas exige TUDO: todos os monstros mortos, todos os diamantes da
+// layer coletados, zero dano recebido e dentro do tempo-alvo do mapa.
+// 2 estrelas é uma versão mais branda (só limpou a fase: monstros +
+// diamantes). Qualquer outra combinação vale 1 estrela (só completou).
+function computeStars({ allMonstersDefeated, allDiamantsCollected, noDamageTaken, withinTimeLimit }) {
+  if (allMonstersDefeated && allDiamantsCollected && noDamageTaken && withinTimeLimit) return 3;
+  if (allMonstersDefeated && allDiamantsCollected) return 2;
+  return 1;
 }
 
 function getEnemyDefinitionsFromMap(mapData) {

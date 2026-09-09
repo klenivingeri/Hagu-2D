@@ -23,6 +23,11 @@
 //   5. Nada mais precisa mudar no código: GameScene, createWorld, createPlayer,
 //      createEnemy, createGates e createZones leem tudo dinamicamente a partir
 //      daqui.
+// Tempo-alvo (ms) pra fase valer as 3 estrelas (ver GameScene.completeRun()).
+// Fixo por enquanto pra todo mapa; se algum mapa precisar de um valor
+// próprio, basta sobrescrever "starTimeLimitMs" na entrada dele em MAPS.
+export const DEFAULT_STAR_TIME_LIMIT_MS = 90000;
+
 const TILESET_DEFAULTS = {
   tilesetName: 'world_tileset', // precisa bater com o nome do tileset dentro do .tmj
   tilesetImageKey: 'world_tileset_image',

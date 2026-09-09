@@ -228,6 +228,7 @@ function playStompAnimation(enemy) {
 function killEnemy(enemy) {
   addGlobalExp(1);
   if (enemy.scene.player?.status) enemy.scene.player.status.exp = gameState.exp;
+  registerEnemyKill(enemy);
   if (Math.random() * 100 < Math.max(0, Math.min(100, Number(gameState.dropDiamant) || 0))) {
     spawnDroppedDiamant(enemy.scene, enemy.x, enemy.y);
   }
@@ -240,6 +241,21 @@ function killEnemy(enemy) {
   enemy.once(`animationcomplete-${getEntityAnimationKey(enemy.entityKey, 'spark')}`, () => {
     enemyDestroy(enemy);
   });
+}
+
+// Alimenta o resumo da run (ver GameScene.completeRun() / RunSummaryScreen.js)
+// com XP ganho na fase e a contagem de monstros derrotados agrupada por
+// tipo (key+path, já que dois mobs podem usar a mesma key com pastas de
+// sprite diferentes via override do Tiled).
+function registerEnemyKill(enemy) {
+  const scene = enemy.scene;
+  if (scene.player) scene.player.levelExp = (scene.player.levelExp || 0) + 1;
+  if (!scene.enemyKills) return;
+
+  const id = `${enemy.entityKey}|${enemy.entityPath || ''}`;
+  const entry = scene.enemyKills.get(id) || { key: enemy.entityKey, path: enemy.entityPath || '', count: 0 };
+  entry.count += 1;
+  scene.enemyKills.set(id, entry);
 }
 
 function enemyDestroy(enemy) {

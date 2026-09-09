@@ -73,6 +73,7 @@ export function createPlayer(scene) {
   player.status = createPlayerStatus(config.stats);
   player.levelCoins = 0;
   player.levelDiamants = 0;
+  player.levelExp = 0;
 
   // Estado do jetpack: recarrega sempre que o player toca o chão
   // (ver updatePlayerMovement.js).
@@ -169,6 +170,11 @@ function hitByEnemy(scene, player, enemy) {
 export function damagePlayer(scene, damage = 1) {
   const player = scene.player;
   if (!player || player.invulnerable || player.isDead) return;
+
+  // Critério de 3 estrelas (ver GameScene.completeRun()): qualquer dano real
+  // recebido na run zera a chance de "sem levar dano", mesmo que o player
+  // sobreviva e recupere vida depois.
+  scene.runDamageTaken = true;
 
   scene.sound.play('tap');
   emitEnemyHitBurst(scene, player);

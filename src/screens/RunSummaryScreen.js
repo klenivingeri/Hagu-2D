@@ -14,10 +14,77 @@ function parseTemplate(html) {
   return template.content.firstElementChild;
 }
 
+function formatTime(ms = 0) {
+  const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+// Sprite de "run" (frame 0) de cada tipo de mob já é um PNG estático em
+// /public/assets/mobs/ (ver preloadEnemyAssets em createEnemy.js — mesma
+// convenção de pasta: config.path + (path || key)). Reaproveitar o mesmo
+// arquivo aqui evita duplicar asset só pra esta tela, e não exige nenhum
+// import de código do Phaser (CLAUDE.md regra 1 — esta tela só lê um
+// arquivo estático, nunca uma textura do Phaser).
+function getMonsterIconSrc({ key, path }) {
+  const folder = path || key;
+  return `/assets/mobs/${folder}/run/sprite_run_two_0.png`;
+}
+
+function renderStars(container, stars = 0) {
+  container.innerHTML = '';
+  for (let i = 1; i <= 3; i += 1) {
+    const star = document.createElement('span');
+    star.textContent = i <= stars ? '⭐' : '☆';
+    star.className = i <= stars ? 'text-yellow-400' : 'text-gray-600';
+    container.append(star);
+  }
+}
+
+function renderMonsterKills(wrap, listEl, monsterKills = []) {
+  listEl.innerHTML = '';
+  if (!monsterKills.length) {
+    wrap.classList.add('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+
+  monsterKills.forEach(({ key, path, count }) => {
+    const item = document.createElement('div');
+    item.className = 'flex flex-col items-center gap-1';
+
+    const img = document.createElement('img');
+    img.src = getMonsterIconSrc({ key, path });
+    img.alt = key;
+    img.className = 'h-8 w-8 object-contain [image-rendering:pixelated]';
+    // Sprite de mob genérico ("commun") sem run/sprite_run_two_0.png não
+    // deve deixar o ícone quebrado visível — some com ele.
+    img.onerror = () => { img.style.visibility = 'hidden'; };
+
+    const countLabel = document.createElement('span');
+    countLabel.className = 'text-xs font-bold text-white';
+    countLabel.textContent = `x${count}`;
+
+    item.append(img, countLabel);
+    listEl.append(item);
+  });
+}
+
 // `onBack` é quem decide o que fazer com a run terminada (ver main.js):
 // destruir o Phaser.Game e voltar pra Welcome, já com o mapa liberado
 // aparecendo no grid.
-export function ShowRunSummaryScreen({ coins = 0, diamonds = 0, unlockedMapKey, onBack } = {}) {
+export function ShowRunSummaryScreen({
+  coins = 0,
+  diamonds = 0,
+  diamondsTotal = 0,
+  exp = 0,
+  timeMs = 0,
+  monsterKills = [],
+  stars = 0,
+  unlockedMapKey,
+  onBack,
+} = {}) {
   const app = document.getElementById('app');
   if (!app) {
     console.warn('[RunSummaryScreen] #app não encontrado no DOM — resumo da run não será exibido.');
@@ -32,16 +99,25 @@ export function ShowRunSummaryScreen({ coins = 0, diamonds = 0, unlockedMapKey, 
   elements = {
     root,
     unlockedLabel: root.querySelector('.run-summary-unlocked'),
+    stars: root.querySelector('.run-summary-stars'),
+    exp: root.querySelector('.run-summary-exp'),
     coins: root.querySelector('.run-summary-coins'),
     diamonds: root.querySelector('.run-summary-diamonds'),
+    time: root.querySelector('.run-summary-time'),
+    monstersWrap: root.querySelector('.run-summary-monsters-wrap'),
+    monsters: root.querySelector('.run-summary-monsters'),
     backBtn: root.querySelector('.run-summary-back-btn'),
   };
 
   elements.unlockedLabel.textContent = unlockedMapKey
     ? `${getStageLabel(unlockedMapKey)} liberada!`
     : 'Fase concluída';
+  renderStars(elements.stars, stars);
+  elements.exp.textContent = String(exp);
   elements.coins.textContent = String(coins);
-  elements.diamonds.textContent = String(diamonds);
+  elements.diamonds.textContent = diamondsTotal > 0 ? `${diamonds}/${diamondsTotal}` : String(diamonds);
+  elements.time.textContent = formatTime(timeMs);
+  renderMonsterKills(elements.monstersWrap, elements.monsters, monsterKills);
   elements.backBtn.addEventListener('click', () => onBack?.());
 }
 

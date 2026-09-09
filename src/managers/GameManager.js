@@ -66,6 +66,10 @@ export const gameState = {
   // passando pela gate correspondente. Populado de verdade por
   // loadPersistedState().
   unlockedMaps: [...DEFAULT_UNLOCKED_MAPS],
+  // Melhor resultado (1-3, ver GameScene.completeRun()) já alcançado em cada
+  // mapKey — usado pelo grid de fases da Welcome (renderStages) pra desenhar
+  // as estrelas preenchidas. Populado de verdade por loadPersistedState().
+  mapStars: {},
 
   isStick: true,
   // Capacidade da aljava (munição máxima). A velocidade de recarga de cada
@@ -97,6 +101,8 @@ export async function loadPersistedState() {
   // gastas E o upgrade comprado no próximo F5).
   gameState.coins = await load('coins', gameState.coins);
   gameState.diamant = await load('diamant', gameState.diamant);
+  gameState.exp = await load('exp', gameState.exp);
+  gameState.mapStars = await load('mapStars', gameState.mapStars);
   gameState.upgrade = { ...gameState.upgrade, ...(await load('upgrade', gameState.upgrade)) };
   gameState.maxlife = await load('maxlife', gameState.maxlife);
   gameState.dropDiamant = await load('dropDiamant', gameState.dropDiamant);
@@ -114,6 +120,19 @@ export function unlockMap(mapKey) {
 
 export function isMapUnlocked(mapKey) {
   return gameState.unlockedMaps.includes(mapKey);
+}
+
+export function getMapStars(mapKey) {
+  return gameState.mapStars[mapKey] || 0;
+}
+
+// Chamado por GameScene.completeRun() ao fim de toda run. Só sobrescreve o
+// resultado salvo se a nova run foi melhor — nunca deve ser possível "piorar"
+// uma fase já feita com 3 estrelas jogando de novo mais devagar/com dano.
+export function recordMapStars(mapKey, stars) {
+  if (!mapKey || stars <= getMapStars(mapKey)) return;
+  gameState.mapStars = { ...gameState.mapStars, [mapKey]: stars };
+  save('mapStars', gameState.mapStars);
 }
 
 export function addGlobalCoins(amount = 1) {
@@ -190,6 +209,7 @@ export function addGlobalMaxLife(amount = 1) {
 
 export function addGlobalExp(amount = 1) {
   gameState.exp += amount;
+  save('exp', gameState.exp);
 }
 
 export function setPlayerName(name) {
@@ -221,6 +241,7 @@ export function resetProgress() {
   gameState.gold = 0;
   gameState.exp = 0;
   gameState.unlockedMaps = [...DEFAULT_UNLOCKED_MAPS];
+  gameState.mapStars = {};
   gameState.settings = { ...DEFAULT_SETTINGS };
   gameState.upgrade = buildDefaultUpgradeLevels();
   gameState.maxlife = DEFAULT_MAX_LIFE;
