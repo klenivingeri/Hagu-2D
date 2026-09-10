@@ -426,7 +426,8 @@ function cleanupProjectile(scene, projectile) {
 
   if (projectile.maxRangePx
     && Math.abs(projectile.x - projectile.spawnX) >= projectile.maxRangePx) {
-    emitBulletImpactDust(scene, projectile, Math.sign(projectile.body?.velocity.x || 1));
+    // Fim de alcance sem acertar nada: some sem efeito/som — a explosão e
+    // o dust trail só acontecem em colisão de verdade (ver colliders acima).
     destroyProjectile(projectile);
   }
 }

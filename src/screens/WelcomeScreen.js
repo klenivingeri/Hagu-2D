@@ -141,6 +141,16 @@ let runnerRow = 0;
 let runnerCol = 0;
 let runnerMoving = false;
 
+// Timers dos ícones animados do grid da Coleção (ver buildCollectionCard) —
+// precisam ser limpos manualmente porque trocam img.src via setInterval,
+// não uma anims.create() do Phaser que morre sozinha com a cena.
+let collectionCardTimers = [];
+
+function stopCollectionCardAnimations() {
+  collectionCardTimers.forEach((timerId) => window.clearInterval(timerId));
+  collectionCardTimers = [];
+}
+
 function findMapGridPosition(mapKey) {
   for (let row = 0; row < MAP_GRID.length; row += 1) {
     const col = MAP_GRID[row].indexOf(mapKey);
@@ -756,6 +766,23 @@ function getCollectionIconSrc({ key, path }) {
   return `/assets/mobs/${folder}/run/sprite_run_two_0.png`;
 }
 
+// Todos os frames do "run" da espécie (mesma animação que ela usa correndo
+// em campo), pra tocar como <img> comum no card da Coleção — mesma técnica
+// de trocar src via setInterval do startRunnerFrames, já que aqui fora não
+// tem cena do Phaser rodando uma anims.create() de verdade. Sem 'run'
+// configurado (mob novo/incompleto), cai pro frame estático de sempre.
+function getCollectionRunFrames(entry) {
+  const folder = entry.path || entry.key;
+  const run = getMobConfig(entry.behavior).animations?.find((animation) => animation.key === 'run');
+  if (!run) return { frames: [getCollectionIconSrc(entry)], frameRate: 1 };
+
+  const frames = Array.from(
+    { length: run.frames + 1 },
+    (_, i) => `/assets/mobs/${folder}/${run.url}${i}.png`
+  );
+  return { frames, frameRate: run.frameRate };
+}
+
 // Poses "de identidade" do mob (o que ele parece fora de combate/reação) —
 // deixa fora 'stomp'/'spark', que são feedback de dano/morte, não um jeito
 // de mostrar o bicho na galeria. Ordem fixa pra galeria não pular de posição
@@ -849,11 +876,21 @@ function buildCollectionCard(speciesKey, entry) {
   // openCollectionModal), na galeria de sprites, até o item colecionável ser
   // pego em campo NUMA RUN CONCLUÍDA (ver GameManager.unlockEnemySprite).
   const bestiaryEntry = getBestiaryEntry(speciesKey);
+  const { frames, frameRate } = getCollectionRunFrames(entry);
   const img = document.createElement('img');
-  img.src = getCollectionIconSrc(entry);
+  img.src = frames[0];
   img.alt = bestiaryEntry.name;
   img.className = 'h-10 w-10 object-contain [image-rendering:pixelated]';
   img.onerror = () => { img.style.visibility = 'hidden'; };
+
+  if (frames.length > 1) {
+    let frameIndex = 0;
+    const timerId = window.setInterval(() => {
+      frameIndex = (frameIndex + 1) % frames.length;
+      img.src = frames[frameIndex];
+    }, 1000 / frameRate);
+    collectionCardTimers.push(timerId);
+  }
 
   const label = document.createElement('span');
   label.className = 'truncate text-[9px] font-bold text-white';
@@ -870,6 +907,7 @@ function buildCollectionCard(speciesKey, entry) {
 // getBestiaryEntry, cai no fallback genérico).
 function renderCollection() {
   if (!elements) return;
+  stopCollectionCardAnimations();
   const entries = getCollectionEntries();
   const speciesKeys = Array.from(new Set([...Object.keys(BESTIARY), ...Object.keys(entries)]));
 
@@ -1029,7 +1067,11 @@ function switchView(view) {
     renderEquipmentAbilities();
     renderEquipmentAccessories();
   }
-  if (view === 'collection') renderCollection();
+  if (view === 'collection') {
+    renderCollection();
+  } else {
+    stopCollectionCardAnimations();
+  }
 }
 
 export function ShowWelcomeScreen({ onPlay } = {}) {

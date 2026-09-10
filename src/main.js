@@ -23,7 +23,7 @@ let activeGame = null;
 function startMatch(mapKey) {
   HideWelcomeScreen();
   if (gameLayout) gameLayout.classList.add('is-active');
-  ShowLoadingScreen();
+  ShowLoadingScreen('Criando mapa...');
 
   const game = new Phaser.Game(gameConfig);
   activeGame = game;
@@ -89,7 +89,7 @@ RegisterServiceWorker();
 
 // Boot inicial: loading primeiro (aqui entra qualquer leitura de dado
 // persistido — StorageService/futuro banco local), só depois a Welcome.
-ShowLoadingScreen();
+ShowLoadingScreen('Carregando jogo...', 'player');
 loadPersistedState().finally(() => {
   HideLoadingScreen();
   ShowWelcomeScreen({ onPlay: startMatch });

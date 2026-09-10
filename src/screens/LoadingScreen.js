@@ -80,7 +80,11 @@ function removeScreenNode(root) {
   window.setTimeout(() => root.remove(), 600);
 }
 
-export function ShowLoadingScreen(message = 'Criando mapas...') {
+// variant 'tiles' (padrão, usada ao iniciar uma run): só o chão de tiles
+// caindo. variant 'player' (usada no boot do app, antes da Welcome): o
+// mesmo chão de tiles + a cenografia player-vs-inimigos em CSS (ver
+// .loading-actor* / .loading-bullet* em main.css).
+export function ShowLoadingScreen(message = 'Carregando...', variant = 'tiles') {
   const app = document.getElementById('app');
   if (!app) {
     console.warn('[LoadingScreen] #app não encontrado no DOM — tela de loading não será exibida.');
@@ -94,6 +98,7 @@ export function ShowLoadingScreen(message = 'Criando mapas...') {
   const root = parseTemplate(loadingTemplate);
   const messageEl = root.querySelector('.loading-message');
   if (messageEl) messageEl.textContent = message;
+  if (variant === 'player') root.classList.add('is-player-variant');
   mountFallingTiles(root.querySelector('.loading-tiles'));
   app.append(root);
 

@@ -429,6 +429,37 @@ button {
   min-height: 0;
 }
 
+/* Tabbar inferior da Welcome (ver welcomeScreen.html): só a aba ativa
+   mostra o nome — as outras ficam só com o ícone, pra dar mais respiro
+   pros 5 botões dividindo a largura da tela em telas pequenas. */
+.tab-btn .tab-label {
+  display: none;
+}
+
+.tab-btn.tab-active .tab-label {
+  display: inline;
+}
+
+/* Sem o label, sobra só o ícone dentro do flex-col — sem isso ele fica
+   grudado no topo (padding-top do botão) em vez de centralizado na
+   altura da tabbar. */
+.tab-btn {
+  justify-content: center;
+}
+
+/* Ícone da aba ativa cresce e sobe um pouco pra chamar mais atenção do
+   que os das abas inativas. transition fica no estado base (não no
+   .tab-active) pra animar tanto entrando quanto saindo do destaque. */
+.tab-btn .tab-icon {
+  font-size: 1.375rem;
+  display: inline-block;
+  transition: transform 0.15s ease-out;
+}
+
+.tab-btn.tab-active .tab-icon {
+  transform: scale(1.7) translateY(-6px);
+}
+
 /* Trilha entre fases na tela de Welcome (ver renderStageConnections em
    WelcomeScreen.js) — linha tracejada com efeito de "fluxo" pra sugerir
    caminho percorrível entre os mapas, sem competir visualmente com as
@@ -599,6 +630,178 @@ button {
   100% { opacity: 0; transform: translateY(0); }
 }
 
+/* variant "player": os tiles caem uma vez só e ficam assentados — sem isso
+   o chão sumiria e recairia em loop embaixo do player/inimigo correndo por
+   cima, o que fica estranho já que eles "pisam" nele (ver .loading-actor
+   mais abaixo). "both" segura o estado final (opacity 1, no lugar). */
+.loading-screen.is-player-variant .loading-tile {
+  animation: boot-tile-drop-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes boot-tile-drop-in {
+  0%   { opacity: 0; transform: translateY(-160%); }
+  60%  { opacity: 1; transform: translateY(0); }
+  80%  { transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Tela de loading no boot do app (ver LoadingScreen.js, variant "player"):
+   o chão é exatamente o .loading-tiles de sempre (mesma animação de
+   caindo em loop da tela de "Criando mapa..."), e por cima roda uma
+   cenografia em HTML/CSS puro (regra 1 do CLAUDE.md: esta tela não pode
+   depender do Phaser/canvas) de 9s em loop: o player entra correndo da
+   esquerda, o inimigo entra correndo da direita, o player dispara 3 tiros
+   que o destroem, e o player sai correndo de volta — tudo
+   timelines em % de uma única duração, pra manter os atores sincronizados.
+   Sprites: cada ator tem 2 animações simultâneas — um "frame cycle" rápido
+   e infinito que só troca a sprite (pernas correndo) e um "path" que cobre
+   o ciclo inteiro e mexe em transform/opacity/background-image nos
+   instantes-chave (chegada, impacto, morte). background-image não
+   interpola: o navegador só troca pra próxima imagem no % do keyframe. */
+.loading-stage {
+  position: relative;
+  width: 340px;
+  height: 140px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.loading-actor,
+.loading-bullet {
+  display: none;
+  position: absolute;
+  left: 0;
+  bottom: 40px; /* em pé sobre a fileira de tiles (TILE_DISPLAY_SIZE = 40px) */
+  image-rendering: pixelated;
+}
+
+.loading-screen.is-player-variant .loading-actor,
+.loading-screen.is-player-variant .loading-bullet {
+  display: block;
+}
+
+.loading-actor {
+  width: 40px;
+  height: 60px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* boot-player-path/boot-enemy-path/boot-bullet-*-path começam com 0.6s de
+   atraso (ver BOOT_INTRO_DELAY): só o suficiente pros primeiros tiles já
+   estarem caindo antes do player entrar — só o primeiro ciclo espera, os
+   loops seguintes emendam direto (delay de animation só conta 1x).
+   "backwards" é essencial aqui: sem ele, durante o delay o elemento fica
+   parado no `left:0` padrão (canto da tela) em vez de já começar na
+   posição do 0% do keyframe (fora da tela). */
+.loading-actor--player {
+  animation:
+    boot-player-frames 0.4s steps(1) infinite,
+    boot-player-path 9s ease-in-out 0.6s infinite backwards;
+}
+
+.loading-actor--enemy {
+  animation: boot-enemy-path 9s ease-in-out 0.6s infinite backwards;
+}
+
+.loading-bullet {
+  width: 8px;
+  height: 4px;
+  bottom: 66px;
+  background-color: #fde047;
+  box-shadow: 0 0 4px 1px #fde047;
+  opacity: 0;
+}
+
+.loading-bullet--1 { animation: boot-bullet-1-path 9s linear 0.6s infinite backwards; }
+.loading-bullet--2 { animation: boot-bullet-2-path 9s linear 0.6s infinite backwards; }
+.loading-bullet--3 { animation: boot-bullet-3-path 9s linear 0.6s infinite backwards; }
+
+/* Pernas do player "correndo" — cicla independente do path pra não precisar
+   repetir os 4 frames em cada trecho da timeline de posição. */
+@keyframes boot-player-frames {
+  0%   { background-image: url('/assets/player/run/sprite_run_two_0.png'); }
+  25%  { background-image: url('/assets/player/run/sprite_run_two_1.png'); }
+  50%  { background-image: url('/assets/player/run/sprite_run_two_2.png'); }
+  75%  { background-image: url('/assets/player/run/sprite_run_two_3.png'); }
+  100% { background-image: url('/assets/player/run/sprite_run_two_0.png'); }
+}
+
+/* Entra correndo (0-15%), segura posição enquanto o inimigo chega e leva os
+   3 tiros (15-46%), volta correndo e sai de cena (75-85%) até o loop
+   reiniciar. */
+@keyframes boot-player-path {
+  0%   { transform: translate(-60px, 0); }
+  15%  { transform: translate(90px, 0); }
+  60%  { transform: translate(90px, 0); }
+  75%  { transform: translate(-60px, 0); }
+  100% { transform: translate(-60px, 0); }
+}
+
+/* Corre da direita (0-15%) e continua "correndo parado" (pernas ciclando)
+   enquanto espera pra "levar" os 3 tiros (15-42%, sincronizado com
+   .loading-bullet--*), só parando de fato pra explodir em faísca no
+   impacto do 3º tiro (~43%). transform só é redeclarado quando muda
+   (0%→15% de entrada, 42% segurando o mesmo x) — nos % só de troca de
+   perna o navegador mantém o valor interpolado entre essas âncoras. */
+@keyframes boot-enemy-path {
+  0%   { transform: translate(380px, 0); opacity: 1; background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
+  3%   { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_1.png'); }
+  6%   { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_2.png'); }
+  9%   { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_3.png'); }
+  12%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
+  15%  { transform: translate(250px, 0); background-image: url('/assets/mobs/mob_1/run/sprite_run_two_1.png'); }
+  18%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_2.png'); }
+  21%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_3.png'); }
+  24%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
+  27%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_1.png'); }
+  30%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_2.png'); }
+  33%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_3.png'); }
+  36%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
+  39%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_1.png'); }
+  42%  { transform: translate(250px, 0); background-image: url('/assets/mobs/mob_1/run/sprite_run_two_2.png'); }
+  43%  { background-image: url('/assets/mobs/mob_1/spark/sprite_z_die_spark_0.png'); }
+  44%  { background-image: url('/assets/mobs/mob_1/spark/sprite_z_die_spark_3.png'); }
+  45%  { background-image: url('/assets/mobs/mob_1/spark/sprite_z_die_spark_6.png'); opacity: 1; }
+  46%  { transform: translate(250px, 0); opacity: 0; }
+  99%  { transform: translate(380px, 0); opacity: 0; }
+  100% { transform: translate(380px, 0); opacity: 1; background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
+}
+
+/* 3 tiros do player (parado em x=90) até o inimigo (parado em x=250), um
+   logo depois do outro, o 3º chegando junto com a faísca de morte em
+   boot-enemy-path (43%). */
+@keyframes boot-bullet-1-path {
+  0%     { transform: translateX(98px); opacity: 0; }
+  32.9%  { transform: translateX(98px); opacity: 0; }
+  33%    { transform: translateX(98px); opacity: 1; }
+  35%    { transform: translateX(242px); opacity: 1; }
+  35.5%  { transform: translateX(242px); opacity: 0; }
+  100%   { transform: translateX(98px); opacity: 0; }
+}
+
+@keyframes boot-bullet-2-path {
+  0%     { transform: translateX(98px); opacity: 0; }
+  36.4%  { transform: translateX(98px); opacity: 0; }
+  36.5%  { transform: translateX(98px); opacity: 1; }
+  38.5%  { transform: translateX(242px); opacity: 1; }
+  39%    { transform: translateX(242px); opacity: 0; }
+  100%   { transform: translateX(98px); opacity: 0; }
+}
+
+@keyframes boot-bullet-3-path {
+  0%     { transform: translateX(98px); opacity: 0; }
+  39.9%  { transform: translateX(98px); opacity: 0; }
+  40%    { transform: translateX(98px); opacity: 1; }
+  42%    { transform: translateX(242px); opacity: 1; }
+  42.5%  { transform: translateX(242px); opacity: 0; }
+  100%   { transform: translateX(98px); opacity: 0; }
+}
+
 /* Modal de Game Over (ver GameOverScreen.js) — escurece a tela e mostra
    "GAME OVER" letra por letra, mesma linguagem visual do "DEAD" que aparece
    no canvas a cada morte (ver createPlayer.showDeathText), só que em CSS
@@ -630,4 +833,96 @@ button {
   /* Cada letra usa seu índice (--i, 0 a 7) pra entrar em sequência — mesmo
      efeito "cascata" do showDeathText, só que dirigido por CSS. */
   animation-delay: calc(var(--i, 0) * 80ms);
+}
+
+/* Tela de resumo da run (ver RunSummaryScreen.js) — o painel é um grid com
+   4 áreas nomeadas (header/stats/lists/footer) pra poder reorganizar de
+   coluna única (portrait) pra duas colunas (landscape) sem duplicar HTML,
+   mesma ideia do grid-template-areas de .game-layout acima. */
+@keyframes run-summary-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.run-summary-screen {
+  animation: run-summary-fade-in 0.2s ease-out;
+}
+
+@keyframes run-summary-pop-in {
+  0% { opacity: 0; transform: translateY(10px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.run-summary-panel {
+  display: grid;
+  width: min(92vw, 26rem);
+  max-height: 92dvh;
+  overflow-y: auto;
+  gap: 0.9rem;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "header" "stats" "lists" "footer";
+  opacity: 0;
+  animation: run-summary-pop-in 0.3s ease-out forwards;
+}
+
+.run-summary-area-header { grid-area: header; }
+.run-summary-area-stats { grid-area: stats; }
+.run-summary-area-lists { grid-area: lists; min-height: 0; }
+.run-summary-area-footer { grid-area: footer; }
+
+/* Estrelas "estalam" uma a uma ao aparecer, mesma cadência de stagger usada
+   no game-over-title (só que via nth-child, já que aqui os spans são
+   gerados dinamicamente em RunSummaryScreen.js/renderStars). */
+@keyframes run-summary-star-pop {
+  0% { opacity: 0; transform: scale(0.3) rotate(-15deg); }
+  60% { opacity: 1; transform: scale(1.25) rotate(4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.run-summary-stars span {
+  display: inline-block;
+  opacity: 0;
+  animation: run-summary-star-pop 0.35s ease-out forwards;
+}
+
+.run-summary-stars span:nth-child(1) { animation-delay: 0.15s; }
+.run-summary-stars span:nth-child(2) { animation-delay: 0.3s; }
+.run-summary-stars span:nth-child(3) { animation-delay: 0.45s; }
+
+.run-summary-card {
+  opacity: 0;
+  animation: run-summary-pop-in 0.3s ease-out forwards;
+  animation-delay: 0.2s;
+}
+
+/* Telas curtas em landscape (celular deitado) não têm altura pra empilhar
+   header + 4 cards + listas + botão — vira 2 colunas: título/estrelas à
+   esquerda, stats + listas roláveis à direita, botão ocupando as duas. */
+@media (orientation: landscape) {
+  .run-summary-panel {
+    width: min(94vw, 46rem);
+    max-height: 90dvh;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+      "header stats"
+      "header lists"
+      "footer footer";
+  }
+
+  .run-summary-area-header {
+    display: flex;
+    height: 100%;
+    justify-content: center;
+  }
+
+  .run-summary-area-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .run-summary-area-lists {
+    overflow-y: auto;
+    max-height: 100%;
+  }
 }
