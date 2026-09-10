@@ -50,7 +50,7 @@ export const UPGRADES_CATALOG = [
   {
     id: 'energy',
     label: 'Energia do jetpack',
-    icon: '⚡',
+    icon: '⛽',
     tier: 'B', // utilidade: só relevante depois de comprar o jetpack (💎)
     maxLevel: 10,
     baseCost: 3,

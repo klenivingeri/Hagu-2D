@@ -23,8 +23,8 @@ export function createPlayerStatus(overrides = {}) {
   return {
     life: gameState.maxlife,  // vidas/corações
     coyoteTimeMs: 65,
-    speed: 110,                // velocidade horizontal (px/s) - já usado em updatePlayerMovement
-    jumpHeight: 200,            // força do pulo (velocidade vertical, px/s) - já usado em updatePlayerMovement
+    speed: 100,                // velocidade horizontal (px/s) - já usado em updatePlayerMovement
+    jumpHeight: 210,            // força do pulo (velocidade vertical, px/s) - já usado em updatePlayerMovement
     maxSafeFallTiles: upgradeValue('fallResistance'), // tiles de queda seguros antes de morrer
     // Pulo duplo/paraquedas/jetpack/parede são comprados na Loja mas só um fica ATIVO
     // por vez (ver GameManager.equipAbility) — por isso checam

@@ -91,9 +91,26 @@ button {
   padding: 0.5px;
 }
 
+.hud-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.hud-bar-icon {
+  flex-shrink: 0;
+  font-size: 6px;
+  line-height: 1;
+}
+
+.hud-bar-row .health-bar,
+.hud-bar-row .energy-bar {
+  flex: 1;
+}
+
 .health-bar {
   width: 100%;
-  height: 5px;
+  height: 7px;
   padding: 1px;
   box-sizing: border-box;
   background: #2a0808;
@@ -127,10 +144,10 @@ button {
 
 .energy-bar {
   width: 100%;
-  height: 5px;
+  height: 7px;
   padding: 1px;
   box-sizing: border-box;
-  background: #13002b;
+  background: #041a2e;
   pointer-events: none;
 }
 
@@ -150,7 +167,7 @@ button {
   width: 100%;
   height: 100%;
   border-radius: 1px;
-  background: linear-gradient(0deg, #5200d5 80%, #9f47fd 30%);
+background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
   /* Sem transition no width: a barra já é atualizada a cada frame em
      createBulletSystem.update(), então a própria cadência do jogo é quem
      dá a suavidade do carregamento (uma transition aqui só atrasaria). */
@@ -174,7 +191,7 @@ button {
   color: #fef08a;
   font-size: 0.7rem;
   font-weight: 900;
-  line-height: 16px;
+  line-height: 1;
   text-shadow: 0 2px 2px rgba(0, 0, 0, 0.75);
   pointer-events: none;
 }
@@ -221,15 +238,19 @@ button {
   color: #bfdbfe;
   font-size: 0.7rem;
   font-weight: 900;
-  line-height: 16px;
+  line-height: 1;
   text-shadow: 0 2px 2px rgba(0, 0, 0, 0.75);
   pointer-events: none;
 }
 
 .diamond-icon {
-  font-size: 8px;
-  line-height: 16px;
-  display: inline-block;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transform-origin: center;
 }
 
