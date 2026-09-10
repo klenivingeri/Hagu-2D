@@ -30,6 +30,11 @@ import {
   onFullscreenChange,
   offFullscreenChange,
 } from '../services/FullscreenService.js';
+import { BESTIARY, getBestiaryEntry, getBehaviorTraitLabel } from '../game/config/bestiary.js';
+import { getCollectionEntries } from '../managers/GameManager.js';
+// Só a CONFIG de mobs (dados puros, sem Phaser) — nunca o Phaser em si,
+// que fica proibido aqui (CLAUDE.md regra 1: WelcomeScreen é tela HTML).
+import { getMobConfig } from '../game/config/entities.js';
 
 let elements = null;
 let idleAnimationTimer = null;
@@ -744,6 +749,168 @@ function handleAccessoryListClick(event) {
   }
 }
 
+// Ícone estático (frame 0 do run) de cada espécie — mesma pasta/convenção
+// usada em RunSummaryScreen.getMonsterIconSrc (config.path || key).
+function getCollectionIconSrc({ key, path }) {
+  const folder = path || key;
+  return `/assets/mobs/${folder}/run/sprite_run_two_0.png`;
+}
+
+// Poses "de identidade" do mob (o que ele parece fora de combate/reação) —
+// deixa fora 'stomp'/'spark', que são feedback de dano/morte, não um jeito
+// de mostrar o bicho na galeria. Ordem fixa pra galeria não pular de posição
+// entre espécies diferentes.
+const GALLERY_POSE_ORDER = ['idle', 'run', 'bow', 'attack'];
+const GALLERY_POSE_LABELS = { idle: 'Parado', run: 'Run', bow: 'Arco', attack: 'Ataque' };
+
+// entry.behavior é a mesma key usada em MOBS_CONFIG (ver
+// EnemyBase.killEnemy -> recordEnemyDefeat, que grava enemy.entityConfig.behavior
+// vindo de getMobConfig(type) — cada type do MOBS_CONFIG usa a própria key
+// como valor de "behavior"), então dá pra buscar de volta a lista de
+// animations daquele tipo de mob a partir só do que já está salvo na
+// Coleção (sem precisar de nenhuma cena do Phaser ativa).
+function getGalleryPoses(entry) {
+  if (!entry) return [];
+  const folder = entry.path || entry.key;
+  const config = getMobConfig(entry.behavior);
+
+  return GALLERY_POSE_ORDER
+    .map((poseKey) => config.animations?.find((animation) => animation.key === poseKey))
+    .filter(Boolean)
+    .map((animation) => ({
+      key: animation.key,
+      label: GALLERY_POSE_LABELS[animation.key] || animation.key,
+      src: `/assets/mobs/${folder}/${animation.url}0.png`,
+    }));
+}
+
+function buildGallerySpriteSlot({ label, src }, spriteUnlocked) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'flex flex-col items-center gap-1';
+
+  const frame = document.createElement('div');
+  frame.className = 'flex h-14 w-14 items-center justify-center rounded-lg border border-white/10 bg-gray-900/80';
+
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = `Sprite de ${label}`;
+  img.className = `h-10 w-10 object-contain [image-rendering:pixelated] ${getSpriteFilterClass(spriteUnlocked)}`;
+  // Nem todo mob tem asset pra toda pose (ex: nem todo type usa 'bow') —
+  // some o slot em vez de mostrar o ícone quebrado do navegador.
+  img.onerror = () => { wrapper.remove(); };
+
+  const caption = document.createElement('span');
+  caption.className = 'text-[9px] font-semibold text-gray-400';
+  caption.textContent = label;
+
+  frame.append(img);
+  wrapper.append(frame, caption);
+  return wrapper;
+}
+
+// Sprite ainda não dropado (ver GameManager.hasCollectedSprite): vira
+// silhueta preta em vez de sumir, pra dar a mesma sensação de "quem é esse
+// bicho?" tanto no card quanto no modal — ver EnemyBase.killEnemy() pra
+// onde a chance de drop rola de verdade.
+function getSpriteFilterClass(spriteUnlocked) {
+  return spriteUnlocked ? '' : '[filter:brightness(0)] opacity-70';
+}
+
+// Card da aba Coleção: espécie nunca derrotada (sem entrada em
+// GameManager.gameState.collection ou kills === 0) fica travada com "❔",
+// sem nome nem clique — só depois de derrotar pelo menos uma vez é que o
+// nome aparece (com a sprite em silhueta até dropar o item, ver
+// createSpriteDrops.js).
+function buildCollectionCard(speciesKey, entry) {
+  const discovered = Boolean(entry && entry.kills > 0);
+
+  const card = document.createElement('button');
+  card.type = 'button';
+  card.className = [
+    'collection-card flex flex-col items-center gap-1 rounded-xl border px-2 py-3 transition-transform',
+    discovered ? 'border-white/15 bg-gray-900/60 active:scale-95' : 'cursor-default border-white/5 bg-gray-900/30',
+  ].join(' ');
+
+  if (!discovered) {
+    const icon = document.createElement('span');
+    icon.className = 'flex h-10 w-10 items-center justify-center text-xl text-gray-600';
+    icon.textContent = '❔';
+    const label = document.createElement('span');
+    label.className = 'truncate text-[9px] font-bold text-gray-600';
+    label.textContent = '???';
+    card.append(icon, label);
+    return card;
+  }
+
+  // O card do grid revela o bicho assim que ele é derrotado pelo menos uma
+  // vez — mas só conta se a run em que ele morreu chegou até o fim (ver
+  // GameManager.recordEnemyDefeat, commitado só em GameScene.completeRun()).
+  // A silhueta de "quem é esse bicho?" fica só dentro do modal (ver
+  // openCollectionModal), na galeria de sprites, até o item colecionável ser
+  // pego em campo NUMA RUN CONCLUÍDA (ver GameManager.unlockEnemySprite).
+  const bestiaryEntry = getBestiaryEntry(speciesKey);
+  const img = document.createElement('img');
+  img.src = getCollectionIconSrc(entry);
+  img.alt = bestiaryEntry.name;
+  img.className = 'h-10 w-10 object-contain [image-rendering:pixelated]';
+  img.onerror = () => { img.style.visibility = 'hidden'; };
+
+  const label = document.createElement('span');
+  label.className = 'truncate text-[9px] font-bold text-white';
+  label.textContent = bestiaryEntry.name;
+
+  card.append(img, label);
+  card.addEventListener('click', () => openCollectionModal(speciesKey, entry));
+  return card;
+}
+
+// União do bestiário (espécies conhecidas de antemão, ver
+// game/config/bestiary.js) com o que já foi encontrado em jogo — mob novo
+// derrotado antes de ganhar entrada no bestiário ainda aparece no grid (ver
+// getBestiaryEntry, cai no fallback genérico).
+function renderCollection() {
+  if (!elements) return;
+  const entries = getCollectionEntries();
+  const speciesKeys = Array.from(new Set([...Object.keys(BESTIARY), ...Object.keys(entries)]));
+
+  elements.collectionGrid.innerHTML = '';
+  speciesKeys.forEach((speciesKey) => {
+    elements.collectionGrid.append(buildCollectionCard(speciesKey, entries[speciesKey]));
+  });
+}
+
+function openCollectionModal(speciesKey, entry) {
+  if (!elements || !entry) return;
+  const bestiaryEntry = getBestiaryEntry(speciesKey);
+  const spriteUnlocked = Boolean(entry.spriteUnlocked);
+
+  elements.collectionModalName.textContent = bestiaryEntry.name;
+  elements.collectionModalDescription.textContent = bestiaryEntry.description;
+
+  elements.collectionModalTraits.innerHTML = '';
+  if (entry.behavior) {
+    const badge = document.createElement('span');
+    badge.className = 'rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold text-sky-300';
+    badge.textContent = getBehaviorTraitLabel(entry.behavior);
+    elements.collectionModalTraits.append(badge);
+  }
+
+  elements.collectionModalSpriteGallery.innerHTML = '';
+  getGalleryPoses(entry).forEach((pose) => {
+    elements.collectionModalSpriteGallery.append(buildGallerySpriteSlot(pose, spriteUnlocked));
+  });
+  elements.collectionModalSpriteHint.classList.toggle('hidden', spriteUnlocked);
+  elements.collectionModalKills.textContent = `Derrotados nas runs: ${entry.kills}`;
+
+  elements.collectionModal.classList.remove('hidden');
+  elements.collectionModal.classList.add('flex');
+}
+
+function closeCollectionModal() {
+  elements?.collectionModal.classList.add('hidden');
+  elements?.collectionModal.classList.remove('flex');
+}
+
 function switchEquipmentSubview(subview) {
   if (!elements) return;
   elements.equipmentSubviews.forEach((panel) => {
@@ -862,6 +1029,7 @@ function switchView(view) {
     renderEquipmentAbilities();
     renderEquipmentAccessories();
   }
+  if (view === 'collection') renderCollection();
 }
 
 export function ShowWelcomeScreen({ onPlay } = {}) {
@@ -873,8 +1041,8 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
 
   HideWelcomeScreen();
 
-  const [screenRoot, modalRoot] = parseTemplate(welcomeTemplate);
-  app.append(screenRoot, modalRoot);
+  const [screenRoot, modalRoot, collectionModalRoot] = parseTemplate(welcomeTemplate);
+  app.append(screenRoot, modalRoot, collectionModalRoot);
 
   elements = {
     screenRoot,
@@ -906,6 +1074,16 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     accessoryList: screenRoot.querySelector('.equipment-accessory-list'),
     equipmentSubviews: [...screenRoot.querySelectorAll('.equipment-subview')],
     equipmentSubtabButtons: [...screenRoot.querySelectorAll('.equipment-subtab-btn')],
+    collectionGrid: screenRoot.querySelector('.collection-grid'),
+    collectionModalRoot,
+    collectionModal: collectionModalRoot,
+    collectionModalClose: collectionModalRoot.querySelector('.collection-modal-close'),
+    collectionModalName: collectionModalRoot.querySelector('.collection-modal-name'),
+    collectionModalTraits: collectionModalRoot.querySelector('.collection-modal-traits'),
+    collectionModalDescription: collectionModalRoot.querySelector('.collection-modal-description'),
+    collectionModalSpriteGallery: collectionModalRoot.querySelector('.collection-modal-sprite-gallery'),
+    collectionModalSpriteHint: collectionModalRoot.querySelector('.collection-modal-sprite-hint'),
+    collectionModalKills: collectionModalRoot.querySelector('.collection-modal-kills'),
   };
 
   elements.gearBtn.addEventListener('click', openSettings);
@@ -932,6 +1110,10 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   });
   elements.tabButtons.forEach((button) => {
     button.addEventListener('click', () => switchView(button.dataset.view));
+  });
+  elements.collectionModalClose.addEventListener('click', closeCollectionModal);
+  elements.collectionModal.addEventListener('click', (event) => {
+    if (event.target === elements.collectionModal) closeCollectionModal();
   });
   elements.playBtn.addEventListener('click', () => onPlay?.(selectedMapKey));
   elements.zoomResetBtn.addEventListener('click', () => {
@@ -968,6 +1150,7 @@ export function HideWelcomeScreen() {
   landscapeMediaQuery?.removeEventListener('change', handleOrientationChange);
   elements.screenRoot.remove();
   elements.modalRoot.remove();
+  elements.collectionModalRoot.remove();
   elements = null;
   hasCenteredStageGrid = false;
   stageZoom = getDefaultStageZoom();

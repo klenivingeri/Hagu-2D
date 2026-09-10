@@ -70,8 +70,8 @@
       <div class="shop-list min-h-0 flex w-full flex-1 flex-col gap-2 overflow-y-auto"></div>
     </section>
 
-    <section class="welcome-view hidden flex flex-1 flex-col items-center justify-center px-4" data-view="collection">
-      <p class="text-sm text-gray-400">Coleção em construção</p>
+    <section class="welcome-view hidden min-h-0 flex flex-1 flex-col px-4 pb-3 pt-3" data-view="collection">
+      <div class="collection-grid grid min-h-0 w-full flex-1 auto-rows-min grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4"></div>
     </section>
 
     <section class="welcome-view hidden min-h-0 flex flex-1 flex-col px-4 pb-3 pt-3" data-view="equipment">
@@ -160,5 +160,30 @@
         Resetar dados salvos
       </button>
     </div>
+  </div>
+</div>
+
+<div class="collection-modal fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4">
+  <div class="collection-panel w-full max-w-xs rounded-xl bg-gray-900 p-4 shadow-xl">
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="collection-modal-name text-base font-bold">???</h2>
+      <button type="button" class="collection-modal-close text-xl leading-none text-gray-400" aria-label="Fechar">×</button>
+    </div>
+
+    <div class="collection-modal-traits mb-3 flex flex-wrap gap-1"></div>
+
+    <p class="collection-modal-description mb-4 text-xs leading-relaxed text-gray-300"></p>
+
+    <div class="rounded-lg border border-white/10 bg-gray-950/60 p-3">
+      <span class="mb-2 block text-[10px] uppercase tracking-wide text-gray-400">Galeria de sprites</span>
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="collection-modal-sprite-gallery flex flex-wrap gap-3"></div>
+        <p class="collection-modal-sprite-hint text-[10px] leading-relaxed text-gray-500">
+          Derrote esse inimigo pra ter chance de coletar o item que revela essa sprite.
+        </p>
+      </div>
+    </div>
+
+    <p class="collection-modal-kills mt-3 text-[10px] text-gray-500"></p>
   </div>
 </div>

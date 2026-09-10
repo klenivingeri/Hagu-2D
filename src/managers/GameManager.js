@@ -110,6 +110,13 @@ export const gameState = {
   // as únicas exceções são vida máxima e chance de drop acima, que também
   // são lidas fora do player (HUD/EnemyBase) e por isso ficam espelhadas.
   upgrade: buildDefaultUpgradeLevels(),
+
+  // Coleção (Pokédex de inimigos, ver aba "Coleção" da Welcome). Uma entrada
+  // por espécie derrotada pelo menos uma vez, indexada pela MESMA `key` do
+  // Object Layer "enemy" do Tiled usada em EnemyBase.js/scene.enemyKills —
+  // ver recordEnemyDefeat()/unlockEnemySprite() abaixo. Populado de verdade
+  // por loadPersistedState().
+  collection: {},
 };
 
 // Carrega o estado persistido (StorageService) por cima dos defaults.
@@ -135,6 +142,7 @@ export async function loadPersistedState() {
   gameState.dropDiamant = await load('dropDiamant', gameState.dropDiamant);
   gameState.equippedAbility = await load('equippedAbility', gameState.equippedAbility);
   gameState.equippedAccessory = await load('equippedAccessory', gameState.equippedAccessory);
+  gameState.collection = await load('collection', gameState.collection);
   return gameState;
 }
 
@@ -165,11 +173,13 @@ export function recordMapStars(mapKey, stars) {
 }
 
 export function addGlobalCoins(amount = 1) {
+  if (!amount) return;
   gameState.coins += amount;
   save('coins', gameState.coins);
 }
 
 export function addGlobalDiamant(amount = 1) {
+  if (!amount) return;
   gameState.diamant += amount;
   save('diamant', gameState.diamant);
 }
@@ -318,6 +328,71 @@ export function updateSetting(key, value) {
   save('settings', gameState.settings);
 }
 
+// ==========================================
+// COLEÇÃO (BESTIÁRIO)
+// ==========================================
+// Chance (%) de um inimigo morto soltar o item colecionável de sprite (ver
+// spawnSpriteDrop em game/systems/create/createSpriteDrops.js) — só rola
+// enquanto a espécie ainda não tiver o sprite desbloqueado (hasCollectedSprite).
+export const SPRITE_DROP_CHANCE_PERCENT = 35;
+
+// ==========================================
+// DROP: SACO DE MOEDAS
+// ==========================================
+// Chance (%) de um inimigo morto soltar o saco de moedas (ver
+// spawnGoldBagDrop em game/systems/create/createGoldBagDrops.js). Ao ser
+// coletado, o saco vale uma quantidade aleatória de moedas nesse intervalo.
+export const GOLD_BAG_DROP_CHANCE_PERCENT = 12;
+export const GOLD_BAG_MIN_COINS = 2;
+export const GOLD_BAG_MAX_COINS = 6;
+
+export function getCollectionEntries() {
+  return gameState.collection;
+}
+
+export function getCollectionEntry(key) {
+  return gameState.collection[key] || null;
+}
+
+export function hasCollectedSprite(key) {
+  return Boolean(gameState.collection[key]?.spriteUnlocked);
+}
+
+function touchCollectionEntry(key, path, behavior) {
+  const existing = gameState.collection[key] || { key, path: path || '', behavior, kills: 0, spriteUnlocked: false };
+  if (path) existing.path = path;
+  if (behavior) existing.behavior = behavior;
+  return existing;
+}
+
+// Chamado por GameScene.completeRun() (nunca durante a run em si — ver
+// EnemyBase.killEnemy(), que só acumula em scene.enemyKills) uma vez pra
+// cada espécie derrotada, já com a contagem total da run em `count`.
+// Registra a espécie como "encontrada" (aparece na Coleção, ainda que só
+// com silhueta) e soma a contagem de abates, independente de ter dropado
+// sprite ou não. Só chega a persistir se o player alcançar a tela de
+// pós-jogo — abandonar/morrer sem terminar a run não conta pra Coleção.
+export function recordEnemyDefeat({ key, path = '', behavior, count = 1 } = {}) {
+  if (!key) return;
+  const entry = touchCollectionEntry(key, path, behavior);
+  entry.kills += count;
+  gameState.collection = { ...gameState.collection, [key]: entry };
+  save('collection', gameState.collection);
+}
+
+// Chamado por GameScene.completeRun() pra cada espécie cujo item de sprite
+// foi pego em campo NESTA run (ver scene.collectedSprites, populado pelo
+// overlap em createSpriteDrops.js) — só a partir da run concluída o card da
+// Coleção revela a arte colorida em vez da silhueta; morrer/sair antes do
+// portal não desbloqueia, mesmo já tendo encostado no item.
+export function unlockEnemySprite({ key, path = '', behavior } = {}) {
+  if (!key) return;
+  const entry = touchCollectionEntry(key, path, behavior);
+  entry.spriteUnlocked = true;
+  gameState.collection = { ...gameState.collection, [key]: entry };
+  save('collection', gameState.collection);
+}
+
 // Apaga tudo que foi persistido (StorageService) e devolve o gameState em
 // memória pros defaults — usado pelo botão "Resetar dados" em
 // Configurações (ver WelcomeScreen.js). É destrutivo e não tem undo, quem
@@ -337,4 +412,5 @@ export function resetProgress() {
   gameState.dropDiamant = DEFAULT_DROP_DIAMANT;
   gameState.equippedAbility = null;
   gameState.equippedAccessory = DEFAULT_EQUIPPED_ACCESSORY;
+  gameState.collection = {};
 }

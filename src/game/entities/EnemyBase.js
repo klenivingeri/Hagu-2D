@@ -5,8 +5,10 @@ import { getTiledProperty } from "../commons/tiledUtils.js";
 import { MAP_DEPTHS } from "../../constants.js";
 import { showFloatingDamage } from "../commons/floatingTextPool.js";
 import { emitEnemyHitBurst } from "../commons/dustTrail.js";
-import { addGlobalExp, gameState } from "../../managers/GameManager.js";
+import { addGlobalExp, gameState, hasCollectedSprite, SPRITE_DROP_CHANCE_PERCENT, GOLD_BAG_DROP_CHANCE_PERCENT } from "../../managers/GameManager.js";
 import { spawnDroppedDiamant } from "../systems/create/createDiamants.js";
+import { spawnSpriteDrop } from "../systems/create/createSpriteDrops.js";
+import { spawnGoldBagDrop } from "../systems/create/createGoldBagDrops.js";
 
 // ==========================================
 // ENEMY BASE
@@ -272,9 +274,27 @@ function killEnemy(enemy) {
   }
   addGlobalExp(1);
   if (enemy.scene.player?.status) enemy.scene.player.status.exp = gameState.exp;
+  // NÃO persiste na Coleção aqui (ver GameManager.recordEnemyDefeat) — só
+  // acumula na sessão (scene.enemyKills). O commit de verdade só acontece em
+  // GameScene.completeRun(), ou seja, só conta pra Coleção quem chega na
+  // tela de pós-jogo; morrer/sair no meio da run não deve contaminar o
+  // progresso salvo.
   registerEnemyKill(enemy);
   if (Math.random() * 100 < Math.max(0, Math.min(100, Number(gameState.dropDiamant) || 0))) {
     spawnDroppedDiamant(enemy.scene, enemy.x, enemy.y);
+  }
+  // Item de Coleção (ver aba "Coleção" da Welcome): só rola enquanto o
+  // player ainda não tiver a sprite daquela espécie, senão o mapa ficaria
+  // poluído de itens repetidos que não desbloqueiam mais nada.
+  if (!hasCollectedSprite(enemy.entityKey) && Math.random() * 100 < SPRITE_DROP_CHANCE_PERCENT) {
+    spawnSpriteDrop(enemy.scene, enemy.x, enemy.y, {
+      key: enemy.entityKey,
+      path: enemy.entityPath,
+      behavior: enemy.entityConfig?.behavior,
+    });
+  }
+  if (Math.random() * 100 < GOLD_BAG_DROP_CHANCE_PERCENT) {
+    spawnGoldBagDrop(enemy.scene, enemy.x, enemy.y);
   }
   enemy.isDead = true;
   enemy.isStomped = true; // reaproveita a mesma trava de animação durante a morte
@@ -297,7 +317,12 @@ function registerEnemyKill(enemy) {
   if (!scene.enemyKills) return;
 
   const id = `${enemy.entityKey}|${enemy.entityPath || ''}`;
-  const entry = scene.enemyKills.get(id) || { key: enemy.entityKey, path: enemy.entityPath || '', count: 0 };
+  const entry = scene.enemyKills.get(id) || {
+    key: enemy.entityKey,
+    path: enemy.entityPath || '',
+    behavior: enemy.entityConfig?.behavior,
+    count: 0,
+  };
   entry.count += 1;
   scene.enemyKills.set(id, entry);
 }

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY, DEFAULT_STAR_TIME_LIMIT_MS } from '../config/maps.js';
 import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS, PAUSE_EVENTS, SETTINGS_EVENTS } from '../../constants.js';
-import { gameState, unlockMap, recordMapStars } from '../../managers/GameManager.js';
+import { gameState, unlockMap, recordMapStars, recordEnemyDefeat, unlockEnemySprite, addGlobalCoins, addGlobalDiamant } from '../../managers/GameManager.js';
 import { getVirtualFrame } from '../commons/textureUtils.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
 import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
@@ -15,6 +15,8 @@ import { createRails } from '../systems/create/createRails.js';
 import { updateRailMovement } from '../systems/upgrade/updateRailMovement.js';
 import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems/create/createCoins.js';
 import { preloadDiamantAssets, createDiamantAnimations, createDiamants } from '../systems/create/createDiamants.js';
+import { createSpriteDropGroup } from '../systems/create/createSpriteDrops.js';
+import { preloadGoldBagAssets, createGoldBagDropGroup } from '../systems/create/createGoldBagDrops.js';
 import { createLifes } from '../systems/create/createLifes.js';
 import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeVisibility.js';
 import { preloadDustTexture, preloadSwordWaveTexture, preloadFireballTexture } from '../commons/dustTrail.js';
@@ -73,6 +75,7 @@ export class GameScene extends Phaser.Scene {
     preloadPlayerAssets(this)
     preloadCoinAssets(this)
     preloadDiamantAssets(this)
+    preloadGoldBagAssets(this)
 
     // Log de qualquer asset que falhar ao carregar (ajuda a depurar caminhos errados)
     this.load.on('loaderror', (file) => {
@@ -102,6 +105,10 @@ export class GameScene extends Phaser.Scene {
     this.runStartTime = this.time.now;
     this.runDamageTaken = false;
     this.enemyKills = new Map();
+    // Espécies cujo item de sprite (ver createSpriteDrops.js) foi pego nesta
+    // run — alimenta o resumo em RunSummaryScreen.js, mesma ideia do
+    // enemyKills acima.
+    this.collectedSprites = new Map();
 
     // Gera a textura de 2x2px da poeira uma única vez, antes de qualquer
     // emitDustTrail/emitBulletImpactDust ser chamado.
@@ -155,6 +162,8 @@ export class GameScene extends Phaser.Scene {
 
     createDiamantAnimations(this);
     createDiamants(this);
+    createSpriteDropGroup(this);
+    createGoldBagDropGroup(this);
     createLifes(this);
 
     createEnemyAnimations(this)
@@ -234,6 +243,22 @@ export class GameScene extends Phaser.Scene {
     // gate liberou (unlockMapKey) — são fases diferentes.
     recordMapStars(this.mapKey, stars);
 
+    // Só agora, com a run efetivamente concluída (chegou no portal e vai
+    // pra tela de pós-jogo), tudo é persistido de verdade — Coleção (ver
+    // EnemyBase.killEnemy()/createSpriteDrops.js) e moedas/diamantes (ver
+    // createCoins.js/createDiamants.js/createGoldBagDrops.js), que durante a
+    // run só acumulam em campos locais (scene.enemyKills/collectedSprites,
+    // player.levelCoins/levelDiamants). Morrer ou sair no meio da run nunca
+    // chama completeRun(), então nunca commita nada disso.
+    monsterKills.forEach(({ key, path, behavior, count }) => {
+      recordEnemyDefeat({ key, path, behavior, count });
+    });
+    this.collectedSprites.forEach(({ key, path, behavior }) => {
+      unlockEnemySprite({ key, path, behavior });
+    });
+    addGlobalCoins(this.player.levelCoins || 0);
+    addGlobalDiamant(this.player.levelDiamants || 0);
+
     this.game.events.emit(RUN_EVENTS.COMPLETE, {
       mapKey: this.mapKey,
       unlockedMapKey: unlockMapKey,
@@ -243,6 +268,7 @@ export class GameScene extends Phaser.Scene {
       exp: this.player.levelExp || 0,
       timeMs,
       monsterKills,
+      collectedSprites: Array.from(this.collectedSprites.values()),
       totalMonsters,
       totalMonstersKilled,
       stars,

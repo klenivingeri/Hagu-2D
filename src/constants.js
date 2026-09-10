@@ -30,6 +30,8 @@ export const MAP_DEPTHS = {
     COINS: 50,
     DIAMANTS: 51,
     LIFE: 52,
+    SPRITE_DROP: 53,
+    GOLD_BAG: 54,
     GROUND_FAKE: 60,
     FOREGROUND: 70,
     OBSTACLES: 80,

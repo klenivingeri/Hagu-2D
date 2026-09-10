@@ -5,6 +5,7 @@
 // só escuta (ligada em main.js/BindRunEvents).
 import runSummaryTemplate from './runSummaryScreen.html?raw';
 import { getStageLabel } from './mapLabels.js';
+import { getBestiaryEntry } from '../game/config/bestiary.js';
 
 let elements = null;
 
@@ -71,6 +72,37 @@ function renderMonsterKills(wrap, listEl, monsterKills = []) {
   });
 }
 
+// Sprites de Coleção pegos NESTA run (ver createSpriteDrops.js/
+// GameScene.completeRun) — mesmo ícone estático usado em renderMonsterKills,
+// mas com nome da Coleção (ver game/config/bestiary.js) embaixo em vez da
+// contagem, já que aqui é sempre "1 por espécie, pela primeira vez".
+function renderCollectedSprites(wrap, listEl, collectedSprites = []) {
+  listEl.innerHTML = '';
+  if (!collectedSprites.length) {
+    wrap.classList.add('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+
+  collectedSprites.forEach(({ key, path }) => {
+    const item = document.createElement('div');
+    item.className = 'flex flex-col items-center gap-1';
+
+    const img = document.createElement('img');
+    img.src = getMonsterIconSrc({ key, path });
+    img.alt = key;
+    img.className = 'h-8 w-8 object-contain [image-rendering:pixelated]';
+    img.onerror = () => { img.style.visibility = 'hidden'; };
+
+    const nameLabel = document.createElement('span');
+    nameLabel.className = 'max-w-[4rem] truncate text-[10px] font-bold text-amber-300';
+    nameLabel.textContent = getBestiaryEntry(key).name;
+
+    item.append(img, nameLabel);
+    listEl.append(item);
+  });
+}
+
 // `onBack` é quem decide o que fazer com a run terminada (ver main.js):
 // destruir o Phaser.Game e voltar pra Welcome, já com o mapa liberado
 // aparecendo no grid.
@@ -81,6 +113,7 @@ export function ShowRunSummaryScreen({
   exp = 0,
   timeMs = 0,
   monsterKills = [],
+  collectedSprites = [],
   stars = 0,
   unlockedMapKey,
   onBack,
@@ -106,6 +139,8 @@ export function ShowRunSummaryScreen({
     time: root.querySelector('.run-summary-time'),
     monstersWrap: root.querySelector('.run-summary-monsters-wrap'),
     monsters: root.querySelector('.run-summary-monsters'),
+    spritesWrap: root.querySelector('.run-summary-sprites-wrap'),
+    sprites: root.querySelector('.run-summary-sprites'),
     backBtn: root.querySelector('.run-summary-back-btn'),
   };
 
@@ -118,6 +153,7 @@ export function ShowRunSummaryScreen({
   elements.diamonds.textContent = diamondsTotal > 0 ? `${diamonds}/${diamondsTotal}` : String(diamonds);
   elements.time.textContent = formatTime(timeMs);
   renderMonsterKills(elements.monstersWrap, elements.monsters, monsterKills);
+  renderCollectedSprites(elements.spritesWrap, elements.sprites, collectedSprites);
   elements.backBtn.addEventListener('click', () => onBack?.());
 }
 

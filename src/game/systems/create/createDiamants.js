@@ -1,5 +1,4 @@
 import { MAP_DEPTHS, HUD_EVENTS } from '../../../constants.js';
-import { addGlobalDiamant, gameState } from '../../../managers/GameManager.js';
 
 const DIAMANTS_LAYER_NAME = 'diamants';
 const COIN_TILESET_NAME = 'coin';
@@ -62,9 +61,10 @@ export function createDiamants(scene) {
     if (!diamant.active || diamant.isCollecting) return;
     diamant.isCollecting = true;
     diamant.body.enable = false;
+    // Só acumula em levelDiamants (sessão da run) — commit no saldo
+    // persistido (GameManager.addGlobalDiamant) só em GameScene.completeRun(),
+    // mesma regra da Coleção/moedas: não conta se a run não terminar.
     scene.player.levelDiamants = (scene.player.levelDiamants || 0) + 1;
-    addGlobalDiamant(1);
-    scene.player.status.diamant = gameState.diamant;
     scene.sound.play('coin');
     scene.game.events.emit(HUD_EVENTS.DIAMONDS_CHANGED, scene.player.levelDiamants);
     scene.tweens.add({

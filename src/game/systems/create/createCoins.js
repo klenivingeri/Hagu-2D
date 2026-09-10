@@ -4,7 +4,6 @@ const COINS_LAYER_NAME = 'coins';
 const COIN_TILESET_NAME = 'coin';
 const COIN_FRAME_COUNT = 12;
 const COIN_DEPTH = 50;
-import { addGlobalCoins } from '../../../managers/GameManager.js';
 import { HUD_EVENTS } from '../../../constants.js';
 
 export function preloadCoinAssets(scene) {
@@ -74,9 +73,12 @@ function collectCoin(scene, player, coin) {
   coin.isCollecting = true;
   coin.body.enable = false;
   // Upgrade 'coinValue' da loja multiplica quantas moedas cada coleta vale.
+  // Só acumula em player.levelCoins (sessão da run) — o commit no saldo
+  // persistido (GameManager.addGlobalCoins) só acontece em
+  // GameScene.completeRun(), igual à Coleção (ver EnemyBase.killEnemy()):
+  // morrer/sair no meio da run não deve creditar moedas.
   const value = player.status.coinValue || 1;
   player.levelCoins = (player.levelCoins || 0) + value;
-  addGlobalCoins(value);
   player.status.totalCoins += value;
   scene.sound.play('coin');
   scene.game.events.emit(HUD_EVENTS.COINS_CHANGED, player.levelCoins);
