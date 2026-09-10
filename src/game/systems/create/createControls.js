@@ -11,7 +11,7 @@ export function createControls(scene) {
     right: false,
     jump: false,
     // Diferente de `jump` (disparo único), reflete se o botão continua
-    // pressionado. Usado por mecânicas que dependem de segurar, como o jetpack.
+    // pressionado. Usado por mecânicas que dependem de segurar, como o paraquedas.
     jumpHeld: false
   };
 

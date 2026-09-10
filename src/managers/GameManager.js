@@ -85,7 +85,7 @@ export const gameState = {
   // as estrelas preenchidas. Populado de verdade por loadPersistedState().
   mapStars: {},
 
-  // Habilidade ativa entre pulo duplo/jetpack/grudar na parede (ver
+  // Habilidade ativa entre pulo duplo/paraquedas/jetpack/grudar na parede (ver
   // ABILITY_UPGRADE_IDS) — null = nenhuma equipada ainda. Só uma fica ativa
   // por vez, mesmo com mais de uma comprada (ver equipAbility()).
   equippedAbility: null,
@@ -229,7 +229,7 @@ export function purchaseUpgrade(id) {
 // ==========================================
 // EQUIPAMENTO (HABILIDADES)
 // ==========================================
-// Pulo duplo/jetpack/grudar na parede (ver ABILITY_UPGRADE_IDS) são
+// Pulo duplo/paraquedas/jetpack/grudar na parede (ver ABILITY_UPGRADE_IDS) são
 // comprados como upgrade normal, mas só um fica ATIVO por vez — equipar um
 // desequipa automaticamente o anterior (ver aba "Equip. > Habilidade" em
 // WelcomeScreen.js). createPlayerStatus() lê gameState.equippedAbility

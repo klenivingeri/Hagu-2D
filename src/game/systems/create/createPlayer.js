@@ -75,9 +75,18 @@ export function createPlayer(scene) {
   player.levelDiamants = 0;
   player.levelExp = 0;
 
-  // Estado do jetpack: recarrega sempre que o player toca o chão
+  // Estado do paraquedas: reseta sempre que o player toca o chão
   // (ver updatePlayerMovement.js).
+  player.isParachuteActive = false;
+  // Só pode abrir uma vez por período no ar. Reseta ao tocar o chão ou
+  // colidir com uma parede (ver updatePlayerMovement.js).
+  player.hasUsedParachute = false;
+
+  // Estado do jetpack: recarrega e desarma sempre que o player toca o chão
+  // (ver updatePlayerMovement.js). "Armado" = já apertou pulo de novo no ar,
+  // então segurar o botão mantém o jetpack ativo.
   player.isJetpackActive = false;
+  player.jetpackArmed = false;
   player.jetpackFuel = player.status.jetpackFuelMs;
   player.jetpackFuelBar = createJetpackFuelBar(scene);
 
@@ -260,7 +269,9 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   // bullet). Só zeramos a velocidade horizontal: a vertical segue livre.
   player.setVelocityX(0);
   player.clearTint();
+  player.isParachuteActive = false;
   player.isJetpackActive = false;
+  player.jetpackArmed = false;
   player.jetpackFuelBar?.setVisible(false);
   // Os frames de dead_jump precisam ficar ancorados pelos pés. Sem isso,
   // cada frame é desenhado pelo centro e a animação parece subir no impacto.

@@ -9,14 +9,14 @@
 // createPlayerStatus em game/config/status.js).
 //
 // Cada upgrade custa moedas (🪙, `currency` omitido) OU diamantes (💎,
-// `currency: 'diamant'`) — pulo duplo, jetpack e chance de drop de
-// diamante são os únicos pagos em diamante, por serem desbloqueios/poder
+// `currency: 'diamant'`) — pulo duplo, paraquedas, jetpack e chance de drop
+// de diamante são os únicos pagos em diamante, por serem desbloqueios/poder
 // mais raros que o resto (ver GameManager.purchaseUpgrade).
 //
 // ECONOMIA: baseCost/costGrowth foram calibrados por "tier" de quanto o
 // upgrade facilita o jogo quando comprado — S (transformador: vida/dano/
-// pulo duplo/jetpack), A (forte: queda/multi-tiro/economia), B (utilidade:
-// alcance/energia) e C (QoL: recarga).
+// pulo duplo/paraquedas/jetpack), A (forte: queda/multi-tiro/economia), B
+// (utilidade: alcance/energia) e C (QoL: recarga).
 //
 // Calibrado para a escala planejada de 4 biomas x 10 fases (40 fases, o
 // hub/map_0 vira só seletor de bioma, sem moeda/diamante):
@@ -25,7 +25,7 @@
 //   moeda custa ~965 — o jogador termina de montar o build perto do fim
 //   do jogo, não no meio do 1º bioma.
 // - Diamantes: ~2/fase (tile + drop de inimigo) x 40 fases ≈ 80 num clear
-//   completo. Pulo duplo/jetpack ficam baratos DE PROPÓSITO (mecânica
+//   completo. Pulo duplo/paraquedas/jetpack ficam baratos DE PROPÓSITO (mecânica
 //   nova — quanto antes o player desbloquear e usar, melhor a run
 //   inteira). 'dropChance' é o upgrade que precisa acompanhar as 40
 //   fases: platinar os 3 upgrades de diamante custa ~74, então também
@@ -55,8 +55,8 @@ export const UPGRADES_CATALOG = [
     maxLevel: 10,
     baseCost: 3,
     costGrowth: 1.15,
-    base: 1600,     // ms de combustível
-    perLevel: 300,
+    base: 500,      // ms de combustível — calibrado pra subir só uns tiles, não o mapa inteiro
+    perLevel: 60,
     unit: 'ms',
   },
   {
@@ -107,10 +107,21 @@ export const UPGRADES_CATALOG = [
     boolean: true,
   },
   {
+    id: 'parachute',
+    label: 'Paraquedas',
+    icon: '🪂',
+    tier: 'S', // transformador: mobilidade vertical nova, mesma categoria do pulo duplo
+    maxLevel: 1,
+    baseCost: 12,
+    costGrowth: 1,
+    currency: 'diamant',
+    boolean: true,
+  },
+  {
     id: 'jetpack',
     label: 'Jetpack',
     icon: '🚀',
-    tier: 'S', // transformador: mobilidade vertical nova, mesma categoria do pulo duplo
+    tier: 'S', // transformador: mobilidade vertical nova, mesma categoria do pulo duplo/paraquedas
     maxLevel: 1,
     baseCost: 12,
     costGrowth: 1,
@@ -121,7 +132,7 @@ export const UPGRADES_CATALOG = [
     id: 'isStick',
     label: 'Grudar na parede',
     icon: '🧗',
-    tier: 'S', // transformador: mesma categoria do pulo duplo/jetpack (habilidade equipável)
+    tier: 'S', // transformador: mesma categoria do pulo duplo/paraquedas/jetpack (habilidade equipável)
     maxLevel: 1,
     baseCost: 8,
     costGrowth: 1,
@@ -196,7 +207,7 @@ export const UPGRADES_CATALOG = [
     id: 'dropChance',
     label: 'Chance de dropar diamante',
     icon: '💎',
-    tier: 'A', // forte: efeito "bola de neve" do diamante, acelera pulo duplo/jetpack
+    tier: 'A', // forte: efeito "bola de neve" do diamante, acelera pulo duplo/paraquedas/jetpack
     maxLevel: 5,
     baseCost: 6,
     costGrowth: 1.3,
@@ -247,7 +258,7 @@ export const UPGRADES_CATALOG = [
 // Upgrades comprados na Loja mas equipados na aba "Equip. > Habilidade" (ver
 // WelcomeScreen.js) em vez de aparecerem na Loja normal — só uma habilidade
 // fica ativa por vez (ver GameManager.equipAbility).
-export const ABILITY_UPGRADE_IDS = ['doubleJump', 'jetpack', 'isStick'];
+export const ABILITY_UPGRADE_IDS = ['doubleJump', 'parachute', 'jetpack', 'isStick'];
 
 // Mesmo esquema acima, só que pra aba "Equip. > Acessório" — só uma arma
 // fica equipada por vez (ver GameManager.equipAccessory). 'defaultWeapon' é

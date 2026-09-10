@@ -26,7 +26,7 @@ export function createPlayerStatus(overrides = {}) {
     speed: 110,                // velocidade horizontal (px/s) - já usado em updatePlayerMovement
     jumpHeight: 200,            // força do pulo (velocidade vertical, px/s) - já usado em updatePlayerMovement
     maxSafeFallTiles: upgradeValue('fallResistance'), // tiles de queda seguros antes de morrer
-    // Pulo duplo/jetpack/parede são comprados na Loja mas só um fica ATIVO
+    // Pulo duplo/paraquedas/jetpack/parede são comprados na Loja mas só um fica ATIVO
     // por vez (ver GameManager.equipAbility) — por isso checam
     // gameState.equippedAbility, nunca o nível do upgrade direto.
     isStick: gameState.equippedAbility === 'isStick', // habilidade equipada de grudar na parede
@@ -36,9 +36,11 @@ export function createPlayerStatus(overrides = {}) {
     bulletRangeTiles: upgradeValue('bulletRange'), // alcance do tiro do player, em tiles (ver createBulletSystem)
 
     isDoubleJump: gameState.equippedAbility === 'doubleJump',
+    isParachute: gameState.equippedAbility === 'parachute',
+    parachuteFloatSpeed: 40,         // velocidade máxima de queda enquanto o paraquedas está freando
     isJetpack: gameState.equippedAbility === 'jetpack',
     jetpackFuelMs: upgradeValue('energy'),   // duração total de uso do jetpack, em ms
-    jetpackFloatSpeed: 40,         // velocidade máxima de queda enquanto o jetpack está freando
+    jetpackLiftSpeed: -70,          // velocidade vertical (px/s) aplicada enquanto o jetpack sobe
     doubleJumpEnabled: gameState.equippedAbility === 'doubleJump', // compatibilidade com o nome antigo
     jumpDamage: 1,                 // dano ao pisar em cima do inimigo (stomp)
     // Arma equipada na aba "Equip. > Acessório" (ver ACCESSORY_UPGRADE_IDS

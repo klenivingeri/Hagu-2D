@@ -17,15 +17,19 @@ export const updatePlayerMovement = (scene) => {
     const right = scene.cursors.right.isDown || scene.keys.D.isDown || scene.controlState.right;
     const wasGrounded = player.body.blocked.down || player.body.touching.down;
     const wasWallSliding = player.isWallSliding;
+    // Guardado antes da lógica do paraquedas reatribuir isParachuteActive:
+    // usado só pra detectar a borda de subida (abriu agora) na animação,
+    // sem isso o repeat:0 da animação seria ignorado (ver mais abaixo).
+    const wasParachuteActive = player.isParachuteActive;
     const now = scene.time.now;
 
-    // Enquanto o jetpack está freando a queda (estado decidido no frame
+    // Enquanto o paraquedas/jetpack está ativo (estado decidido no frame
     // anterior), a distância de queda não conta pra morte: o ponto de
-    // referência anda junto com o player a cada frame. Quando o jetpack
-    // para de ser usado (solta, acaba o combustível ou pousa), o último
+    // referência anda junto com o player a cada frame. Quando a habilidade
+    // para de ser usada (solta, acaba o combustível ou pousa), o último
     // valor gravado aqui fica congelado e passa a valer como novo início
     // de queda.
-    if (player.isJetpackActive) {
+    if (player.isParachuteActive || player.isJetpackActive) {
       player.fallStartY = player.body.bottom;
     }
 
@@ -155,7 +159,7 @@ export const updatePlayerMovement = (scene) => {
 
     // Um pulo extra fica disponível durante todo o período no ar: tanto faz
     // se o player saiu do chão pulando ou simplesmente caiu de uma borda.
-    // Independente do jetpack — as duas mecânicas não competem entre si.
+    // Independente do paraquedas — as duas mecânicas não competem entre si.
     if (scene.controlState.jump
       && !startedJump
       && !wasGrounded
@@ -169,31 +173,69 @@ export const updatePlayerMovement = (scene) => {
       startedJump = true;
     }
 
-    // --- Jetpack: só freia a queda, não impulsiona pra cima ---
-    // Segurando o pulo enquanto está caindo no ar, a queda fica mais lenta
-    // até acabar o combustível. Não interfere no pulo normal/duplo (que usam
-    // velocidade negativa) porque só age quando o player já está caindo.
+    const jumpHeld = scene.cursors.up?.isDown
+      || scene.keys.W.isDown
+      || scene.spaceKey.isDown
+      || scene.controlState.jumpHeld;
+
+    // --- Paraquedas: só freia a queda, não impulsiona pra cima ---
+    // Segurando o pulo enquanto está caindo no ar, a queda fica mais lenta.
+    // Só pode ser aberto uma vez por período no ar: soltar o botão no meio
+    // da queda e apertar de novo NÃO reabre. Só volta a ficar disponível
+    // depois de colidir com uma layer (chão ou parede), que é justamente
+    // quando o player consegue pular de novo.
+    if (wasGrounded || wallSide !== 0) {
+      player.isParachuteActive = false;
+      player.hasUsedParachute = false;
+    } else {
+      const isFalling = player.body.velocity.y > player.status.parachuteFloatSpeed;
+      // hasUsedParachute só bloqueia REABRIR depois de soltar. Enquanto já
+      // está aberto (isParachuteActive), continuar segurando não conta como
+      // reabertura, senão o paraquedas fecharia sozinho no primeiro frame.
+      // Tomar dano desliga o paraquedas: enquanto durar a invulnerabilidade
+      // (mesma janela do piscar), a queda volta a ser normal.
+      const canUseParachute = player.status.isParachute
+        && jumpHeld
+        && isFalling
+        && (player.isParachuteActive || !player.hasUsedParachute)
+        && !player.invulnerable;
+
+      if (canUseParachute) {
+        player.isParachuteActive = true;
+        player.hasUsedParachute = true;
+        player.setVelocityY(player.status.parachuteFloatSpeed);
+      } else {
+        player.isParachuteActive = false;
+      }
+    }
+
+    // --- Jetpack: impulsiona o player pra cima enquanto durar o combustível ---
+    // O pulo normal continua igual (sobe do chão do jeito de sempre). O
+    // jetpack só entra em jogo depois: precisa apertar pulo DE NOVO já no
+    // ar (armar) — segurando depois disso, o jetpack fica ativo. Diferente
+    // do paraquedas (só freia queda), o jetpack sobe mesmo que o player não
+    // esteja caindo, mas só recarrega e desarma no chão.
     if (wasGrounded) {
       player.jetpackFuel = player.status.jetpackFuelMs;
       player.isJetpackActive = false;
+      player.jetpackArmed = false;
     } else {
-      const jumpHeld = scene.cursors.up?.isDown
-        || scene.keys.W.isDown
-        || scene.spaceKey.isDown
-        || scene.controlState.jumpHeld;
-      const isFalling = player.body.velocity.y > player.status.jetpackFloatSpeed;
+      if (!player.jetpackArmed && !startedJump && scene.controlState.jump && player.status.isJetpack) {
+        player.jetpackArmed = true;
+      }
+
       // Tomar dano desliga o jetpack: enquanto durar a invulnerabilidade
-      // (mesma janela do piscar), a queda volta a ser normal.
+      // (mesma janela do piscar), o player volta a cair normalmente.
       const canUseJetpack = player.status.isJetpack
+        && player.jetpackArmed
         && jumpHeld
-        && isFalling
         && player.jetpackFuel > 0
         && !player.invulnerable;
 
       if (canUseJetpack) {
         player.isJetpackActive = true;
         player.jetpackFuel = Math.max(0, player.jetpackFuel - scene.game.loop.delta);
-        player.setVelocityY(player.status.jetpackFloatSpeed);
+        player.setVelocityY(player.status.jetpackLiftSpeed);
       } else {
         player.isJetpackActive = false;
       }
@@ -209,6 +251,15 @@ export const updatePlayerMovement = (scene) => {
         const stickAnimation = getEntityAnimationKey(player.entityKey, 'stick');
         if (player.anims.currentAnim?.key !== stickAnimation) {
           player.anims.play(stickAnimation, true);
+        }
+      } else if (player.isParachuteActive) {
+        // Só (re)inicia a animação na borda de subida (acabou de abrir).
+        // A animação usa repeat:0 (abre uma vez e congela no último frame
+        // enquanto continua caindo) — chamar play() de novo a cada frame,
+        // mesmo com a mesma key, reiniciaria o repeat:0 em loop.
+        if (!wasParachuteActive) {
+          const parachuteAnimation = getEntityAnimationKey(player.entityKey, 'parachute');
+          player.anims.play(parachuteAnimation, true);
         }
       } else if (isAirborne) {
         // Frame do pulo é escolhido pela velocidade vertical, não por uma

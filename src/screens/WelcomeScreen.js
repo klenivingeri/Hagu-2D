@@ -495,7 +495,7 @@ function setupGridInteractions(viewport) {
 }
 
 // Barrinha de "pips" (um quadradinho por nível) usada nos upgrades da loja
-// que têm mais de 1 nível — os upgrades booleanos (pulo duplo, jetpack) não
+// que têm mais de 1 nível — os upgrades booleanos (pulo duplo, paraquedas) não
 // chamam esta função, eles só mostram um badge de bloqueado/comprado.
 function renderUpgradePips(maxLevel, level) {
   return Array.from({ length: maxLevel }, (_, index) => {
@@ -509,7 +509,7 @@ function renderShop() {
 
   elements.shopList.innerHTML = '';
 
-  // Pulo duplo/jetpack/parede/armas saíram da Loja pra aba "Equip." (ver
+  // Pulo duplo/paraquedas/jetpack/parede/armas saíram da Loja pra aba "Equip." (ver
   // renderEquipmentAbilities/renderEquipmentAccessories) — só um item de
   // cada grupo fica ativo por vez, então usam o fluxo comprar-depois-equipar,
   // não o botão de compra normal.

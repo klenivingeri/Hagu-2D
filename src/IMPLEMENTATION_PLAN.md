@@ -12,10 +12,13 @@
 - HUD mostra moedas e diamantes coletados na fase, além do XP global.
 - `isDoubleJump`: pulo extra disponível uma vez por período no ar, resetado
   ao tocar o chão (ver `hasUsedDoubleJump` em `updatePlayerMovement.js`).
-- `isJetpack`: segurar o pulo no ar por `jetpackActivationMs` liga o jetpack
-  (permite planar e subir um pouco), consumindo `jetpackFuelMs` de
-  combustível. Pousar recarrega. Uma barra ao lado do player
-  (`game/commons/jetpackBar.js`) mostra o combustível restante.
+- `isParachute`: segurar o pulo enquanto cai no ar abre o paraquedas, que
+  reduz a velocidade de queda pra evitar morte por queda. Sem limite de uso/
+  combustível — some ao tocar o chão ou tomar dano (ver `updatePlayerMovement.js`).
+- `isJetpack`: segurar o pulo no ar impulsiona o player pra cima
+  (`jetpackLiftSpeed`), consumindo `jetpackFuelMs` de combustível. Pousar
+  recarrega. Uma barra ao lado do player (`game/commons/jetpackBar.js`)
+  mostra o combustível restante.
 
 ## Próximas implementações
 

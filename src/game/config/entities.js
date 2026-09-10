@@ -19,6 +19,7 @@ export const PLAYERS_CONFIG = {
       { key: 'dead_jump', url: 'dead_jump/sprite_z_die_one_', frames: 10, frameRate: 10, repeat: 0 },
       { key: 'jump_down', url: 'jump_down/sprite_knock_down_one_', frames: 3, frameRate: 10, repeat: -1 },
       { key: 'attack', url: 'attack/sprite_weapon_sword_atk_melee_', frames: 5, frameRate: 20, repeat: 0 },
+      { key: 'parachute', url: 'parachute/sprite_parachute_', frames: 5, frameRate: 20, repeat: 0 }
     ],
     stats: {},
   },
