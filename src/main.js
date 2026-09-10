@@ -11,6 +11,7 @@ import { BindPauseEvents, HidePauseScreen } from './screens/PauseScreen.js';
 import { BindSettingsEvents, HideSettingsScreen } from './screens/SettingsScreen.js';
 import { BindGameOverEvents, HideGameOverScreen } from './screens/GameOverScreen.js';
 import { loadPersistedState } from './managers/GameManager.js';
+import { RegisterServiceWorker } from './services/registerServiceWorker.js';
 
 // O Phaser só é instanciado quando a partida realmente começa (CLAUDE.md
 // regra 4), então o canvas e os controles ficam escondidos (via CSS, já no
@@ -83,6 +84,8 @@ function backToWelcome() {
   if (gameLayout) gameLayout.classList.remove('is-active');
   ShowWelcomeScreen({ onPlay: startMatch });
 }
+
+RegisterServiceWorker();
 
 // Boot inicial: loading primeiro (aqui entra qualquer leitura de dado
 // persistido — StorageService/futuro banco local), só depois a Welcome.
