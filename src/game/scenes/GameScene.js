@@ -17,7 +17,7 @@ import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems
 import { preloadDiamantAssets, createDiamantAnimations, createDiamants } from '../systems/create/createDiamants.js';
 import { createLifes } from '../systems/create/createLifes.js';
 import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeVisibility.js';
-import { preloadDustTexture, preloadSwordWaveTexture } from '../commons/dustTrail.js';
+import { preloadDustTexture, preloadSwordWaveTexture, preloadFireballTexture } from '../commons/dustTrail.js';
 import { preloadPortalAssets, createPortalAnimations, createPortals } from '../systems/create/createPortals.js';
 import { createGates } from '../systems/create/createGates.js';
 
@@ -59,7 +59,7 @@ export class GameScene extends Phaser.Scene {
     this.load.audio('bullet_effect_1', 'assets/sounds/bullet_effect_6.mp3');
     // Som do tiro do Arco (ver ACCESSORY_UPGRADE_IDS em game/config/upgrades.js
     // e BOW_WEAPON_ID em createBulletSystem.js) — cada arma tem o próprio som.
-    this.load.audio('bullet_effect_bow', 'assets/sounds/bullet_effect_4.mp3');
+    this.load.audio('bullet_effect_bow', 'assets/sounds/bullet_effect_7.mp3');
     // Som do golpe da Espada (ver WEAPONS_CONFIG.sword em game/config/weapons.js).
     this.load.audio('sword_swing', 'assets/sounds/sword-sound.mp3');
     // Som de impacto do Arco (a flecha "explode" ao colidir, ver
@@ -108,6 +108,8 @@ export class GameScene extends Phaser.Scene {
     preloadDustTexture(this);
     // Gera a textura da meia lua da Espada (ver createBulletSystem.js).
     preloadSwordWaveTexture(this);
+    // Gera a textura da bola de fogo do Cajado (ver createBulletSystem.js).
+    preloadFireballTexture(this);
 
     createWorld(this);
     createControls(this);
@@ -143,6 +145,11 @@ export class GameScene extends Phaser.Scene {
     // game/config/upgrades.js) — grupo próprio porque não usa munição da
     // aljava nem a textura genérica 'bullet' (ver createBulletSystem.js).
     this.swordWaves = this.physics.add.group({ maxSize: 4 });
+    // Bola de fogo do Cajado (ver ACCESSORY_UPGRADE_IDS em
+    // game/config/upgrades.js) — grupo próprio porque, ao contrário de
+    // bullets/swordWaves, tem gravidade ligada e quica nas plataformas (ver
+    // createBulletSystem.js).
+    this.fireballs = this.physics.add.group({ maxSize: 4 });
     this.bulletSystem = createBulletSystem(this);
     this.damagePlayer = (damage) => damagePlayer(this, damage);
 

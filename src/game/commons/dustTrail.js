@@ -17,6 +17,15 @@ const SWORD_WAVE_STROKE = 3;
 const SWORD_WAVE_TRAIL_INTERVAL = 40;
 const SWORD_WAVE_TRAIL_PARTICLES = 2;
 
+// Bola de fogo do Cajado (ver WEAPONS_CONFIG.staff em game/config/weapons.js
+// e spawnFireball em createBulletSystem.js): círculo pequeno com núcleo mais
+// claro, sem depender de sprite, igual ao "foguinho" do Mario.
+const FIREBALL_RADIUS = 3;
+const FIREBALL_OUTER_COLOR = 0xff6a00;
+const FIREBALL_INNER_COLOR = 0xffe066;
+const FIREBALL_TRAIL_INTERVAL = 40;
+const FIREBALL_TRAIL_PARTICLES = 2;
+
 /**
  * Gera a textura de 2x2px usada pela poeira, uma única vez por jogo.
  * Precisa ser chamada ANTES do primeiro emitDustTrail/emitBulletImpactDust
@@ -56,6 +65,23 @@ export function preloadSwordWaveTexture(scene) {
   );
   graphics.strokePath();
   graphics.generateTexture('sword_wave', SWORD_WAVE_WIDTH, SWORD_WAVE_HEIGHT);
+  graphics.destroy();
+}
+
+/**
+ * Gera a textura da bola de fogo do Cajado — um círculo laranja com núcleo
+ * amarelo mais claro, 10x10px, sem depender de sprite.
+ */
+export function preloadFireballTexture(scene) {
+  if (scene.textures.exists('fireball')) return;
+
+  const size = FIREBALL_RADIUS * 2;
+  const graphics = scene.make.graphics({ x: 0, y: 0, add: false });
+  graphics.fillStyle(FIREBALL_OUTER_COLOR, 1);
+  graphics.fillCircle(FIREBALL_RADIUS, FIREBALL_RADIUS, FIREBALL_RADIUS);
+  graphics.fillStyle(FIREBALL_INNER_COLOR, 1);
+  graphics.fillCircle(FIREBALL_RADIUS, FIREBALL_RADIUS, FIREBALL_RADIUS * 0.55);
+  graphics.generateTexture('fireball', size, size);
   graphics.destroy();
 }
 
@@ -288,6 +314,30 @@ export function emitSwordWaveTrail(scene, wave) {
       scale: Phaser.Math.FloatBetween(0.6, 1),
       lifespan: Phaser.Math.Between(120, 200),
       tint: SWORD_WAVE_COLOR,
+    });
+  }
+}
+
+/**
+ * Rastro de faíscas atrás da bola de fogo do Cajado enquanto ela quica (ver
+ * spawnFireball em createBulletSystem.js) — mesmo throttle das outras trilhas.
+ */
+export function emitFireballTrail(scene, fireball) {
+  const now = scene.time.now;
+  const lastEmission = fireball._lastTrailEmission ?? -Infinity;
+  if (now - lastEmission < FIREBALL_TRAIL_INTERVAL) return;
+  fireball._lastTrailEmission = now;
+
+  const emitter = getDustEmitter(scene);
+
+  for (let index = 0; index < FIREBALL_TRAIL_PARTICLES; index += 1) {
+    const x = fireball.x + Phaser.Math.Between(-2, 2);
+    const y = fireball.y + Phaser.Math.Between(-2, 2);
+
+    emitParticle(emitter, x, y, Phaser.Math.Between(-10, 10), Phaser.Math.Between(-10, 10), {
+      scale: Phaser.Math.FloatBetween(0.6, 1),
+      lifespan: Phaser.Math.Between(120, 200),
+      tint: FIREBALL_OUTER_COLOR,
     });
   }
 }

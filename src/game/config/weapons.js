@@ -48,16 +48,23 @@ export const WEAPONS_CONFIG = {
     critMultiplier: 2,
     rangeTiles: 2,
   },
-  // Cajado: ainda sem mecânica própria (ver ACCESSORY_UPGRADE_IDS em
-  // game/config/upgrades.js) — usa o mesmo comportamento da arma padrão até
-  // ganhar bullet/animação/som próprios.
+  // Cajado: dispara uma bola de fogo (spawnType 'fireball', ver
+  // spawnFireball em createBulletSystem.js) que quica no chão feito o
+  // foguinho do Mario. Some no primeiro tile/parede lateral ou ao cair mais
+  // de 1 tile sem repicar; ao acertar um inimigo, some e aplica queimadura
+  // (burnDamage a cada burnTickIntervalMs) em vez de transformar em moeda.
+  // O Nº DE HITS de queimadura não fica aqui: vem de player.status.burnTicks
+  // (upgrade 'burnTicks' da loja, base 1 — ver game/config/status.js), pra
+  // precisar comprar na loja pra queimar por mais tempo.
   staff: {
     animationKey: 'bow',
-    spawnType: 'bullet',
+    spawnType: 'fireball',
     shootSoundKey: 'bullet_effect_1',
     impactSoundKey: 'tap',
     pierce: false,
-    damageMultiplier: 1,
+    damageMultiplier: 0.5,
+    burnDamage: 1,
+    burnTickIntervalMs: 500,
   },
 };
 

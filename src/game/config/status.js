@@ -51,6 +51,12 @@ export function createPlayerStatus(overrides = {}) {
     exp: gameState.exp,
     playerSpritePath: gameState.playerSpritePath,
     BulletSequence: upgradeValue('sequence'),   // quantas flechas saem por disparo
+    // Nº de hits de queimadura aplicados por acerto da bola de fogo do
+    // Cajado (upgrade 'burnTicks' — ver WEAPONS_CONFIG.staff em
+    // game/config/weapons.js e spawnFireball em createBulletSystem.js). Não
+    // acumula entre acertos: cada novo hit apenas reinicia a contagem
+    // (ver applyBurn em entities/EnemyBase.js), nunca soma.
+    burnTicks: upgradeValue('burnTicks'),
     // Energia: todas as armas (ver ACCESSORY_UPGRADE_IDS em
     // game/config/upgrades.js) gastam energia pra atacar — não é mais só
     // munição do arco/arma (ver createBulletSystem.js). Recarrega sozinha

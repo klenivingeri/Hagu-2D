@@ -1,6 +1,6 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
 import { getWeaponConfig } from '../../config/weapons.js';
-import { emitBulletImpactDust, emitDryFireBurst, emitSwordWaveTrail } from '../../commons/dustTrail.js';
+import { emitBulletImpactDust, emitDryFireBurst, emitSwordWaveTrail, emitFireballTrail } from '../../commons/dustTrail.js';
 import { MAP_DEPTHS, HUD_EVENTS } from '../../../constants.js';
 
 // Intervalo entre cada flecha de uma mesma "sequência de disparo" (upgrade
@@ -27,6 +27,16 @@ const SWORD_WAVE_OFFSET_Y = 2;
 // ataque "falha a seco" igual à aljava vazia de antes.
 const ENERGY_COST_PER_ATTACK = 1;
 
+// Bola de fogo do Cajado (WEAPONS_CONFIG.staff, spawnType 'fireball'): quica
+// no chão feito o "foguinho" do Mario. FIREBALL_BOUNCE_VELOCITY é o impulso
+// vertical aplicado a cada repique (ver o collider com scene.platforms mais
+// abaixo); FIREBALL_SPEED é a velocidade horizontal constante.
+const FIREBALL_SPEED = 180;
+const FIREBALL_BOUNCE_VELOCITY = 130;
+// Se ela sair de uma borda/plataforma e cair mais que 1 tile (16px) sem
+// repicar num chão, é destruída em vez de cair pra sempre (ver update()).
+const FIREBALL_FALL_DESTROY_PX = 16;
+
 export function createBulletSystem(scene) {
   // O tiro colide fisicamente com o cenário. Cada layer colidível usa um
   // callback próprio para garantir que o efeito aconteça somente em tiles,
@@ -45,6 +55,28 @@ export function createBulletSystem(scene) {
       emitBulletImpactDust(scene, wave, Math.sign(wave.body?.velocity.x || scene.lastDirection));
       scene.sound.play(wave.impactSoundKey || 'tap');
       destroyProjectile(wave);
+    });
+    // Bola de fogo do Cajado: bater em cima do tile (touching.down) é o
+    // repique normal (quica). Qualquer outro lado (parede lateral ou teto)
+    // destrói, igual ao foguinho do Mario explodindo na parede — e mesmo
+    // batendo em cima, se ela caiu mais de 1 tile (FIREBALL_FALL_DESTROY_PX)
+    // desde o último chão tocado (ex: caiu de uma borda/plataforma alta),
+    // esse próprio impacto no chão já destrói em vez de repicar de novo.
+    scene.physics.add.collider(scene.fireballs, colliderLayer, (fireball) => {
+      if (!fireball?.active) return;
+
+      const touchedDown = fireball.body.touching.down || fireball.body.blocked.down;
+      const fellTooFar = fireball.y - fireball.lastGroundY > FIREBALL_FALL_DESTROY_PX;
+
+      if (touchedDown && !fellTooFar) {
+        fireball.body.setVelocityY(-FIREBALL_BOUNCE_VELOCITY);
+        fireball.lastGroundY = fireball.y;
+        return;
+      }
+
+      emitBulletImpactDust(scene, fireball, Math.sign(fireball.body?.velocity.x || scene.lastDirection));
+      scene.sound.play(fireball.impactSoundKey || 'tap');
+      destroyProjectile(fireball);
     });
   });
 
@@ -99,6 +131,45 @@ export function createBulletSystem(scene) {
       emitEnergyHud(scene, player);
       scene.sound.play(weaponConfig.shootSoundKey);
     }
+  };
+
+  // Cajado: cria a bola de fogo e lança na direção que o player está
+  // olhando, com gravidade normal (o repique é resolvido pelo collider com
+  // scene.platforms acima). Sem sequência/aljava — um tiro por gasto de
+  // energia, igual à espada.
+  const spawnFireball = () => {
+    const player = scene.player;
+    if (!hasEnoughEnergy(player)) {
+      dryFire(scene, player);
+      return;
+    }
+    const weaponConfig = getWeaponConfig(player.status.currentWeapon);
+    const fireball = scene.fireballs.get(player.x, player.y + 5, 'fireball');
+    if (!fireball) return;
+
+    fireball.setActive(true);
+    fireball.setVisible(true);
+    fireball.body.enable = true;
+    fireball.body.allowGravity = true;
+    fireball.body.setVelocity(FIREBALL_SPEED * player._shootDirection, 0);
+    fireball.owner = 'player';
+    fireball.setDepth(scene.player.depth ?? MAP_DEPTHS.PLAYER);
+    fireball.damage = Math.max(1, Math.round(player.status.bulletDamage * weaponConfig.damageMultiplier));
+    fireball.burnDamage = weaponConfig.burnDamage || 0;
+    // Quantos hits de queimadura ela aplica ao acertar um inimigo — vem do
+    // upgrade 'burnTicks' da loja (player.status, ver game/config/status.js),
+    // não da arma: base 1 hit, precisa comprar pra queimar por mais tempo.
+    fireball.burnTicks = player.status.burnTicks || 1;
+    fireball.burnTickIntervalMs = weaponConfig.burnTickIntervalMs || 500;
+    fireball.impactSoundKey = weaponConfig.impactSoundKey;
+    // Referência de "último chão tocado", usada em update() pra destruir a
+    // bola de fogo se ela cair mais de 1 tile sem repicar (saiu de uma
+    // borda/plataforma) — ver FIREBALL_FALL_DESTROY_PX.
+    fireball.lastGroundY = fireball.y;
+
+    spendEnergy(player, scene);
+    emitEnergyHud(scene, player);
+    scene.sound.play(weaponConfig.shootSoundKey);
   };
 
   // Dispara `player.status.BulletSequence` flechas em rajada (upgrade
@@ -218,6 +289,10 @@ export function createBulletSystem(scene) {
       playWeaponAnimation(player, weaponConfig.animationKey, spawnSwordWave);
       return;
     }
+    if (weaponConfig.spawnType === 'fireball') {
+      playWeaponAnimation(player, weaponConfig.animationKey, spawnFireball);
+      return;
+    }
 
     playWeaponAnimation(player, weaponConfig.animationKey, spawnBulletSequence);
   };
@@ -279,6 +354,19 @@ export function createBulletSystem(scene) {
       // Rastro de partículas atrás da meia lua enquanto ela avança.
       scene.swordWaves.getChildren().forEach((wave) => {
         if (wave?.active) emitSwordWaveTrail(scene, wave);
+      });
+
+      // Bola de fogo do Cajado: não usa maxRangePx (o collider com
+      // scene.platforms acima já cuida do repique/destruição em paredes,
+      // teto e quedas de mais de 1 tile) — aqui só cobre o caso que o
+      // collider não vê: sair da tela sem nunca ter colidido com nada.
+      scene.fireballs.getChildren().forEach((fireball) => {
+        if (!fireball?.active) return;
+        emitFireballTrail(scene, fireball);
+
+        if (fireball.x > scene.scale.width || fireball.x < 0) {
+          destroyProjectile(fireball);
+        }
       });
     },
   };

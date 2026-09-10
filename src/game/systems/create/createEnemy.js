@@ -1,7 +1,7 @@
 import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
 import { DEFAULT_MOB_TYPE, getMobConfig } from "../../config/entities.js";
 import { EnemyFactory } from "../../entities/EnemyFactory.js";
-import { damageEnemy, stompDamageEnemy } from "../../entities/EnemyBase.js";
+import { damageEnemy, stompDamageEnemy, applyBurn } from "../../entities/EnemyBase.js";
 
 // ==========================================
 // CRIAÇÃO DOS INIMIGOS
@@ -53,6 +53,25 @@ export function createEnemys(scene) {
       const waveDirection = Math.sign(wave.body?.velocity.x || 0);
       bulletDestroy(wave);
       damageEnemy(enemy, wave.damage, waveDirection);
+    },
+    null,
+    scene
+  );
+
+  // Bola de fogo do Cajado (ver WEAPONS_CONFIG.staff em game/config/weapons.js
+  // e spawnFireball em createBulletSystem.js): some no primeiro inimigo que
+  // acertar (nunca atravessa) e, em vez de dano único, aplica dano de
+  // impacto + queimadura (dano ao longo do tempo, ver applyBurn em
+  // entities/EnemyBase.js).
+  scene.physics.add.overlap(
+    scene.fireballs,
+    enemies,
+    (fireball, enemy) => {
+      if (!fireball?.active) return;
+      const fireballDirection = Math.sign(fireball.body?.velocity.x || 0);
+      bulletDestroy(fireball);
+      damageEnemy(enemy, fireball.damage, fireballDirection);
+      applyBurn(enemy, fireball.burnDamage, fireball.burnTicks, fireball.burnTickIntervalMs);
     },
     null,
     scene

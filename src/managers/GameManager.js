@@ -48,6 +48,9 @@ const DEFAULT_DROP_DIAMANT = getUpgradeValue(findUpgradeDef('dropChance'), 0);
 // resetProgress()) — dá pra comprar/testar habilidades e armas sem precisar
 // jogar uma run primeiro.
 const DEFAULT_DIAMANT = 100;
+// Moedas (🪙, "ouro") iniciais do player, mesmo esquema do diamante acima —
+// dá pra platinar upgrades e testar builds sem precisar farmar fase por fase.
+const DEFAULT_COINS = 10000;
 
 // Nível 0 (ainda não comprado) pra cada upgrade do catálogo. Sempre uma
 // cópia nova (buildDefaultUpgradeLevels()) — nunca reutilize este objeto
@@ -65,7 +68,7 @@ export const gameState = {
   playerName: 'Jogador',
   maxlife: DEFAULT_MAX_LIFE,
   gold: 0,
-  coins: 0,
+  coins: DEFAULT_COINS,
   diamant: DEFAULT_DIAMANT,
   playerSpritePath: '',
   // Preferências do usuário (persistidas via StorageService — nunca
@@ -311,7 +314,7 @@ export function updateSetting(key, value) {
 // chama é responsável por confirmar com o player antes.
 export function resetProgress() {
   clearAll();
-  gameState.coins = 0;
+  gameState.coins = DEFAULT_COINS;
   gameState.diamant = DEFAULT_DIAMANT;
   gameState.gold = 0;
   gameState.exp = 0;

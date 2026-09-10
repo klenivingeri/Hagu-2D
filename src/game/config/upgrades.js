@@ -172,7 +172,7 @@ export const UPGRADES_CATALOG = [
     id: 'staff',
     label: 'Cajado',
     icon: '🪄',
-    description: 'Bolinhas mágicas: transformam o inimigo em moeda ao matar.',
+    description: 'Bola de fogo que quica pelo chão e queima o inimigo ao acertar.',
     tier: 'S',
     maxLevel: 1,
     baseCost: 14,
@@ -216,6 +216,18 @@ export const UPGRADES_CATALOG = [
     base: 1,
     perLevel: 1,
     unit: 'moeda(s)',
+  },
+  {
+    id: 'burnTicks',
+    label: 'Queimadura do Cajado',
+    icon: '🔥',
+    tier: 'B', // utilidade: só relevante pra quem tem o Cajado equipado
+    maxLevel: 4,
+    baseCost: 6,
+    costGrowth: 1.2,
+    base: 1,        // hits de queimadura aplicados após o acerto da bola de fogo
+    perLevel: 1,
+    unit: 'hit(s)',
   },
   {
     id: 'reloadSpeed',

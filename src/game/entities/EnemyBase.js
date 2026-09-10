@@ -30,6 +30,7 @@ export const ENEMY_HIT_FLASH_MS = 100;
 export const ENEMY_KNOCKBACK_SPEED = 80;
 export const ENEMY_KNOCKBACK_MS = 100;
 export const ENEMY_DAMAGE_COOLDOWN_MS = 300; // tempo sem poder levar outro dano (bullet ou stomp), evita múltiplos hits de uma vez
+const BURN_TINT = 0xff8c00; // laranja: feedback visual distinto do vermelho de dano por impacto
 
 // --------------------------------------------------------------
 // Leitura das props do Object Layer (Tiled) com fallback pro default
@@ -147,19 +148,58 @@ export function stompDamageEnemy(enemy, damage = 1) {
   applyDamage(enemy, damage, 'stomp');
 }
 
+// Queimadura da bola de fogo do Cajado (ver WEAPONS_CONFIG.staff em
+// game/config/weapons.js e a overlap fireballs x enemies em createEnemy.js):
+// aplica `tickDamage` a cada `intervalMs`, por `ticks` vezes, via applyDamage
+// (source 'burn', que ignora o cooldown de invulnerabilidade do bullet/stomp
+// — senão os próprios ticks se bloqueariam entre si). Um novo hit da bola de
+// fogo só reinicia a contagem de ticks restantes; nunca empilha um segundo
+// timer por cima do que já está queimando.
+export function applyBurn(enemy, tickDamage, ticks, intervalMs) {
+  if (!enemy || !enemy.active || enemy.isDead) return;
+  if (!tickDamage || !ticks) return;
+
+  enemy._burnTicksLeft = ticks;
+  enemy._burnTickDamage = tickDamage;
+  if (enemy._burnTimer) return;
+
+  enemy._burnTimer = enemy.scene.time.addEvent({
+    delay: intervalMs,
+    loop: true,
+    callback: () => {
+      if (!enemy.active || enemy.isDead) {
+        enemy._burnTimer?.remove();
+        enemy._burnTimer = null;
+        return;
+      }
+      applyDamage(enemy, enemy._burnTickDamage, 'burn');
+      enemy._burnTicksLeft -= 1;
+      if (enemy._burnTicksLeft <= 0) {
+        enemy._burnTimer.remove();
+        enemy._burnTimer = null;
+      }
+    },
+  });
+}
+
 function applyDamage(enemy, damage, source, bulletDirection = 0) {
   if (!enemy || !enemy.active) return;
   if (enemy.isDead) return;        // já morrendo/morto: nunca mais recebe dano
-  if (enemy.invulnerable) return;  // ainda no cooldown do último hit
+  // Queimadura ignora o cooldown de invulnerabilidade do bullet/stomp —
+  // senão os próprios ticks (mais frequentes que ENEMY_DAMAGE_COOLDOWN_MS)
+  // se bloqueariam uns aos outros.
+  if (source !== 'burn' && enemy.invulnerable) return;
 
   enemy.status.life -= damage;
   enemy.scene.sound.play('tap');
   playHitFeedback(enemy, damage, source, bulletDirection);
 
-  enemy.invulnerable = true;
-  enemy.scene.time.delayedCall(ENEMY_DAMAGE_COOLDOWN_MS, () => {
-    if (enemy && enemy.active) enemy.invulnerable = false;
-  });
+  if (source !== 'burn') {
+    enemy.invulnerable = true;
+    enemy.scene.time.delayedCall(ENEMY_DAMAGE_COOLDOWN_MS, () => {
+      if (enemy && enemy.active) enemy.invulnerable = false;
+    });
+  }
 
   if (enemy.status.life <= 0) {
     killEnemy(enemy);
@@ -184,7 +224,7 @@ function playHitFeedback(enemy, damage, source, bulletDirection) {
   }
 
   enemy.clearTint();
-  enemy.setTint(0xff3b30);
+  enemy.setTint(source === 'burn' ? BURN_TINT : 0xff3b30);
   enemy.scene.time.delayedCall(ENEMY_HIT_FLASH_MS, () => {
     if (enemy.active) enemy.clearTint();
   });
@@ -226,6 +266,10 @@ function playStompAnimation(enemy) {
 }
 
 function killEnemy(enemy) {
+  if (enemy._burnTimer) {
+    enemy._burnTimer.remove();
+    enemy._burnTimer = null;
+  }
   addGlobalExp(1);
   if (enemy.scene.player?.status) enemy.scene.player.status.exp = gameState.exp;
   registerEnemyKill(enemy);
