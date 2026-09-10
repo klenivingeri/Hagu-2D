@@ -26,7 +26,6 @@ function parseTemplate(html) {
 function CreateHud({
   initialCoins = 0,
   initialDiamonds = 0,
-  coinFrame = 0,
   attemptsLeft = 0,
   maxAttempts = 0,
 } = {}) {
@@ -54,13 +53,11 @@ function CreateHud({
     attemptsMax: attempts.querySelector('.attempts-max'),
     resources,
     coinTotal: resources.querySelector('.coin-total'),
-    coinIcon: resources.querySelector('.coin-icon'),
     diamondTotal: resources.querySelector('.diamond-total'),
   };
 
   hud.coinTotal.textContent = String(initialCoins);
   hud.diamondTotal.textContent = String(initialDiamonds);
-  hud.coinIcon.dataset.frame = coinFrame;
   updateHudAttempts(attemptsLeft, maxAttempts);
 }
 

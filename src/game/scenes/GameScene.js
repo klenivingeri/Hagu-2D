@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY, DEFAULT_STAR_TIME_LIMIT_MS } from '../config/maps.js';
 import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS, PAUSE_EVENTS, SETTINGS_EVENTS, MAX_RUN_ATTEMPTS } from '../../constants.js';
 import { gameState, unlockMap, recordMapStars, recordEnemyDefeat, unlockEnemySprite, addGlobalCoins, addGlobalDiamant } from '../../managers/GameManager.js';
-import { getVirtualFrame } from '../commons/textureUtils.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
 import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
 import { createControls } from '../systems/create/createControls.js';
@@ -146,7 +145,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.game.events.emit(HUD_EVENTS.RESET, {
-      coinFrame: getVirtualFrame(this, 'coin', 1, 0, 12, 1),
       initialCoins: this.player.levelCoins,
       initialDiamonds: this.player.levelDiamants,
       // attemptsLeft NÃO é resetado aqui (ver constructor) — precisa
