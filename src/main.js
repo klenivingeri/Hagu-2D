@@ -9,6 +9,7 @@ import { ShowWelcomeScreen, HideWelcomeScreen } from './screens/WelcomeScreen.js
 import { ShowRunSummaryScreen, HideRunSummaryScreen } from './screens/RunSummaryScreen.js';
 import { BindPauseEvents, HidePauseScreen } from './screens/PauseScreen.js';
 import { BindSettingsEvents, HideSettingsScreen } from './screens/SettingsScreen.js';
+import { BindGameOverEvents, HideGameOverScreen } from './screens/GameOverScreen.js';
 import { loadPersistedState } from './managers/GameManager.js';
 
 // O Phaser só é instanciado quando a partida realmente começa (CLAUDE.md
@@ -46,6 +47,18 @@ function startMatch(mapKey) {
       game.scene.getScene('GameScene')?.applyCameraZoom(zoom);
     },
   });
+  BindGameOverEvents(game, {
+    // "Tentar novamente": tentativas só resetam num Phaser.Game novo (ver
+    // GameScene constructor/MAX_RUN_ATTEMPTS), então precisa destruir este
+    // e começar outro do zero, igual à Welcome mandando pra mesma fase.
+    onRetry: () => {
+      HideGameOverScreen();
+      activeGame?.destroy(true);
+      activeGame = null;
+      startMatch(mapKey);
+    },
+    onBackToMap: backToWelcome,
+  });
   // gameConfig não lista nenhuma cena (ver game/config/gameConfig.js) — é
   // aqui que a GameScene sobe pela primeira vez, já com a fase escolhida no
   // grid de mapas da Welcome (ver WelcomeScreen.js).
@@ -64,6 +77,7 @@ function startMatch(mapKey) {
 // entre runs.
 function backToWelcome() {
   HideRunSummaryScreen();
+  HideGameOverScreen();
   activeGame?.destroy(true);
   activeGame = null;
   if (gameLayout) gameLayout.classList.remove('is-active');

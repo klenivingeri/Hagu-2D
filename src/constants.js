@@ -52,7 +52,14 @@ export const HUD_EVENTS = {
     ENERGY_EMPTY: 'hud:energy-empty',
     COINS_CHANGED: 'hud:coins-changed',
     DIAMONDS_CHANGED: 'hud:diamonds-changed',
+    ATTEMPTS_CHANGED: 'hud:attempts-changed',
 };
+
+// Quantidade de tentativas (respawns) por fase antes do Game Over (ver
+// GameScene.attemptsLeft / createPlayer.killPlayer()). Fica fixa aqui, não
+// em GameManager, porque não é progresso persistido — reseta sozinha a cada
+// Phaser.Game novo (ver main.js/startMatch), nunca é salva em storage.
+export const MAX_RUN_ATTEMPTS = 3;
 
 // XP necessário para passar de um nível pro próximo (ver
 // GameManager.getLevelInfo). Fixo por enquanto — se a progressão precisar
@@ -86,4 +93,11 @@ export const PAUSE_EVENTS = {
 // (ver game/systems/create/createControls.js) durante a run.
 export const SETTINGS_EVENTS = {
     OPEN: 'settings:open',
+};
+
+// Contrato de eventos entre o Phaser e o modal de Game Over em HTML (ver
+// /src/screens/GameOverScreen.js). Disparado por createPlayer.killPlayer()
+// quando attemptsLeft chega a 0 (ver MAX_RUN_ATTEMPTS acima).
+export const GAME_OVER_EVENTS = {
+    OPEN: 'game-over:open',
 };

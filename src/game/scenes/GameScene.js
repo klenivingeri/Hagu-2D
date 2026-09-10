@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY, DEFAULT_STAR_TIME_LIMIT_MS } from '../config/maps.js';
-import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS, PAUSE_EVENTS, SETTINGS_EVENTS } from '../../constants.js';
+import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS, PAUSE_EVENTS, SETTINGS_EVENTS, MAX_RUN_ATTEMPTS } from '../../constants.js';
 import { gameState, unlockMap, recordMapStars, recordEnemyDefeat, unlockEnemySprite, addGlobalCoins, addGlobalDiamant } from '../../managers/GameManager.js';
 import { getVirtualFrame } from '../commons/textureUtils.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
@@ -26,6 +26,12 @@ import { createGates } from '../systems/create/createGates.js';
 export class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
+    // Definido no construtor (roda só UMA vez por Phaser.Game, mesmo que
+    // scene.restart() reaproveite esta instância a cada respawn — ver
+    // createPlayer.killPlayer()) pra sobreviver aos respawns dentro da
+    // mesma partida e só voltar a valer MAX_RUN_ATTEMPTS quando o player
+    // realmente começar uma partida nova (novo Phaser.Game, ver main.js).
+    this.attemptsLeft = MAX_RUN_ATTEMPTS;
   }
 
   init(data = {}) {
@@ -143,6 +149,11 @@ export class GameScene extends Phaser.Scene {
       coinFrame: getVirtualFrame(this, 'coin', 1, 0, 12, 1),
       initialCoins: this.player.levelCoins,
       initialDiamonds: this.player.levelDiamants,
+      // attemptsLeft NÃO é resetado aqui (ver constructor) — precisa
+      // continuar refletindo o valor real mesmo depois de um respawn
+      // (scene.restart chama create() de novo, mas não o constructor).
+      attemptsLeft: this.attemptsLeft,
+      maxAttempts: MAX_RUN_ATTEMPTS,
     });
     this.game.events.emit(HUD_EVENTS.HEALTH_CHANGED, this.player.status.life, gameState.maxlife);
     this.game.events.emit(HUD_EVENTS.ENERGY_CHANGED, this.player.status.currentEnergy, this.player.status.maxEnergy);

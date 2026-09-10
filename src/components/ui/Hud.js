@@ -23,7 +23,13 @@ function parseTemplate(html) {
   return template.content;
 }
 
-function CreateHud({ initialCoins = 0, initialDiamonds = 0, coinFrame = 0 } = {}) {
+function CreateHud({
+  initialCoins = 0,
+  initialDiamonds = 0,
+  coinFrame = 0,
+  attemptsLeft = 0,
+  maxAttempts = 0,
+} = {}) {
   const hudBar = document.querySelector('#hud-bar');
   if (!hudBar) {
     console.warn('[Hud] #hud-bar não encontrado no DOM — HUD não será exibido.');
@@ -34,14 +40,18 @@ function CreateHud({ initialCoins = 0, initialDiamonds = 0, coinFrame = 0 } = {}
 
   const fragment = parseTemplate(hudTemplate);
   const lifePanel = fragment.querySelector('.hud-life-panel');
+  const attempts = fragment.querySelector('.hud-attempts');
   const resources = fragment.querySelector('.hud-resources');
-  hudBar.append(lifePanel, resources);
+  hudBar.append(lifePanel, attempts, resources);
 
   hud = {
     lifePanel,
     healthFill: lifePanel.querySelector('.health-fill'),
     energyBar: lifePanel.querySelector('.energy-bar'),
     energyFill: lifePanel.querySelector('.energy-fill'),
+    attempts,
+    attemptsCurrent: attempts.querySelector('.attempts-current'),
+    attemptsMax: attempts.querySelector('.attempts-max'),
     resources,
     coinTotal: resources.querySelector('.coin-total'),
     coinIcon: resources.querySelector('.coin-icon'),
@@ -51,10 +61,11 @@ function CreateHud({ initialCoins = 0, initialDiamonds = 0, coinFrame = 0 } = {}
   hud.coinTotal.textContent = String(initialCoins);
   hud.diamondTotal.textContent = String(initialDiamonds);
   hud.coinIcon.dataset.frame = coinFrame;
+  updateHudAttempts(attemptsLeft, maxAttempts);
 }
 
 function DestroyHud() {
-  document.querySelectorAll('.hud-life-panel, .hud-resources').forEach((el) => el.remove());
+  document.querySelectorAll('.hud-life-panel, .hud-attempts, .hud-resources').forEach((el) => el.remove());
   hud = null;
 }
 
@@ -90,6 +101,14 @@ function updateHudDiamonds(totalDiamonds) {
   hud.diamondTotal.textContent = String(totalDiamonds);
 }
 
+// "X/Y" de tentativas restantes na fase (ver GameScene.attemptsLeft/
+// MAX_RUN_ATTEMPTS em constants.js) — fica entre a vida e os recursos.
+function updateHudAttempts(attemptsLeft, maxAttempts) {
+  if (!hud?.attemptsCurrent) return;
+  hud.attemptsCurrent.textContent = String(attemptsLeft);
+  hud.attemptsMax.textContent = String(maxAttempts);
+}
+
 // Liga o HUD ao EventEmitter global do jogo. Chame uma vez por Phaser.Game
 // (main.js chama a cada startMatch, um Game novo por partida). Idempotente:
 // chamar de novo com o mesmo `game` não duplica listeners.
@@ -103,6 +122,7 @@ export function BindHudEvents(game) {
   game.events.on(HUD_EVENTS.ENERGY_EMPTY, shakeHudEnergy);
   game.events.on(HUD_EVENTS.COINS_CHANGED, updateHudCoins);
   game.events.on(HUD_EVENTS.DIAMONDS_CHANGED, updateHudDiamonds);
+  game.events.on(HUD_EVENTS.ATTEMPTS_CHANGED, updateHudAttempts);
   // Phaser emite 'destroy' no próprio game.events quando game.destroy() é
   // chamado (ver regra de ciclo de vida no CLAUDE.md: ao voltar pros menus
   // HTML, destruir o Phaser deve limpar o HUD junto).

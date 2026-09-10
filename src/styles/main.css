@@ -233,6 +233,29 @@ button {
   transform-origin: center;
 }
 
+/* Contador de tentativas ("3/3") — fica entre o painel de vida (esquerda) e
+   os recursos (direita); ver GameScene.attemptsLeft/MAX_RUN_ATTEMPTS. */
+.hud-attempts {
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 16px;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
+.attempts-separator {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.attempts-max {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 /* Painel Geral de Controles */
 .controls-panel {
   display: flex;
@@ -471,6 +494,7 @@ button {
   }
 
   .hud-life-panel,
+  .hud-attempts,
   .hud-resources {
     position: static;
   }
@@ -511,6 +535,13 @@ button {
     left: 0.5rem;
   }
 
+  .hud-attempts {
+    position: absolute;
+    top: 0.4rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
   .hud-resources {
     position: absolute;
     top: 0.35rem;
@@ -542,4 +573,37 @@ button {
     width: calc(100% - 1.5rem);
     background: linear-gradient(-90deg, rgba(17,24,39,0.9) 0%, rgba(17,24,39,0) 100%);
   }
+}
+
+/* Modal de Game Over (ver GameOverScreen.js) — escurece a tela e mostra
+   "GAME OVER" letra por letra, mesma linguagem visual do "DEAD" que aparece
+   no canvas a cada morte (ver createPlayer.showDeathText), só que em CSS
+   porque este modal é HTML puro por cima do jogo pausado. */
+@keyframes game-over-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.game-over-screen {
+  animation: game-over-fade-in 0.2s ease-out;
+}
+
+@keyframes game-over-letter-drop {
+  0% { opacity: 0; transform: translateY(-26px) scale(0.6); }
+  60% { opacity: 1; transform: translateY(4px) scale(1.08); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.game-over-title span {
+  display: inline-block;
+  font-family: "PixelOperator8", "Arial Black", sans-serif;
+  font-weight: 900;
+  font-size: 2rem;
+  color: #ff3b30;
+  text-shadow: 0 2px 0 #1b0b0b, 0 0 12px rgba(255, 59, 48, 0.55);
+  opacity: 0;
+  animation: game-over-letter-drop 0.4s ease-out forwards;
+  /* Cada letra usa seu índice (--i, 0 a 7) pra entrar em sequência — mesmo
+     efeito "cascata" do showDeathText, só que dirigido por CSS. */
+  animation-delay: calc(var(--i, 0) * 80ms);
 }

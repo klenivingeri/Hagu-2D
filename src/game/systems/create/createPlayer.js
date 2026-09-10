@@ -4,7 +4,7 @@ import { createPlayerStatus } from "../../config/status.js";
 import { PLAYERS_CONFIG, getEntityAnimationKey } from "../../config/entities.js";
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
-import { MAP_DEPTHS, HUD_EVENTS } from "../../../constants.js";
+import { MAP_DEPTHS, HUD_EVENTS, GAME_OVER_EVENTS, MAX_RUN_ATTEMPTS } from "../../../constants.js";
 import { emitEnemyHitBurst, emitDustTrail } from "../../commons/dustTrail.js";
 import { createJetpackFuelBar } from "../../commons/jetpackBar.js";
 import { gameState } from '../../../managers/GameManager.js';
@@ -288,6 +288,12 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   player.anims.play(getEntityAnimationKey(player.entityKey, animation));
   showDeathText(scene, player);
 
+  // Consome uma tentativa da fase (ver GameScene.attemptsLeft/MAX_RUN_ATTEMPTS
+  // em constants.js) — some estar sem tentativa nenhuma sobrando decide, lá
+  // embaixo no delayedCall, entre respawnar de novo ou abrir o Game Over.
+  scene.attemptsLeft = Math.max(0, scene.attemptsLeft - 1);
+  scene.game.events.emit(HUD_EVENTS.ATTEMPTS_CHANGED, scene.attemptsLeft, MAX_RUN_ATTEMPTS);
+
   if (animation === 'dead_jump') {
     // Pequeno deslocamento no sentido em que o player estava andando.
     // Usa velocidade (não tween em x) para não brigar com o corpo físico,
@@ -311,9 +317,18 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
     });
   }
 
-  // Mantém a animação de morte visível por 2 segundos antes do respawn.
+  // Mantém a animação de morte visível por 2 segundos antes do respawn —
+  // ou, se essa foi a última tentativa da fase, antes de abrir o Game Over
+  // (ver GameOverScreen.js/main.js, que decide "tentar novamente"/"voltar
+  // pro mapa"; o Phaser só emite o evento, nunca mexe em DOM — CLAUDE.md
+  // regra 1).
   scene.time.delayedCall(2000, () => {
-    scene.scene.restart();
+    if (scene.attemptsLeft > 0) {
+      scene.scene.restart();
+      return;
+    }
+    scene.scene.pause();
+    scene.game.events.emit(GAME_OVER_EVENTS.OPEN, { mapKey: scene.mapKey });
   });
 }
 
