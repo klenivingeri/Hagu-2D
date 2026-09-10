@@ -575,6 +575,30 @@ button {
   }
 }
 
+/* Tela de loading (ver LoadingScreen.js): tiles de chão do world_tileset
+   "caem" e se empilham em sequência pra simular a montagem do mapa
+   enquanto o jogo carrega. Mesmo truque de stagger via --i por índice do
+   .game-over-title acima, só que em loop (a tela pode ficar visível por
+   tempo variável, então a animação não pode ter fim). */
+.loading-tiles {
+  display: flex;
+  gap: 2px;
+}
+
+.loading-tile {
+  image-rendering: pixelated;
+  opacity: 0;
+  animation: loading-tile-fall 1.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  animation-delay: calc(var(--i, 0) * 120ms);
+}
+
+@keyframes loading-tile-fall {
+  0% { opacity: 0; transform: translateY(-160%); }
+  35% { opacity: 1; transform: translateY(0); }
+  75% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(0); }
+}
+
 /* Modal de Game Over (ver GameOverScreen.js) — escurece a tela e mostra
    "GAME OVER" letra por letra, mesma linguagem visual do "DEAD" que aparece
    no canvas a cada morte (ver createPlayer.showDeathText), só que em CSS
