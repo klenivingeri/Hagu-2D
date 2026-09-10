@@ -60,6 +60,18 @@ export const UPGRADES_CATALOG = [
     unit: 'ms',
   },
   {
+    id: 'maxEnergy',
+    label: 'Energia máxima',
+    icon: '🔋',
+    tier: 'B', // utilidade: deixa disparar mais vezes antes de precisar recarregar
+    maxLevel: 8,
+    baseCost: 5,
+    costGrowth: 1.2,
+    base: 4,        // unidades de energia (ver gameState.maxEnergy/createPlayerStatus)
+    perLevel: 1,
+    unit: 'energia',
+  },
+  {
     id: 'fallResistance',
     label: 'Resistência à queda',
     icon: '🛡️',

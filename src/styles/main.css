@@ -395,9 +395,15 @@ button {
 /* Toda section da Welcome (home/shop/collection) precisa ser "positioned"
    pra pintar por cima do .stage-preview-viewport (ver welcomeScreen.html):
    ele é absolute dentro do mesmo <main>, e um elemento posicionado sempre
-   pinta acima de um estático, não importa a ordem no DOM. */
+   pinta acima de um estático, não importa a ordem no DOM.
+   min-height: 0 é o que faz essa section conseguir encolher dentro do
+   <main overflow-hidden> quando a viewport fica baixa (paisagem/celular
+   deitado) — sem isso o item de flex recusa ficar menor que o conteúdo e o
+   excesso (ex: o botão "Jogar", no fim da coluna) é cortado pelo
+   overflow-hidden do <main> em vez de reorganizar o layout. */
 .welcome-view {
   position: relative;
+  min-height: 0;
 }
 
 /* Trilha entre fases na tela de Welcome (ver renderStageConnections em

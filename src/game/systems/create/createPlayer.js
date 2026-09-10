@@ -8,6 +8,7 @@ import { MAP_DEPTHS, HUD_EVENTS } from "../../../constants.js";
 import { emitEnemyHitBurst, emitDustTrail } from "../../commons/dustTrail.js";
 import { createJetpackFuelBar } from "../../commons/jetpackBar.js";
 import { gameState } from '../../../managers/GameManager.js';
+import { vibrateDamage, vibrateDeath } from '../../../services/HapticsService.js';
 
 const DAMAGE_COOLDOWN_MS = 1000; // tempo sem poder tomar dano de novo
 const STOMP_TOLERANCE_RATIO = 0.5; // "pisou" se os pés estiverem na metade de cima do inimigo
@@ -187,6 +188,7 @@ export function damagePlayer(scene, damage = 1) {
 
   scene.sound.play('tap');
   emitEnemyHitBurst(scene, player);
+  vibrateDamage();
   player.status.life -= damage;
   scene.game.events.emit(HUD_EVENTS.HEALTH_CHANGED, player.status.life, gameState.maxlife);
 
@@ -258,6 +260,8 @@ function makePlayerInvulnerable(scene, player) {
 
 export function killPlayer(scene, player, animation = 'dead', deathDirection = 0) {
   if (player.isDead) return;
+
+  vibrateDeath();
 
   const wasFlipped = player.flipX;
   const feetY = player.body.bottom;

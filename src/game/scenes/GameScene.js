@@ -116,7 +116,6 @@ export class GameScene extends Phaser.Scene {
 
     createPlayerAnimations(this);
     this.player = createPlayer(this);
-    window.__scene = this; // TEMP DEBUG - remover antes de terminar
 
     // Cada fase (ver createWorld.js) tem exatamente o tamanho da resolução
     // lógica do jogo (448x448 — ver gameConfig.js), então zoom 1 (default)

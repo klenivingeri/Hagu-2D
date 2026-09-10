@@ -97,10 +97,15 @@ export async function showMapPreview(mapKey, viewport) {
   const tilesetsByFirstGidDesc = sortTilesetsByFirstGidDesc(mapData.tilesets);
   const naturalWidth = mapData.width * PREVIEW_TILE_PX;
   const naturalHeight = mapData.height * PREVIEW_TILE_PX;
-  // Nunca deixa o mapa passar da altura da tela (largura pode "vazar" pras
-  // laterais — o viewport tem overflow-hidden e corta, dando um efeito de
-  // cover horizontal sem esmagar o mapa verticalmente).
-  const scale = Math.min(1, viewport.clientHeight / naturalHeight);
+  // Em portrait, escala pela altura (a largura pode "vazar" pras laterais —
+  // o viewport tem overflow-hidden e corta, dando um efeito de cover
+  // horizontal sem esmagar o mapa verticalmente). Em landscape a viewport
+  // fica baixa e larga — escalar pela altura deixaria o mapa minúsculo, por
+  // isso a base vira a largura (agora é a altura que pode vazar/cortar).
+  const isLandscape = viewport.clientWidth > viewport.clientHeight;
+  const scale = isLandscape
+    ? Math.min(1, viewport.clientWidth / naturalWidth)
+    : Math.min(1, viewport.clientHeight / naturalHeight);
 
   const surface = document.createElement('div');
   surface.className = 'stage-preview-surface absolute left-1/2 top-1/2';

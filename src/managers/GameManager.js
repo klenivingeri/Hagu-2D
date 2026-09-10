@@ -44,6 +44,9 @@ const DEFAULT_UNLOCKED_MAPS = [DEFAULT_MAP_KEY];
 // do catálogo (ver game/config/upgrades.js) pra loja e HUD começarem iguais.
 const DEFAULT_MAX_LIFE = getUpgradeValue(findUpgradeDef('life'), 0);
 const DEFAULT_DROP_DIAMANT = getUpgradeValue(findUpgradeDef('dropChance'), 0);
+// Mesmo esquema de DEFAULT_MAX_LIFE, mas pro upgrade 'maxEnergy' — precisa
+// bater com o nível 0 do catálogo pra loja e gameState iniciarem iguais.
+const DEFAULT_MAX_ENERGY = getUpgradeValue(findUpgradeDef('maxEnergy'), 0);
 // Diamante inicial do player, usado tanto no gameState quanto no reset (ver
 // resetProgress()) — dá pra comprar/testar habilidades e armas sem precisar
 // jogar uma run primeiro.
@@ -94,8 +97,10 @@ export const gameState = {
   equippedAccessory: DEFAULT_EQUIPPED_ACCESSORY,
   // Capacidade máxima de energia — todas as armas (ver ACCESSORY_UPGRADE_IDS)
   // gastam energia pra atacar, não só o arco/arma como antes. A velocidade
-  // de recarga é o upgrade 'reloadSpeed' (ver createPlayerStatus).
-  maxEnergy: 4,
+  // de recarga é o upgrade 'reloadSpeed' (ver createPlayerStatus). Aumenta
+  // com o upgrade 'maxEnergy' da loja — espelhado aqui (mesmo esquema de
+  // maxlife/dropDiamant) pra createPlayerStatus() só precisar ler o campo.
+  maxEnergy: DEFAULT_MAX_ENERGY,
   exp: 0,
   // Espelha o nível do upgrade 'dropChance' — EnemyBase.js lê direto daqui
   // (fora do player.status) na hora de decidir se o inimigo solta diamante.
@@ -126,6 +131,7 @@ export async function loadPersistedState() {
   gameState.mapStars = await load('mapStars', gameState.mapStars);
   gameState.upgrade = { ...gameState.upgrade, ...(await load('upgrade', gameState.upgrade)) };
   gameState.maxlife = await load('maxlife', gameState.maxlife);
+  gameState.maxEnergy = await load('maxEnergy', gameState.maxEnergy);
   gameState.dropDiamant = await load('dropDiamant', gameState.dropDiamant);
   gameState.equippedAbility = await load('equippedAbility', gameState.equippedAbility);
   gameState.equippedAccessory = await load('equippedAccessory', gameState.equippedAccessory);
@@ -221,6 +227,10 @@ export function purchaseUpgrade(id) {
   if (id === 'dropChance') {
     gameState.dropDiamant = getUpgradeValue(def, gameState.upgrade[id]);
     save('dropDiamant', gameState.dropDiamant);
+  }
+  if (id === 'maxEnergy') {
+    gameState.maxEnergy = getUpgradeValue(def, gameState.upgrade[id]);
+    save('maxEnergy', gameState.maxEnergy);
   }
 
   return true;
@@ -323,6 +333,7 @@ export function resetProgress() {
   gameState.settings = { ...DEFAULT_SETTINGS };
   gameState.upgrade = buildDefaultUpgradeLevels();
   gameState.maxlife = DEFAULT_MAX_LIFE;
+  gameState.maxEnergy = DEFAULT_MAX_ENERGY;
   gameState.dropDiamant = DEFAULT_DROP_DIAMANT;
   gameState.equippedAbility = null;
   gameState.equippedAccessory = DEFAULT_EQUIPPED_ACCESSORY;

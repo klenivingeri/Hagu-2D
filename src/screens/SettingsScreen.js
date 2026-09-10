@@ -9,6 +9,13 @@
 import settingsTemplate from './settingsScreen.html?raw';
 import { gameState, updateSetting } from '../managers/GameManager.js';
 import { SETTINGS_EVENTS } from '../constants.js';
+import {
+  isFullscreenSupported,
+  isFullscreenActive,
+  toggleFullscreen,
+  onFullscreenChange,
+  offFullscreenChange,
+} from '../services/FullscreenService.js';
 
 let elements = null;
 // Cada partida cria um Phaser.Game novo (ver main.js/startMatch) — precisa
@@ -33,6 +40,19 @@ function renderSettings() {
     button.classList.toggle('text-gray-950', isActive);
     button.classList.toggle('text-gray-300', !isActive);
   });
+
+  elements.fullscreenRow?.classList.toggle('hidden', !isFullscreenSupported());
+  if (elements.fullscreenToggle) {
+    elements.fullscreenToggle.checked = isFullscreenActive();
+  }
+}
+
+// Não usa updateSetting/gameState.settings: fullscreen não é uma preferência
+// persistível (o navegador exige gesto do usuário pra entrar, então não dá
+// pra restaurar sozinho num reload) — o estado real é sempre
+// document.fullscreenElement (ver FullscreenService.js).
+function handleFullscreenToggle() {
+  toggleFullscreen();
 }
 
 // `onClose` decide o que fazer com a Run pausada (ver main.js): retomar a
@@ -55,6 +75,8 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
     closeBtn: root.querySelector('.settings-close-btn'),
     settingToggles: [...root.querySelectorAll('.setting-toggle')],
     cameraZoomButtons: [...root.querySelectorAll('.camera-zoom-btn')],
+    fullscreenRow: root.querySelector('.fullscreen-setting-row'),
+    fullscreenToggle: root.querySelector('.fullscreen-toggle'),
   };
 
   elements.closeBtn.addEventListener('click', () => onClose?.());
@@ -74,12 +96,17 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
       onCameraZoomChange?.(zoom);
     });
   });
+  elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);
+  // O player pode sair do fullscreen sem usar o toggle (Esc, gesto do
+  // navegador) — resincroniza o checkbox nesses casos.
+  onFullscreenChange(renderSettings);
 
   renderSettings();
 }
 
 export function HideSettingsScreen() {
   if (!elements) return;
+  offFullscreenChange(renderSettings);
   elements.root.remove();
   elements = null;
 }

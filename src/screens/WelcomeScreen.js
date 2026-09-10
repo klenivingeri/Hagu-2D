@@ -23,6 +23,13 @@ import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '..
 import { MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
 import { getStageLabel, getStageNumber } from './mapLabels.js';
 import { showMapPreview, updateMapPreview, destroyMapPreview } from './mapPreview.js';
+import {
+  isFullscreenSupported,
+  isFullscreenActive,
+  toggleFullscreen,
+  onFullscreenChange,
+  offFullscreenChange,
+} from '../services/FullscreenService.js';
 
 let elements = null;
 let idleAnimationTimer = null;
@@ -39,9 +46,34 @@ let knownUnlockedMapKeys = null;
 const STAGE_ZOOM_MIN = 0.5;
 const STAGE_ZOOM_MAX = 1.8;
 const STAGE_ZOOM_DEFAULT = 1;
+// Em paisagem a viewport fica bem mais baixa — com o zoom padrão o grid
+// inteiro não cabe na tela sem rolar, por isso o default nasce na metade.
+const STAGE_ZOOM_DEFAULT_LANDSCAPE = STAGE_ZOOM_DEFAULT * 0.5;
+
+const landscapeMediaQuery = typeof window !== 'undefined'
+  ? window.matchMedia('(orientation: landscape)')
+  : null;
+
+function isLandscapeOrientation() {
+  return Boolean(landscapeMediaQuery?.matches);
+}
+
+function getDefaultStageZoom() {
+  return isLandscapeOrientation() ? STAGE_ZOOM_DEFAULT_LANDSCAPE : STAGE_ZOOM_DEFAULT;
+}
 
 function clampZoom(zoom) {
   return Math.min(STAGE_ZOOM_MAX, Math.max(STAGE_ZOOM_MIN, zoom));
+}
+
+// Ao girar a tela: recalcula o zoom padrão pro novo formato de viewport e
+// força o preview do mapa a reler clientWidth/clientHeight (mapPreview.js
+// escala pela largura ou altura dependendo da orientação).
+function handleOrientationChange() {
+  if (!elements) return;
+  stageZoom = getDefaultStageZoom();
+  applyStageZoom();
+  showMapPreview(selectedMapKey, elements.stagePreviewViewport);
 }
 
 // Zoom é só um transform visual (não muda o tamanho de layout do grid) — o
@@ -239,6 +271,24 @@ function moveRunnerAlongPath(path, onArrive) {
   runStep();
 }
 
+// Corre o boneco até a fase recém-desbloqueada (chamado só depois que a
+// animação de pop/brilho da célula termina — ver isNewlyUnlocked em
+// renderStages) e a seleciona ao chegar, como se o player tivesse clicado
+// nela. runnerMoving evita disparo duplo se mais de uma fase desbloquear
+// junto (não deveria acontecer no fluxo normal, mas é barato de checar).
+function moveRunnerToStage(mapKey, cells) {
+  if (!runnerEl || runnerMoving) return;
+  const target = cells.find((cell) => cell.mapKey === mapKey);
+  if (!target) return;
+
+  const path = findStagePath(buildStageGraph(cells), { row: runnerRow, col: runnerCol }, { row: target.row, col: target.col });
+  moveRunnerAlongPath(path, () => {
+    selectedMapKey = mapKey;
+    renderStages();
+    updateMapPreview(mapKey, elements.stagePreviewViewport);
+  });
+}
+
 function parseTemplate(html) {
   const template = document.createElement('template');
   template.innerHTML = html.trim();
@@ -372,7 +422,10 @@ function renderStages() {
       <span class="stage-cell-label absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold leading-none text-gray-300">${getStageLabel(mapKey)}</span>
     `;
     if (isNewlyUnlocked) {
-      cell.addEventListener('animationend', () => cell.classList.remove('stage-cell-unlock'), { once: true });
+      cell.addEventListener('animationend', () => {
+        cell.classList.remove('stage-cell-unlock');
+        moveRunnerToStage(mapKey, cells);
+      }, { once: true });
     }
     cell.addEventListener('click', () => {
       if (mapKey === selectedMapKey || runnerMoving) return;
@@ -719,6 +772,13 @@ function renderSettings() {
     button.classList.toggle('text-gray-950', isActive);
     button.classList.toggle('text-gray-300', !isActive);
   });
+
+  // Navegadores sem Fullscreen API (ex: Safari iOS) escondem a opção em vez
+  // de mostrar um toggle que nunca funciona.
+  elements.fullscreenRow?.classList.toggle('hidden', !isFullscreenSupported());
+  if (elements.fullscreenToggle) {
+    elements.fullscreenToggle.checked = isFullscreenActive();
+  }
 }
 
 function openSettings() {
@@ -741,6 +801,17 @@ function handleCameraZoomChange(event) {
   renderSettings();
 }
 
+// Não usa updateSetting/gameState.settings: fullscreen não é uma preferência
+// persistível (o navegador exige gesto do usuário pra entrar, então não dá
+// pra restaurar sozinho num reload) — o estado real é sempre
+// document.fullscreenElement (ver FullscreenService.js).
+function handleFullscreenToggle() {
+  // document.documentElement (default do FullscreenService), nunca um nó da
+  // tela atual: screenRoot é substituído a cada troca de view/tela e sairia
+  // do fullscreen sozinho se fosse removido do DOM.
+  toggleFullscreen();
+}
+
 // Destrutivo e sem undo — por isso o confirm nativo antes de mexer em
 // qualquer coisa (StorageService.clearAll() + reset do gameState em
 // memória, ver GameManager.resetProgress()).
@@ -754,7 +825,7 @@ function handleResetStorage() {
   selectedMapKey = DEFAULT_MAP_KEY;
   hasCenteredStageGrid = false;
   knownUnlockedMapKeys = null;
-  stageZoom = STAGE_ZOOM_DEFAULT;
+  stageZoom = getDefaultStageZoom();
   runnerMoving = false;
   ({ row: runnerRow, col: runnerCol } = findMapGridPosition(DEFAULT_MAP_KEY));
   startRunnerFrames(IDLE_SPRITE_FRAMES, IDLE_SPRITE_FRAME_RATE);
@@ -826,6 +897,8 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     resetStorageBtn: modalRoot.querySelector('.reset-storage-btn'),
     settingToggles: [...modalRoot.querySelectorAll('.setting-toggle')],
     cameraZoomButtons: [...modalRoot.querySelectorAll('.camera-zoom-btn')],
+    fullscreenRow: modalRoot.querySelector('.fullscreen-setting-row'),
+    fullscreenToggle: modalRoot.querySelector('.fullscreen-toggle'),
     views: [...screenRoot.querySelectorAll('.welcome-view')],
     tabButtons: [...screenRoot.querySelectorAll('.tab-btn')],
     shopList: screenRoot.querySelector('.shop-list'),
@@ -846,6 +919,10 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   elements.cameraZoomButtons.forEach((button) => {
     button.addEventListener('click', handleCameraZoomChange);
   });
+  elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);
+  // O player pode sair do fullscreen sem usar o toggle (Esc, gesto do
+  // navegador) — resincroniza o checkbox nesses casos.
+  onFullscreenChange(renderSettings);
   elements.resetStorageBtn.addEventListener('click', handleResetStorage);
   elements.shopList.addEventListener('click', handleShopBuyClick);
   elements.abilityList.addEventListener('click', handleAbilityListClick);
@@ -858,10 +935,11 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   });
   elements.playBtn.addEventListener('click', () => onPlay?.(selectedMapKey));
   elements.zoomResetBtn.addEventListener('click', () => {
-    stageZoom = STAGE_ZOOM_DEFAULT;
+    stageZoom = getDefaultStageZoom();
     applyStageZoom();
   });
   setupGridInteractions(elements.stageGridViewport);
+  landscapeMediaQuery?.addEventListener('change', handleOrientationChange);
 
   // O boneco sempre "começa" no hub (fase 0) parado, idle — a corrida só
   // acontece de novo se o player clicar numa fase.
@@ -886,9 +964,11 @@ export function HideWelcomeScreen() {
   runnerEl = null;
   runnerMoving = false;
   destroyMapPreview(elements.stagePreviewViewport);
+  offFullscreenChange(renderSettings);
+  landscapeMediaQuery?.removeEventListener('change', handleOrientationChange);
   elements.screenRoot.remove();
   elements.modalRoot.remove();
   elements = null;
   hasCenteredStageGrid = false;
-  stageZoom = STAGE_ZOOM_DEFAULT;
+  stageZoom = getDefaultStageZoom();
 }

@@ -54,7 +54,7 @@
         <span class="zoom-level">100%</span>
       </button>
 
-      <div class="stage-select relative z-10 flex w-full flex-1 flex-col items-center gap-4 overflow-hidden">
+      <div class="stage-select relative z-10 flex min-h-0 w-full flex-1 flex-col items-center gap-4 overflow-hidden">
         <div
           class="stage-grid-viewport relative flex w-full flex-1 cursor-grab select-none overflow-auto [touch-action:none] [-ms-overflow-style:none] [scrollbar-width:none] active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
         >
@@ -137,6 +137,10 @@
       <label class="flex items-center justify-between gap-3 text-sm">
         <span>Modo daltônico</span>
         <input type="checkbox" class="setting-toggle h-5 w-5 accent-emerald-500" data-setting="colorblindMode" />
+      </label>
+      <label class="fullscreen-setting-row flex items-center justify-between gap-3 text-sm">
+        <span>Tela cheia</span>
+        <input type="checkbox" class="fullscreen-toggle h-5 w-5 accent-emerald-500" />
       </label>
 
       <div class="flex items-center justify-between gap-3 text-sm">
