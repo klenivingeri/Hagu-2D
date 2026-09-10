@@ -1,11 +1,21 @@
 import Phaser from 'phaser';
 
+// Referência mutável pra cena ativa. Os handlers de DOM abaixo (botões
+// fora do canvas — CLAUDE.md regra 1) são ligados UMA ÚNICA VEZ pra vida
+// inteira da página (ver bindDomControlsOnce): indireciona por aqui em vez
+// de fechar sobre uma `scene` fixa, pra sempre agir na partida/cena
+// realmente ativa no momento do clique/toque.
+let activeScene = null;
+let domControlsBound = false;
+
 export function createControls(scene) {
+  activeScene = scene;
+
   scene.cursors = scene.input.keyboard.createCursorKeys();
   scene.keys = scene.input.keyboard.addKeys('W,A,S,D');
   scene.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
   scene.lastDirection = 1;
-  
+
   scene.controlState = {
     left: false,
     right: false,
@@ -14,6 +24,37 @@ export function createControls(scene) {
     // pressionado. Usado por mecânicas que dependem de segurar, como o paraquedas.
     jumpHeld: false
   };
+
+  // --- Sistema de Teclado com Disparo Único (Evita pulo infinito ao segurar W/Espaço/Seta) ---
+  // scene.cursors/keys/spaceKey são recriados do zero a cada create() (ver
+  // acima), então estes listeners nascem e morrem junto com o Key antigo —
+  // não acumulam entre restarts (diferente dos addEventListener de DOM
+  // abaixo, ligados nos botões HTML persistentes).
+  const triggerJumpOnce = () => {
+    scene.controlState.jump = true;
+  };
+
+  scene.spaceKey.on('down', triggerJumpOnce);
+  scene.keys.W.on('down', triggerJumpOnce);
+  if (scene.cursors.up) {
+    scene.cursors.up.on('down', triggerJumpOnce);
+  }
+
+  bindDomControlsOnce();
+}
+
+// Os botões de HTML (#btnStart, #dpadPad, #actionPad...) vivem em
+// index.html e nunca são destruídos entre respawns (scene.restart()) nem
+// entre partidas (novo Phaser.Game a cada "Jogar" — ver main.js). createControls()
+// rodava a cada create(), então cada respawn empilhava mais um
+// addEventListener nos MESMOS elementos, sem nunca remover os antigos —
+// um vazamento que cresce com cada morte do player. Ligar isso uma única
+// vez pra vida da página (guardado por domControlsBound) resolve, desde
+// que os handlers leiam a cena atual via `activeScene` (atualizada a cada
+// createControls()) em vez de fechar sobre a cena do momento do bind.
+function bindDomControlsOnce() {
+  if (domControlsBound) return;
+  domControlsBound = true;
 
   const btnEsquerda = document.querySelector('#btnEsquerda');
   const btnDireita = document.querySelector('#btnDireita');
@@ -26,22 +67,12 @@ export function createControls(scene) {
   const btnStart = document.querySelector('#btnStart');
   const btnSelect = document.querySelector('#btnSelect');
 
-  btnStart.addEventListener('click', () => scene.openPauseMenu());
-  btnSelect.addEventListener('click', () => scene.openSettingsMenu());
-
-  // --- Sistema de Teclado com Disparo Único (Evita pulo infinito ao segurar W/Espaço/Seta) ---
-  const triggerJumpOnce = () => {
-    scene.controlState.jump = true;
-  };
-
-  scene.spaceKey.on('down', triggerJumpOnce);
-  scene.keys.W.on('down', triggerJumpOnce);
-  if (scene.cursors.up) {
-    scene.cursors.up.on('down', triggerJumpOnce);
-  }
+  btnStart.addEventListener('click', () => activeScene?.openPauseMenu());
+  btnSelect.addEventListener('click', () => activeScene?.openSettingsMenu());
 
   // --- Sistema de Joystick Deslizável para o D-Pad (< | >) ---
   const updateDpadFromTouch = (clientX, clientY) => {
+    if (!activeScene) return;
     const leftRect = btnEsquerda.getBoundingClientRect();
     const rightRect = btnDireita.getBoundingClientRect();
 
@@ -56,18 +87,18 @@ export function createControls(scene) {
     );
 
     if (isOverLeft) {
-      scene.controlState.left = true;
-      scene.controlState.right = false;
+      activeScene.controlState.left = true;
+      activeScene.controlState.right = false;
       btnEsquerda.classList.add('pressed');
       btnDireita.classList.remove('pressed');
     } else if (isOverRight) {
-      scene.controlState.right = true;
-      scene.controlState.left = false;
+      activeScene.controlState.right = true;
+      activeScene.controlState.left = false;
       btnDireita.classList.add('pressed');
       btnEsquerda.classList.remove('pressed');
     } else {
-      scene.controlState.left = false;
-      scene.controlState.right = false;
+      activeScene.controlState.left = false;
+      activeScene.controlState.right = false;
       btnEsquerda.classList.remove('pressed');
       btnDireita.classList.remove('pressed');
     }
@@ -85,8 +116,9 @@ export function createControls(scene) {
 
   const resetDpad = (e) => {
     e.preventDefault();
-    scene.controlState.left = false;
-    scene.controlState.right = false;
+    if (!activeScene) return;
+    activeScene.controlState.left = false;
+    activeScene.controlState.right = false;
     btnEsquerda.classList.remove('pressed');
     btnDireita.classList.remove('pressed');
   };
@@ -96,9 +128,10 @@ export function createControls(scene) {
   dpadPad.addEventListener('pointerleave', resetDpad);
 
   // --- Sistema de Joystick Deslizável para Ações (A e B) ---
-  let activeActionTarget = null; 
+  let activeActionTarget = null;
 
   const updateActionFromTouch = (clientX, clientY) => {
+    if (!activeScene) return;
     const fireRect = btnA.getBoundingClientRect();
     const jumpRect = btnB.getBoundingClientRect();
 
@@ -118,27 +151,27 @@ export function createControls(scene) {
 
       // Só dispara o pulo se o dedo acabou de entrar no botão de pulo (evita pulo contínuo ao segurar)
       if (activeActionTarget !== 'jump') {
-        scene.controlState.jump = true;
+        activeScene.controlState.jump = true;
         activeActionTarget = 'jump';
       }
-      scene.controlState.jumpHeld = true;
+      activeScene.controlState.jumpHeld = true;
     } else if (isOverFire) {
       btnA.classList.add('pressed');
       btnB.classList.remove('pressed');
 
       // Só dispara o tiro se o dedo acabou de entrar no botão de tiro
       if (activeActionTarget !== 'fire') {
-        if (scene.bulletSystem && typeof scene.bulletSystem.fire === 'function') {
-          scene.bulletSystem.fire();
+        if (activeScene.bulletSystem && typeof activeScene.bulletSystem.fire === 'function') {
+          activeScene.bulletSystem.fire();
         }
         activeActionTarget = 'fire';
       }
-      scene.controlState.jumpHeld = false;
+      activeScene.controlState.jumpHeld = false;
     } else {
       btnB.classList.remove('pressed');
       btnA.classList.remove('pressed');
       activeActionTarget = null;
-      scene.controlState.jumpHeld = false;
+      activeScene.controlState.jumpHeld = false;
     }
   };
 
@@ -155,10 +188,11 @@ export function createControls(scene) {
 
   const resetAction = (e) => {
     e.preventDefault();
+    if (!activeScene) return;
     btnA.classList.remove('pressed');
     btnB.classList.remove('pressed');
     activeActionTarget = null;
-    scene.controlState.jumpHeld = false;
+    activeScene.controlState.jumpHeld = false;
   };
 
   actionPad.addEventListener('pointerup', resetAction);

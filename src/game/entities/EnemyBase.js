@@ -398,16 +398,36 @@ export function isPlayerInVision(scene, enemy) {
   const playerX = player.body?.center.x ?? player.x;
   const playerY = player.body?.center.y ?? player.y;
 
-  return getVisionShapes(scene, enemy).some(
-    ({ left, right, top, bottom }) => playerX >= left && playerX <= right && playerY >= top && playerY <= bottom
-  );
+  const shapes = getVisionShapes(scene, enemy);
+  for (let i = 0; i < shapes.length; i += 1) {
+    const { left, right, top, bottom } = shapes[i];
+    if (playerX >= left && playerX <= right && playerY >= top && playerY <= bottom) return true;
+  }
+  return false;
+}
+
+// getVisionShapes() roda todo frame pra todo inimigo com visão (chamada por
+// isPlayerInVision, usada em patrol_and_shoot/patrol_fly). Pra não alocar
+// array+objetos novos 60x/s por inimigo (CLAUDE.md regra 5), os retângulos
+// ficam cacheados no próprio enemy e só têm os campos sobrescritos aqui —
+// nunca são recriados.
+function ensureVisionShapeCache(enemy) {
+  if (enemy._visionShapeFront) return;
+  enemy._visionShapeFront = { left: 0, right: 0, top: 0, bottom: 0 };
+  enemy._visionShapeTop = { left: 0, right: 0, top: 0, bottom: 0 };
+  enemy._visionShapesSingle = [enemy._visionShapeFront];
+  enemy._visionShapesDouble = [enemy._visionShapeFront, enemy._visionShapeTop];
 }
 
 // Devolve 1 ou 2 retângulos {left, right, top, bottom} que juntos formam
 // a caixa de visão. bidirectional=true -> sempre 1 (retângulo simétrico).
 // bidirectional=false -> 1 (sem extensão de altura) ou 2 (linha da frente
-// + topo, formando o "L").
+// + topo, formando o "L"). O array/objetos retornados são reutilizados do
+// enemy (ver ensureVisionShapeCache) — não guarde essa referência além do
+// frame atual.
 function getVisionShapes(scene, enemy) {
+  ensureVisionShapeCache(enemy);
+
   const tileSize = scene.map?.tileWidth || 16;
   const baseHalfWidth = (enemy.body.width || tileSize) / 2;
   const baseHalfHeight = (enemy.body.height || tileSize) / 2;
@@ -420,33 +440,46 @@ function getVisionShapes(scene, enemy) {
 
   const baseTop = centerY - baseHalfHeight;
   const baseBottom = centerY + baseHalfHeight;
+  const frontRow = enemy._visionShapeFront;
 
   if (enemy.bidirectional) {
     // Retângulo único, simétrico nos 4 lados, cobrindo também a coluna
     // do próprio inimigo.
-    return [{
-      left: centerX - baseHalfWidth - widthPx,
-      right: centerX + baseHalfWidth + widthPx,
-      top: baseTop - heightPx,
-      bottom: baseBottom + heightPx,
-    }];
+    frontRow.left = centerX - baseHalfWidth - widthPx;
+    frontRow.right = centerX + baseHalfWidth + widthPx;
+    frontRow.top = baseTop - heightPx;
+    frontRow.bottom = baseBottom + heightPx;
+    return enemy._visionShapesSingle;
   }
 
   // "Linha da frente": BASE + width tiles na direção que o inimigo olha,
   // sempre na mesma altura do inimigo (sem extensão vertical aqui).
-  const frontRow = facingRight
-    ? { left: centerX - baseHalfWidth, right: centerX + baseHalfWidth + widthPx, top: baseTop, bottom: baseBottom }
-    : { left: centerX - baseHalfWidth - widthPx, right: centerX + baseHalfWidth, top: baseTop, bottom: baseBottom };
+  if (facingRight) {
+    frontRow.left = centerX - baseHalfWidth;
+    frontRow.right = centerX + baseHalfWidth + widthPx;
+  } else {
+    frontRow.left = centerX - baseHalfWidth - widthPx;
+    frontRow.right = centerX + baseHalfWidth;
+  }
+  frontRow.top = baseTop;
+  frontRow.bottom = baseBottom;
 
-  if (heightPx <= 0) return [frontRow];
+  if (heightPx <= 0) return enemy._visionShapesSingle;
 
   // "Topo": só sobre a área da frente (exclui a coluna do inimigo),
   // encostado no topo da linha da frente e subindo `heightPx`.
-  const topRow = facingRight
-    ? { left: centerX + baseHalfWidth, right: centerX + baseHalfWidth + widthPx, top: baseTop - heightPx, bottom: baseTop }
-    : { left: centerX - baseHalfWidth - widthPx, right: centerX - baseHalfWidth, top: baseTop - heightPx, bottom: baseTop };
+  const topRow = enemy._visionShapeTop;
+  if (facingRight) {
+    topRow.left = centerX + baseHalfWidth;
+    topRow.right = centerX + baseHalfWidth + widthPx;
+  } else {
+    topRow.left = centerX - baseHalfWidth - widthPx;
+    topRow.right = centerX - baseHalfWidth;
+  }
+  topRow.top = baseTop - heightPx;
+  topRow.bottom = baseTop;
 
-  return [frontRow, topRow];
+  return enemy._visionShapesDouble;
 }
 
 // Devolve os retângulos de visão em formato {x, y, width, height} — útil

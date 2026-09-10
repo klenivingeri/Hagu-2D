@@ -330,44 +330,37 @@ export function createBulletSystem(scene) {
         emitEnergyHud(scene, player);
       }
 
-      // Usando getChildren() para retornar um array padrão do JS. Mesma
-      // checagem de alcance/borda vale pra bullet (arco/arma) e sword wave
-      // (espada) — só bullets de player e a wave têm maxRangePx setado.
-      [...scene.bullets.getChildren(), ...scene.swordWaves.getChildren()].forEach((projectile) => {
-        if (!projectile || !projectile.active) return;
+      // for clássico em vez de [...a, ...b].forEach(...): evita recriar dois
+      // arrays novos (spread) + a arrow function a cada frame (CLAUDE.md
+      // regra 5) — mesmo cuidado já tomado em GameScene.update().
+      const bulletList = scene.bullets.getChildren();
+      for (let i = 0; i < bulletList.length; i += 1) {
+        cleanupProjectile(scene, bulletList[i]);
+      }
 
-        // Se o tiro passar da borda direita da tela, esconde e desativa o corpo
-        if (projectile.x > scene.scale.width) {
-          destroyProjectile(projectile);
-          return;
-        }
-
-        // Alcance máximo (upgrade 'bulletRange' da loja pro bullet,
-        // WEAPONS_CONFIG.sword.rangeTiles pra wave). Tiros de inimigo não têm limite.
-        if (projectile.maxRangePx
-          && Math.abs(projectile.x - projectile.spawnX) >= projectile.maxRangePx) {
-          emitBulletImpactDust(scene, projectile, Math.sign(projectile.body?.velocity.x || 1));
-          destroyProjectile(projectile);
-        }
-      });
-
-      // Rastro de partículas atrás da meia lua enquanto ela avança.
-      scene.swordWaves.getChildren().forEach((wave) => {
+      // Rastro de partículas atrás da meia lua enquanto ela avança — feito
+      // no mesmo loop da limpeza pra não iterar swordWaves duas vezes.
+      const waveList = scene.swordWaves.getChildren();
+      for (let i = 0; i < waveList.length; i += 1) {
+        const wave = waveList[i];
+        cleanupProjectile(scene, wave);
         if (wave?.active) emitSwordWaveTrail(scene, wave);
-      });
+      }
 
       // Bola de fogo do Cajado: não usa maxRangePx (o collider com
       // scene.platforms acima já cuida do repique/destruição em paredes,
       // teto e quedas de mais de 1 tile) — aqui só cobre o caso que o
       // collider não vê: sair da tela sem nunca ter colidido com nada.
-      scene.fireballs.getChildren().forEach((fireball) => {
-        if (!fireball?.active) return;
+      const fireballList = scene.fireballs.getChildren();
+      for (let i = 0; i < fireballList.length; i += 1) {
+        const fireball = fireballList[i];
+        if (!fireball?.active) continue;
         emitFireballTrail(scene, fireball);
 
         if (fireball.x > scene.scale.width || fireball.x < 0) {
           destroyProjectile(fireball);
         }
-      });
+      }
     },
   };
 }
@@ -412,6 +405,30 @@ function emitEnergyHud(scene, player) {
   if (player._lastHudEnergy !== undefined && Math.abs(player._lastHudEnergy - displayEnergy) < 0.001) return;
   player._lastHudEnergy = displayEnergy;
   scene.game.events.emit(HUD_EVENTS.ENERGY_CHANGED, displayEnergy, maxEnergy);
+}
+
+// Mesma checagem de alcance/borda vale pra bullet (arco/arma) e sword wave
+// (espada) — só bullets de player e a wave têm maxRangePx setado.
+// IMPORTANTE: checa as duas bordas da tela. Bullets de player sempre têm
+// maxRangePx como rede de segurança, mas bullets de INIMIGO não (ver
+// createBulletSystem/fireEnemy) — um inimigo virado pra esquerda
+// (facingDirection -1) atira bullets com velocity.x negativo, e sem checar
+// `x < 0` eles nunca eram destruídos, vazando um slot do pool compartilhado
+// `scene.bullets` (maxSize: 10) até ele esgotar e travar os tiros de todo
+// mundo (player incluso).
+function cleanupProjectile(scene, projectile) {
+  if (!projectile || !projectile.active) return;
+
+  if (projectile.x > scene.scale.width || projectile.x < 0) {
+    destroyProjectile(projectile);
+    return;
+  }
+
+  if (projectile.maxRangePx
+    && Math.abs(projectile.x - projectile.spawnX) >= projectile.maxRangePx) {
+    emitBulletImpactDust(scene, projectile, Math.sign(projectile.body?.velocity.x || 1));
+    destroyProjectile(projectile);
+  }
 }
 
 // Nome genérico porque agora serve tanto pra bullet (arco/arma) quanto pra
