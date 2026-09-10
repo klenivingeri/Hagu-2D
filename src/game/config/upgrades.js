@@ -219,13 +219,13 @@ export const UPGRADES_CATALOG = [
   },
   {
     id: 'reloadSpeed',
-    label: 'Velocidade de carregamento da aljava',
+    label: 'Velocidade de recarga de energia',
     icon: '🔄',
-    tier: 'C', // QoL: só encurta o intervalo entre disparos, não muda o resultado
+    tier: 'C', // QoL: só encurta o intervalo entre ataques, não muda o resultado
     maxLevel: 5,
     baseCost: 4,
     costGrowth: 1.2,
-    base: 2000,     // ms pra recarregar 1 flecha
+    base: 2000,     // ms pra recarregar 1 unidade de energia
     perLevel: -250,
     min: 750,
     unit: 'ms',

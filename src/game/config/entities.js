@@ -7,11 +7,18 @@ export const PLAYERS_CONFIG = {
       { key: 'spawn', url: 'spawn/sprite_re_warp_', frames: 5, frameRate: 10, repeat: 0 },
       { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
       { key: 'bow', url: 'bow/sprite_weapon_bow_short_fire_slow_', frames: 5, frameRate: 20, repeat: 0 },
+      // Animação do acessório "Arco" (ver ACCESSORY_UPGRADE_IDS em
+      // game/config/upgrades.js) — reaproveita os frames de bow/ como
+      // placeholder até existir arte própria; já é uma chave separada da
+      // "bow" acima (usada pela arma padrão) pra poder trocar só o asset
+      // depois sem mexer no resto do sistema de tiro (ver createBulletSystem.js).
+      { key: 'arrow', url: 'arrow/sprite_weapon_bow_tall_fire_fast_', frames: 4, frameRate: 20, repeat: 0 },
       // Pose usada enquanto o player está encostado lateralmente em uma parede.
       { key: 'stick', url: 'stick/sprite_stick_two_', frames: 0, frameRate: 1, repeat: -1 },
       { key: 'dead', url: 'dead/sprite_z_die_skull_', frames: 7, frameRate: 10, repeat: 0 },
       { key: 'dead_jump', url: 'dead_jump/sprite_z_die_one_', frames: 10, frameRate: 10, repeat: 0 },
       { key: 'jump_down', url: 'jump_down/sprite_knock_down_one_', frames: 3, frameRate: 10, repeat: -1 },
+      { key: 'attack', url: 'attack/sprite_weapon_sword_atk_melee_', frames: 5, frameRate: 20, repeat: 0 },
     ],
     stats: {},
   },

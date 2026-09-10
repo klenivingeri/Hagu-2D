@@ -32,8 +32,27 @@ export function createEnemys(scene) {
     enemies,
     (bullet, enemy) => {
       const bulletDirection = Math.sign(bullet.body?.velocity.x || 0);
-      bulletDestroy(bullet);
+      // Arco (bullet.pierce, ver createBulletSystem.js): atravessa o
+      // inimigo em vez de ser destruído no primeiro hit. O cooldown de
+      // invulnerabilidade do inimigo (ver EnemyBase.applyDamage) já evita
+      // dano repetido enquanto a flecha ainda está sobreposta a ele.
+      if (!bullet.pierce) bulletDestroy(bullet);
       if (bullet.owner !== 'enemy') damageEnemy(enemy, bullet.damage, bulletDirection);
+    },
+    null,
+    scene
+  );
+
+  // Meia lua da Espada (ver createBulletSystem.js/SWORD_WEAPON_ID) — é
+  // destruída no primeiro inimigo que acertar, não atravessa como o Arco.
+  scene.physics.add.overlap(
+    scene.swordWaves,
+    enemies,
+    (wave, enemy) => {
+      if (!wave?.active) return;
+      const waveDirection = Math.sign(wave.body?.velocity.x || 0);
+      bulletDestroy(wave);
+      damageEnemy(enemy, wave.damage, waveDirection);
     },
     null,
     scene

@@ -46,8 +46,8 @@ export const MAP_DEPTHS = {
 export const HUD_EVENTS = {
     RESET: 'hud:reset',
     HEALTH_CHANGED: 'hud:health-changed',
-    AMMO_CHANGED: 'hud:ammo-changed',
-    AMMO_EMPTY: 'hud:ammo-empty',
+    ENERGY_CHANGED: 'hud:energy-changed',
+    ENERGY_EMPTY: 'hud:energy-empty',
     COINS_CHANGED: 'hud:coins-changed',
     DIAMONDS_CHANGED: 'hud:diamonds-changed',
 };

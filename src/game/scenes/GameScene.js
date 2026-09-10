@@ -17,7 +17,7 @@ import { preloadCoinAssets, createCoinAnimations, createCoins } from '../systems
 import { preloadDiamantAssets, createDiamantAnimations, createDiamants } from '../systems/create/createDiamants.js';
 import { createLifes } from '../systems/create/createLifes.js';
 import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeVisibility.js';
-import { preloadDustTexture } from '../commons/dustTrail.js';
+import { preloadDustTexture, preloadSwordWaveTexture } from '../commons/dustTrail.js';
 import { preloadPortalAssets, createPortalAnimations, createPortals } from '../systems/create/createPortals.js';
 import { createGates } from '../systems/create/createGates.js';
 
@@ -57,6 +57,14 @@ export class GameScene extends Phaser.Scene {
 
     this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullet.png');
     this.load.audio('bullet_effect_1', 'assets/sounds/bullet_effect_6.mp3');
+    // Som do tiro do Arco (ver ACCESSORY_UPGRADE_IDS em game/config/upgrades.js
+    // e BOW_WEAPON_ID em createBulletSystem.js) — cada arma tem o próprio som.
+    this.load.audio('bullet_effect_bow', 'assets/sounds/bullet_effect_4.mp3');
+    // Som do golpe da Espada (ver WEAPONS_CONFIG.sword em game/config/weapons.js).
+    this.load.audio('sword_swing', 'assets/sounds/sword-sound.mp3');
+    // Som de impacto do Arco (a flecha "explode" ao colidir, ver
+    // WEAPONS_CONFIG.bowWeapon.impactSoundKey em game/config/weapons.js).
+    this.load.audio('bow_arrow_explosion', 'assets/sounds/bow-arrow-explosion.mp3');
     this.load.audio('dry_fire_1', 'assets/sounds/dry_fire_1.mp3');
     this.load.audio('coin', 'assets/sounds/coin.wav');
     this.load.audio('jump', 'assets/sounds/jump.wav');
@@ -98,6 +106,8 @@ export class GameScene extends Phaser.Scene {
     // Gera a textura de 2x2px da poeira uma única vez, antes de qualquer
     // emitDustTrail/emitBulletImpactDust ser chamado.
     preloadDustTexture(this);
+    // Gera a textura da meia lua da Espada (ver createBulletSystem.js).
+    preloadSwordWaveTexture(this);
 
     createWorld(this);
     createControls(this);
@@ -126,9 +136,13 @@ export class GameScene extends Phaser.Scene {
       initialDiamonds: this.player.levelDiamants,
     });
     this.game.events.emit(HUD_EVENTS.HEALTH_CHANGED, this.player.status.life, gameState.maxlife);
-    this.game.events.emit(HUD_EVENTS.AMMO_CHANGED, this.player.status.currentAljavaBullet, this.player.status.AljavaBullet);
+    this.game.events.emit(HUD_EVENTS.ENERGY_CHANGED, this.player.status.currentEnergy, this.player.status.maxEnergy);
 
     this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 10 });
+    // Efeito de "meia lua" do acessório Espada (ver ACCESSORY_UPGRADE_IDS em
+    // game/config/upgrades.js) — grupo próprio porque não usa munição da
+    // aljava nem a textura genérica 'bullet' (ver createBulletSystem.js).
+    this.swordWaves = this.physics.add.group({ maxSize: 4 });
     this.bulletSystem = createBulletSystem(this);
     this.damagePlayer = (damage) => damagePlayer(this, damage);
 

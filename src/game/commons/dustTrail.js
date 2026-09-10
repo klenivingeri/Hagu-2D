@@ -7,6 +7,16 @@ const BULLET_IMPACT_PARTICLES = 8;
 const ENEMY_HIT_PARTICLES = 6;
 const DRY_FIRE_PARTICLES = 4;
 
+// Meia lua da Espada (ver SWORD_WEAPON_ID em createBulletSystem.js): um
+// ")" desenhado via Graphics (sem sprite/asset), altura fixa de 16px pra
+// bater com 1 tile.
+const SWORD_WAVE_WIDTH = 10;
+const SWORD_WAVE_HEIGHT = 16;
+const SWORD_WAVE_COLOR = 0xeaf6ff;
+const SWORD_WAVE_STROKE = 3;
+const SWORD_WAVE_TRAIL_INTERVAL = 40;
+const SWORD_WAVE_TRAIL_PARTICLES = 2;
+
 /**
  * Gera a textura de 2x2px usada pela poeira, uma única vez por jogo.
  * Precisa ser chamada ANTES do primeiro emitDustTrail/emitBulletImpactDust
@@ -19,6 +29,33 @@ export function preloadDustTexture(scene) {
   graphics.fillStyle(0xffffff, 1);
   graphics.fillRect(0, 0, 2, 2);
   graphics.generateTexture('dust_pixel', 2, 2);
+  graphics.destroy();
+}
+
+/**
+ * Gera a textura da meia lua da Espada — um ")" desenhado com um arco
+ * (metade direita de um círculo), 16px de altura, sem depender de sprite.
+ * Nasce virada pra direita (abertura pro lado esquerdo); wave.setFlipX()
+ * espelha pra atacar pro outro lado (ver spawnSwordWave em
+ * createBulletSystem.js).
+ */
+export function preloadSwordWaveTexture(scene) {
+  if (scene.textures.exists('sword_wave')) return;
+
+  const graphics = scene.make.graphics({ x: 0, y: 0, add: false });
+  graphics.lineStyle(SWORD_WAVE_STROKE, SWORD_WAVE_COLOR, 1);
+  const radius = SWORD_WAVE_HEIGHT / 2 - 1;
+  graphics.beginPath();
+  graphics.arc(
+    SWORD_WAVE_WIDTH - radius - 1,
+    SWORD_WAVE_HEIGHT / 2,
+    radius,
+    Phaser.Math.DegToRad(-65),
+    Phaser.Math.DegToRad(65),
+    false
+  );
+  graphics.strokePath();
+  graphics.generateTexture('sword_wave', SWORD_WAVE_WIDTH, SWORD_WAVE_HEIGHT);
   graphics.destroy();
 }
 
@@ -224,6 +261,34 @@ export function emitDryFireBurst(scene, player) {
         tint: index % 2 === 0 ? 0xffd166 : 0xffffff,
       }
     );
+  }
+}
+
+/**
+ * Rastro de partículas atrás da meia lua da Espada enquanto ela avança
+ * (ver spawnSwordWave em createBulletSystem.js) — throttlado como o resto
+ * do arquivo pra não emitir a cada frame físico.
+ */
+export function emitSwordWaveTrail(scene, wave) {
+  const now = scene.time.now;
+  const lastEmission = wave._lastTrailEmission ?? -Infinity;
+  if (now - lastEmission < SWORD_WAVE_TRAIL_INTERVAL) return;
+  wave._lastTrailEmission = now;
+
+  const emitter = getDustEmitter(scene);
+  const direction = Math.sign(wave.body?.velocity.x || 1);
+
+  for (let index = 0; index < SWORD_WAVE_TRAIL_PARTICLES; index += 1) {
+    const x = wave.x - direction * Phaser.Math.Between(1, 4);
+    const y = wave.y + Phaser.Math.Between(-6, 6);
+    const vx = -direction * Phaser.Math.Between(10, 30);
+    const vy = Phaser.Math.Between(-10, 10);
+
+    emitParticle(emitter, x, y, vx, vy, {
+      scale: Phaser.Math.FloatBetween(0.6, 1),
+      lifespan: Phaser.Math.Between(120, 200),
+      tint: SWORD_WAVE_COLOR,
+    });
   }
 }
 

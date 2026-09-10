@@ -44,6 +44,10 @@ const DEFAULT_UNLOCKED_MAPS = [DEFAULT_MAP_KEY];
 // do catálogo (ver game/config/upgrades.js) pra loja e HUD começarem iguais.
 const DEFAULT_MAX_LIFE = getUpgradeValue(findUpgradeDef('life'), 0);
 const DEFAULT_DROP_DIAMANT = getUpgradeValue(findUpgradeDef('dropChance'), 0);
+// Diamante inicial do player, usado tanto no gameState quanto no reset (ver
+// resetProgress()) — dá pra comprar/testar habilidades e armas sem precisar
+// jogar uma run primeiro.
+const DEFAULT_DIAMANT = 100;
 
 // Nível 0 (ainda não comprado) pra cada upgrade do catálogo. Sempre uma
 // cópia nova (buildDefaultUpgradeLevels()) — nunca reutilize este objeto
@@ -62,7 +66,7 @@ export const gameState = {
   maxlife: DEFAULT_MAX_LIFE,
   gold: 0,
   coins: 0,
-  diamant: 0,
+  diamant: DEFAULT_DIAMANT,
   playerSpritePath: '',
   // Preferências do usuário (persistidas via StorageService — nunca
   // localStorage direto, ver CLAUDE.md regra 3). Populado de verdade por
@@ -85,9 +89,10 @@ export const gameState = {
   // Arma ativa entre espada/arco/arma atual/cajado (ver ACCESSORY_UPGRADE_IDS)
   // — mesmo esquema de equippedAbility, só uma por vez (ver equipAccessory()).
   equippedAccessory: DEFAULT_EQUIPPED_ACCESSORY,
-  // Capacidade da aljava (munição máxima). A velocidade de recarga de cada
-  // flecha é o upgrade 'reloadSpeed' (ver createPlayerStatus).
-  AljavaBullet: 4,
+  // Capacidade máxima de energia — todas as armas (ver ACCESSORY_UPGRADE_IDS)
+  // gastam energia pra atacar, não só o arco/arma como antes. A velocidade
+  // de recarga é o upgrade 'reloadSpeed' (ver createPlayerStatus).
+  maxEnergy: 4,
   exp: 0,
   // Espelha o nível do upgrade 'dropChance' — EnemyBase.js lê direto daqui
   // (fora do player.status) na hora de decidir se o inimigo solta diamante.
@@ -307,7 +312,7 @@ export function updateSetting(key, value) {
 export function resetProgress() {
   clearAll();
   gameState.coins = 0;
-  gameState.diamant = 0;
+  gameState.diamant = DEFAULT_DIAMANT;
   gameState.gold = 0;
   gameState.exp = 0;
   gameState.unlockedMaps = [...DEFAULT_UNLOCKED_MAPS];

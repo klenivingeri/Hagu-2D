@@ -41,16 +41,23 @@ export function createPlayerStatus(overrides = {}) {
     jetpackFloatSpeed: 40,         // velocidade máxima de queda enquanto o jetpack está freando
     doubleJumpEnabled: gameState.equippedAbility === 'doubleJump', // compatibilidade com o nome antigo
     jumpDamage: 1,                 // dano ao pisar em cima do inimigo (stomp)
-    currentWeapon: 'bow',           // arma equipada (hoje só existe o arco)
+    // Arma equipada na aba "Equip. > Acessório" (ver ACCESSORY_UPGRADE_IDS
+    // em game/config/upgrades.js) — createBulletSystem.js lê daqui pra
+    // escolher animação/dano/perfuração do tiro.
+    currentWeapon: gameState.equippedAccessory,
     totalGold: gameState.gold,
     totalCoins: gameState.coins,
     diamant: gameState.diamant,
     exp: gameState.exp,
     playerSpritePath: gameState.playerSpritePath,
     BulletSequence: upgradeValue('sequence'),   // quantas flechas saem por disparo
-    AljavaBullet: gameState.AljavaBullet,
-    LoadingBullet: upgradeValue('reloadSpeed'), // ms pra recarregar 1 flecha da aljava
-    currentAljavaBullet: gameState.AljavaBullet,
+    // Energia: todas as armas (ver ACCESSORY_UPGRADE_IDS em
+    // game/config/upgrades.js) gastam energia pra atacar — não é mais só
+    // munição do arco/arma (ver createBulletSystem.js). Recarrega sozinha
+    // com o tempo, na velocidade do upgrade 'reloadSpeed'.
+    maxEnergy: gameState.maxEnergy,
+    energyRegenMs: upgradeValue('reloadSpeed'), // ms pra recarregar 1 unidade de energia
+    currentEnergy: gameState.maxEnergy,
     dropDiamant: gameState.dropDiamant,
     coinValue: upgradeValue('coinValue'),       // moedas globais ganhas por coleta (ver createCoins)
     upgrade: gameState.upgrade,

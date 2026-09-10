@@ -40,8 +40,8 @@ function CreateHud({ initialCoins = 0, initialDiamonds = 0, coinFrame = 0 } = {}
   hud = {
     lifePanel,
     healthFill: lifePanel.querySelector('.health-fill'),
-    ammoBar: lifePanel.querySelector('.ammo-bar'),
-    ammoFill: lifePanel.querySelector('.ammo-fill'),
+    energyBar: lifePanel.querySelector('.energy-bar'),
+    energyFill: lifePanel.querySelector('.energy-fill'),
     resources,
     coinTotal: resources.querySelector('.coin-total'),
     coinIcon: resources.querySelector('.coin-icon'),
@@ -64,20 +64,20 @@ function updateHudHealth(life, maxLife = 1) {
   hud.healthFill.style.width = `${percentage}%`;
 }
 
-function updateHudAmmo(currentAmmo, maxAmmo = 1) {
-  if (!hud?.ammoFill) return;
-  const percentage = Math.max(0, Math.min(100, (currentAmmo / (maxAmmo || 1)) * 100));
-  hud.ammoFill.style.width = `${percentage}%`;
+function updateHudEnergy(currentEnergy, maxEnergy = 1) {
+  if (!hud?.energyFill) return;
+  const percentage = Math.max(0, Math.min(100, (currentEnergy / (maxEnergy || 1)) * 100));
+  hud.energyFill.style.width = `${percentage}%`;
 }
 
-function shakeHudAmmo() {
-  if (!hud?.ammoBar) return;
-  // Reinicia a animação mesmo em disparos "a seco" consecutivos: sem tirar
+function shakeHudEnergy() {
+  if (!hud?.energyBar) return;
+  // Reinicia a animação mesmo em ataques "a seco" consecutivos: sem tirar
   // a classe e forçar reflow, o CSS ignora reaplicar a mesma classe já
   // ativa e a barra não treme de novo.
-  hud.ammoBar.classList.remove('ammo-bar--shake');
-  void hud.ammoBar.offsetWidth;
-  hud.ammoBar.classList.add('ammo-bar--shake');
+  hud.energyBar.classList.remove('energy-bar--shake');
+  void hud.energyBar.offsetWidth;
+  hud.energyBar.classList.add('energy-bar--shake');
 }
 
 function updateHudCoins(totalCoins) {
@@ -99,8 +99,8 @@ export function BindHudEvents(game) {
 
   game.events.on(HUD_EVENTS.RESET, CreateHud);
   game.events.on(HUD_EVENTS.HEALTH_CHANGED, updateHudHealth);
-  game.events.on(HUD_EVENTS.AMMO_CHANGED, updateHudAmmo);
-  game.events.on(HUD_EVENTS.AMMO_EMPTY, shakeHudAmmo);
+  game.events.on(HUD_EVENTS.ENERGY_CHANGED, updateHudEnergy);
+  game.events.on(HUD_EVENTS.ENERGY_EMPTY, shakeHudEnergy);
   game.events.on(HUD_EVENTS.COINS_CHANGED, updateHudCoins);
   game.events.on(HUD_EVENTS.DIAMONDS_CHANGED, updateHudDiamonds);
   // Phaser emite 'destroy' no próprio game.events quando game.destroy() é
