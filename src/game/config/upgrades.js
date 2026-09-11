@@ -151,6 +151,18 @@ export const UPGRADES_CATALOG = [
     currency: 'diamant',
     boolean: true,
   },
+  {
+    id: 'isPump',
+    label: 'Bomba',
+    icon: '💣',
+    description: 'Segure o botão de disparo pra carregar uma bomba; solte pra lançar. Explode em área.',
+    tier: 'S', // transformador: mesma categoria do pulo duplo/paraquedas/jetpack/parede (habilidade equipável)
+    maxLevel: 1,
+    baseCost: 10,
+    costGrowth: 1,
+    currency: 'diamant',
+    boolean: true,
+  },
   // Armas (ver ACCESSORY_UPGRADE_IDS): equipáveis na aba "Equip. >
   // Acessório", mesmo esquema de "compra depois equipa" das habilidades
   // acima — só uma arma fica ativa por vez. Ainda sem mecânica de gameplay
@@ -253,6 +265,18 @@ export const UPGRADES_CATALOG = [
     unit: 'hit(s)',
   },
   {
+    id: 'bombDamage',
+    label: 'Dano da bomba',
+    icon: '💣',
+    tier: 'B', // utilidade: só relevante pra quem tem a habilidade Bomba (isPump) equipada
+    maxLevel: 10,
+    baseCost: 7,
+    costGrowth: 1.2,
+    base: 2,        // dano da explosão em área (ver explodeBomb em createBulletSystem.js)
+    perLevel: 1,
+    unit: 'dano',
+  },
+  {
     id: 'reloadSpeed',
     label: 'Velocidade de recarga de energia',
     icon: '🔄',
@@ -270,7 +294,7 @@ export const UPGRADES_CATALOG = [
 // Upgrades comprados na Loja mas equipados na aba "Equip. > Habilidade" (ver
 // WelcomeScreen.js) em vez de aparecerem na Loja normal — só uma habilidade
 // fica ativa por vez (ver GameManager.equipAbility).
-export const ABILITY_UPGRADE_IDS = ['doubleJump', 'parachute', 'jetpack', 'isStick'];
+export const ABILITY_UPGRADE_IDS = ['doubleJump', 'parachute', 'jetpack', 'isStick', 'isPump'];
 
 // Mesmo esquema acima, só que pra aba "Equip. > Acessório" — só uma arma
 // fica equipada por vez (ver GameManager.equipAccessory). 'defaultWeapon' é

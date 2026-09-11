@@ -89,6 +89,14 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.load.image('bullet', 'https://labs.phaser.io/assets/sprites/bullet.png');
+    // Habilidade "Bomba" (isPump, ver ABILITY_UPGRADE_IDS em
+    // game/config/upgrades.js): 4 sprites crescentes usados tanto na
+    // animação de carga (segurar o botão) quanto no visual da bomba lançada
+    // (ver createBulletSystem.js).
+    this.load.image('bomb_charge_0', 'assets/bullet/pump/01.png');
+    this.load.image('bomb_charge_1', 'assets/bullet/pump/02.png');
+    this.load.image('bomb_charge_2', 'assets/bullet/pump/03.png');
+    this.load.image('bomb_charge_3', 'assets/bullet/pump/04.png');
     this.load.audio('bullet_effect_1', 'assets/sounds/bullet_effect_6.mp3');
     // Som do tiro do Arco (ver ACCESSORY_UPGRADE_IDS em game/config/upgrades.js
     // e BOW_WEAPON_ID em createBulletSystem.js) — cada arma tem o próprio som.
@@ -204,6 +212,11 @@ export class GameScene extends Phaser.Scene {
     // bullets/swordWaves, tem gravidade ligada e quica nas plataformas (ver
     // createBulletSystem.js).
     this.fireballs = this.physics.add.group({ maxSize: 4 });
+    // Bomba da habilidade "isPump" (ver ABILITY_UPGRADE_IDS em
+    // game/config/upgrades.js) — sem corpo físico ativo em voo (o trajeto é
+    // feito por tween em createBulletSystem.js, não por velocidade/gravidade
+    // do Arcade Physics), só usa o grupo pra pooling.
+    this.bombs = this.physics.add.group({ maxSize: 2 });
     this.bulletSystem = createBulletSystem(this);
     this.damagePlayer = (damage) => damagePlayer(this, damage);
 
@@ -227,6 +240,7 @@ export class GameScene extends Phaser.Scene {
       this.physics.add.overlap(this.player, portal, () => this.completeRun(portal.unlockMapKey));
     });
 
+    window.__debugScene = this;
     createCoinAnimations(this);
     this.coins = createCoins(this);
 

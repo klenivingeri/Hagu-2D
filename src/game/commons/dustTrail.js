@@ -26,6 +26,19 @@ const FIREBALL_INNER_COLOR = 0xffe066;
 const FIREBALL_TRAIL_INTERVAL = 40;
 const FIREBALL_TRAIL_PARTICLES = 2;
 
+// Explosão da Bomba (habilidade "isPump", ver ABILITY_UPGRADE_IDS em
+// game/config/upgrades.js e explodeBomb em createBulletSystem.js): clarão
+// circular do tamanho do raio de dano + estilhaços em leque, mesmo padrão
+// visual do emitBulletImpactDust acima.
+const BOMB_EXPLOSION_PARTICLES = 14;
+const BOMB_EXPLOSION_COLOR = 0xffb347;
+// Rastro de fumaça da Bomba enquanto ela voa/quica (antes de armar o pavio,
+// ver releaseBomb/armBomb em createBulletSystem.js) — cinza escuro pra
+// parecer fumaça, não faísca (diferente do rastro alaranjado do Cajado).
+const BOMB_TRAIL_INTERVAL = 40;
+const BOMB_TRAIL_PARTICLES = 2;
+const BOMB_TRAIL_COLOR = 0x4a4a4a;
+
 /**
  * Gera a textura de 2x2px usada pela poeira, uma única vez por jogo.
  * Precisa ser chamada ANTES do primeiro emitDustTrail/emitBulletImpactDust
@@ -338,6 +351,62 @@ export function emitFireballTrail(scene, fireball) {
       scale: Phaser.Math.FloatBetween(0.6, 1),
       lifespan: Phaser.Math.Between(120, 200),
       tint: FIREBALL_OUTER_COLOR,
+    });
+  }
+}
+
+/**
+ * Rastro de fumaça atrás da Bomba enquanto ela voa/quica no ar, ainda sem
+ * pavio armado (ver releaseBomb em createBulletSystem.js) — mesmo throttle
+ * das outras trilhas do arquivo.
+ */
+export function emitBombTrail(scene, bomb) {
+  const now = scene.time.now;
+  const lastEmission = bomb._lastTrailEmission ?? -Infinity;
+  if (now - lastEmission < BOMB_TRAIL_INTERVAL) return;
+  bomb._lastTrailEmission = now;
+
+  const emitter = getDustEmitter(scene);
+
+  for (let index = 0; index < BOMB_TRAIL_PARTICLES; index += 1) {
+    const x = bomb.x + Phaser.Math.Between(-2, 2);
+    const y = bomb.y + Phaser.Math.Between(-2, 2);
+
+    emitParticle(emitter, x, y, Phaser.Math.Between(-8, 8), Phaser.Math.Between(-8, 8), {
+      scale: Phaser.Math.FloatBetween(0.5, 0.9),
+      lifespan: Phaser.Math.Between(120, 200),
+      tint: BOMB_TRAIL_COLOR,
+    });
+  }
+}
+
+/**
+ * Explosão da Bomba: clarão que cresce até cobrir o raio de dano (`radius`,
+ * ver BOMB_EXPLOSION_RADIUS_PX em createBulletSystem.js) + estilhaços em
+ * leque partindo do centro, deixando visível a área que causou dano.
+ */
+export function emitBombExplosion(scene, x, y, radius = 16) {
+  const emitter = getDustEmitter(scene);
+
+  const flash = scene.add.circle(x, y, radius, 0xffcc66, 0.55);
+  flash.setDepth(10000);
+  scene.tweens.add({
+    targets: flash,
+    scale: 1.6,
+    alpha: 0,
+    duration: 200,
+    ease: 'Cubic.Out',
+    onComplete: () => flash.destroy(),
+  });
+
+  for (let index = 0; index < BOMB_EXPLOSION_PARTICLES; index += 1) {
+    const angle = Phaser.Math.DegToRad(Phaser.Math.Between(0, 359));
+    const speed = Phaser.Math.Between(60, radius * 8);
+
+    emitParticle(emitter, x, y, Math.cos(angle) * speed, Math.sin(angle) * speed, {
+      scale: Phaser.Math.FloatBetween(0.8, 1.6),
+      lifespan: Phaser.Math.Between(180, 320),
+      tint: BOMB_EXPLOSION_COLOR,
     });
   }
 }

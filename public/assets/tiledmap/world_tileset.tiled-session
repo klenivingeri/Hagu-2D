@@ -8,11 +8,11 @@
             "scaleInDock": 1
         },
         "map_0.tmj": {
-            "scale": 1.891517857142857,
-            "selectedLayer": 18,
+            "scale": 1.5,
+            "selectedLayer": 5,
             "viewCenter": {
-                "x": 223.8942648100071,
-                "y": 224.1586027849894
+                "x": 173.66666666666666,
+                "y": 215
             }
         },
         "map_0.tmj#coin": {
@@ -132,12 +132,38 @@
         "map_4.tmj#world_tileset": {
             "scaleInDock": 1.5
         },
+        "map_desert_1.tmj": {
+            "expandedObjectLayers": [
+                24
+            ],
+            "scale": 1.5797991071428572,
+            "selectedLayer": 18,
+            "viewCenter": {
+                "x": 223.76262804662662,
+                "y": 223.76262804662662
+            }
+        },
+        "map_desert_1.tmj#coin": {
+            "scaleInDock": 1
+        },
+        "map_desert_1.tmj#platforms": {
+            "scaleInDock": 1
+        },
+        "map_desert_1.tmj#world_tileset": {
+            "scaleInDock": 1
+        },
+        "map_desert_1.tmj#world_tileset_background": {
+            "scaleInDock": 1
+        },
         "map_forest_1.tmj": {
+            "expandedObjectLayers": [
+                24
+            ],
             "scale": 1.5,
             "selectedLayer": 18,
             "viewCenter": {
-                "x": 209.66666666666669,
-                "y": 201.33333333333334
+                "x": 209.66666666666666,
+                "y": 201
             }
         },
         "map_forest_1.tmj#coin": {
@@ -159,6 +185,64 @@
             "scaleInDock": 1
         },
         "map_forest_1.tmj#world_tileset_shadow_32": {
+            "scaleInDock": 1
+        },
+        "map_forest_2.tmj": {
+            "scale": 1.5797991071428572,
+            "selectedLayer": 18,
+            "viewCenter": {
+                "x": 223.76262804662662,
+                "y": 223.76262804662662
+            }
+        },
+        "map_forest_2.tmj#coin": {
+            "scaleInDock": 1
+        },
+        "map_forest_2.tmj#diamant": {
+            "scaleInDock": 1
+        },
+        "map_forest_2.tmj#platforms": {
+            "scaleInDock": 1
+        },
+        "map_forest_2.tmj#world_tileset": {
+            "scaleInDock": 1
+        },
+        "map_forest_2.tmj#world_tileset_32": {
+            "scaleInDock": 1
+        },
+        "map_forest_2.tmj#world_tileset_shadow_16": {
+            "scaleInDock": 1
+        },
+        "map_forest_2.tmj#world_tileset_shadow_32": {
+            "scaleInDock": 1
+        },
+        "map_forest_3.tmj": {
+            "scale": 1.5797991071428572,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 223.76262804662662,
+                "y": 223.76262804662662
+            }
+        },
+        "map_forest_3.tmj#coin": {
+            "scaleInDock": 1
+        },
+        "map_forest_3.tmj#diamant": {
+            "scaleInDock": 1
+        },
+        "map_forest_3.tmj#platforms": {
+            "scaleInDock": 1
+        },
+        "map_forest_3.tmj#world_tileset": {
+            "scaleInDock": 1
+        },
+        "map_forest_3.tmj#world_tileset_32": {
+            "scaleInDock": 1
+        },
+        "map_forest_3.tmj#world_tileset_shadow_16": {
+            "scaleInDock": 1
+        },
+        "map_forest_3.tmj#world_tileset_shadow_32": {
             "scaleInDock": 1
         },
         "map_ice_1.tmj": {
@@ -191,8 +275,10 @@
         "map_1.tmj"
     ],
     "project": "world_tileset.tiled-project",
-    "property.type": "bool",
+    "property.type": "string",
     "recentFiles": [
+        "map_forest_3.tmj",
+        "map_forest_1.tmj",
         "map_0.tmj",
         "map_2.tmj",
         "map_3.tmj",

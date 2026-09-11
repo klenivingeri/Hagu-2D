@@ -30,9 +30,11 @@ export function createPlayerStatus(overrides = {}) {
     // por vez (ver GameManager.equipAbility) — por isso checam
     // gameState.equippedAbility, nunca o nível do upgrade direto.
     isStick: gameState.equippedAbility === 'isStick', // habilidade equipada de grudar na parede
+    isPump: gameState.equippedAbility === 'isPump', // habilidade equipada de bomba (segurar/soltar o disparo)
     wallSlideSpeed: 45,         // velocidade máxima de descida ao grudar na parede
     wallJumpHorizontalSpeed: 180, // impulso horizontal do pulo de parede
     bulletDamage: upgradeValue('damage'),     // dano de cada tiro - já usado em createBulletSystem/createEnemy (overlap bullet x enemy)
+    bombDamage: upgradeValue('bombDamage'),   // dano da explosão em área da habilidade "isPump" (ver explodeBomb em createBulletSystem.js)
     bulletRangeTiles: upgradeValue('bulletRange'), // alcance do tiro do player, em tiles (ver createBulletSystem)
 
     isDoubleJump: gameState.equippedAbility === 'doubleJump',

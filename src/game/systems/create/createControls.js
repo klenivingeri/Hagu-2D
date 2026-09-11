@@ -170,6 +170,13 @@ function bindDomControlsOnce() {
     } else {
       btnB.classList.remove('pressed');
       btnA.classList.remove('pressed');
+      // Dedo saiu do botão de tiro sem passar pelo pointerup (ex: arrastou
+      // pra fora): solta a bomba em carga, se houver (ver habilidade
+      // "isPump"/releaseBomb em createBulletSystem.js). Sem efeito pra
+      // qualquer outra arma.
+      if (activeActionTarget === 'fire') {
+        activeScene.bulletSystem?.fireUp?.();
+      }
       activeActionTarget = null;
       activeScene.controlState.jumpHeld = false;
     }
@@ -189,6 +196,11 @@ function bindDomControlsOnce() {
   const resetAction = (e) => {
     e.preventDefault();
     if (!activeScene) return;
+    // Soltou o botão de tiro de verdade: solta a bomba em carga, se houver
+    // (ver comentário equivalente em updateActionFromTouch acima).
+    if (activeActionTarget === 'fire') {
+      activeScene.bulletSystem?.fireUp?.();
+    }
     btnA.classList.remove('pressed');
     btnB.classList.remove('pressed');
     activeActionTarget = null;
