@@ -8,7 +8,8 @@
 // BOUNDS DA CÂMERA (nunca physics.world.setBounds, esse continua do
 // tamanho real do .tmj — ver createWorld.js) por mais FOOTER_ROWS tiles
 // abaixo do mapa, e preenche esse espaço extra repetindo a última linha
-// real de tiles do chão (camada "ground") FOOTER_ROWS vezes. Como não tem
+// real de tiles do chão (camadas "ground" e, se houver tile ali,
+// "foreground") FOOTER_ROWS vezes. Como não tem
 // corpo físico nenhum, player/mobs/coletáveis nunca alcançam essa área (o
 // chão real continua sendo o limite físico deles) — só a câmera "vê" mais
 // longe ali, dando a impressão de que o mapa continua.
@@ -24,7 +25,8 @@ const FOOTER_ROWS = 4;
 // Ordem de "trás pra frente": horizon é o fundo (céu) que aparece atrás do
 // chão no mapa de verdade (ver MAP_DEPTHS em constants.js) — repetir só o
 // ground deixaria buracos pretos onde a última linha não tem tile de chão.
-const FOOTER_SOURCE_LAYERS = [MAP_LAYERS.HORIZON, MAP_LAYERS.GROUND];
+// foreground vem por último pois fica na frente do chão (depth 70 > 40).
+const FOOTER_SOURCE_LAYERS = [MAP_LAYERS.HORIZON, MAP_LAYERS.GROUND, MAP_LAYERS.FOREGROUND];
 
 // Acha, para um GID global de tile, qual Tileset do Phaser (já carregado
 // via map.addTilesetImage em createWorld.js) é o dono dele.

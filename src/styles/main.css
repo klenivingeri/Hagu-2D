@@ -741,6 +741,48 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
   animation: stage-unlock-pop 900ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Botão "Jogar" da WelcomeScreen: encolhe e some enquanto o boneco corre
+   pelo grid (ver hidePlayButton em WelcomeScreen.js) e volta com um "yoyo"
+   (pop + oscilação de escala, feito à mão em keyframes já que aqui é CSS puro
+   e não uma tween do Phaser) quando ele chega na fase e ela é selecionada. */
+.play-btn {
+  transform: scale(1);
+  opacity: 1;
+  transition:
+    transform 220ms ease-in,
+    opacity 220ms ease-in;
+}
+
+.play-btn-hidden {
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes play-btn-yoyo {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(0.9);
+  }
+  80% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.play-btn-yoyo {
+  animation: play-btn-yoyo 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Responsividade: Portrait (Vertical) */
 @media (orientation: portrait) {
   .game-layout {

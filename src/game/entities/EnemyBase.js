@@ -86,7 +86,7 @@ export function resolveEnemyOverrides(properties, config) {
 // responsabilidade da behavior (behavior.init), chamada pela EnemyFactory
 // logo em seguida.
 export function spawnEnemyBase(scene, x, y, { key, path = '', type, properties } = {}) {
-  const config = getMobConfig(type);
+  const config = getMobConfig(type, path || key);
   const overrides = resolveEnemyOverrides(properties, config);
 
   const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
@@ -257,10 +257,17 @@ export function isKnockedBack(scene, enemy) {
 }
 
 function playStompAnimation(enemy) {
-  enemy.isStomped = true;
-  enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'stomp'), true);
+  const animation = getEntityAnimationKey(enemy.entityKey, 'stomp');
+  // Nem toda pasta de MOB_SPRITE_SETS tem "stomp" (ex: bat só tem
+  // run/spark) — sem essa checagem, isStomped travaria pra sempre, porque
+  // o 'animationcomplete-<key>' de uma animação que nunca tocou também
+  // nunca dispara.
+  if (!enemy.scene.anims.exists(animation)) return;
 
-  enemy.once(`animationcomplete-${getEntityAnimationKey(enemy.entityKey, 'stomp')}`, () => {
+  enemy.isStomped = true;
+  enemy.anims.play(animation, true);
+
+  enemy.once(`animationcomplete-${animation}`, () => {
     if (!enemy.active || enemy.isDead) return;
     enemy.isStomped = false;
     enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);

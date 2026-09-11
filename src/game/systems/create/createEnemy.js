@@ -98,8 +98,10 @@ export function preloadEnemyAssets(scene, assetKeys = []) {
     ? { key: item, type: DEFAULT_MOB_TYPE } : item);
   const loaded = new Set();
   definitions.forEach(({ key, path = '', type = DEFAULT_MOB_TYPE }) => {
-    const config = getMobConfig(type);
-    const id = `${key}:${type}`;
+    const config = getMobConfig(type, path || key);
+    // Dedup por key+path (ver mesmo raciocínio em createEnemyAnimations
+    // logo abaixo): os arquivos carregados vêm da pasta de sprite, não do type.
+    const id = `${key}:${path}`;
     if (loaded.has(id)) return;
     loaded.add(id);
     preloadAnimations(scene, config.animations.map((animation) => ({
@@ -112,9 +114,12 @@ export function createEnemyAnimations(scene) {
   const definitions = scene.enemyDefinitions || (scene.enemyAssetKeys || [])
     .map((key) => ({ key, type: DEFAULT_MOB_TYPE }));
   const created = new Set();
-  definitions.forEach(({ key, type = DEFAULT_MOB_TYPE }) => {
-    const config = getMobConfig(type);
-    const id = `${key}:${type}`;
+  definitions.forEach(({ key, path = '', type = DEFAULT_MOB_TYPE }) => {
+    const config = getMobConfig(type, path || key);
+    // Dedup por key+path (não por type): as animações são registradas sob
+    // o prefixo `key` e vêm da pasta de sprite (path||key) — o `type`
+    // (comportamento) não influencia mais quais frames existem.
+    const id = `${key}:${path}`;
     if (created.has(id)) return;
     created.add(id);
     createAnimations(scene, config.animations, key);

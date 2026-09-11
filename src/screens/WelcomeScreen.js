@@ -250,6 +250,27 @@ function findStagePath(grid, from, to) {
   return [from, to];
 }
 
+// Some com o botão "Jogar" enquanto o boneco corre pelo grid — some de novo
+// com showPlayButton() quando ele chega na fase escolhida (ver
+// moveRunnerAlongPath). A classe cuida do encolher+sumir via transition.
+function hidePlayButton() {
+  elements.playBtn?.classList.add('play-btn-hidden');
+}
+
+// Reaparece com um "yoyo" (pop + oscilação de escala, igual efeito
+// yoyo:true de uma tween do Phaser) quando o boneco chega na fase e ela é
+// selecionada. Reinicia a classe pra permitir tocar de novo em seleções
+// seguidas (animationend remove sozinha, como em stage-cell-unlock).
+function showPlayButton() {
+  const btn = elements.playBtn;
+  if (!btn) return;
+  btn.classList.remove('play-btn-hidden');
+  btn.classList.remove('play-btn-yoyo');
+  void btn.offsetWidth; // força reflow pra poder re-adicionar a classe já removida
+  btn.classList.add('play-btn-yoyo');
+  btn.addEventListener('animationend', () => btn.classList.remove('play-btn-yoyo'), { once: true });
+}
+
 // Faz o boneco "correr" (troca de sprite + desliza) por cada célula do
 // `path` (ver findStagePath), uma de cada vez, e só chama onArrive depois
 // que a última corrida termina — simula o deslocamento pelas trilhas do
@@ -261,6 +282,7 @@ function moveRunnerAlongPath(path, onArrive) {
   }
 
   runnerMoving = true;
+  hidePlayButton();
   startRunnerFrames(RUN_SPRITE_FRAMES, RUN_SPRITE_FRAME_RATE);
 
   let stepIndex = 1;
@@ -301,6 +323,7 @@ function moveRunnerToStage(mapKey, cells) {
     selectedMapKey = mapKey;
     renderStages();
     updateMapPreview(mapKey, elements.stagePreviewViewport);
+    showPlayButton();
   });
 }
 
@@ -449,6 +472,7 @@ function renderStages() {
         selectedMapKey = mapKey;
         renderStages();
         updateMapPreview(mapKey, elements.stagePreviewViewport);
+        showPlayButton();
       });
     });
     elements.stageGrid.append(cell);
@@ -759,11 +783,14 @@ function handleAccessoryListClick(event) {
   }
 }
 
-// Ícone estático (frame 0 do run) de cada espécie — mesma pasta/convenção
-// usada em RunSummaryScreen.getMonsterIconSrc (config.path || key).
-function getCollectionIconSrc({ key, path }) {
+// Ícone estático (frame 0 do "run" REAL daquela pasta — cada mob tem seu
+// próprio arquivo/contagem de frames, ver MOB_SPRITE_SETS em
+// game/config/entities.js) — mesma convenção usada em
+// RunSummaryScreen.getMonsterIconSrc (config.path || key + entry.behavior).
+function getCollectionIconSrc({ key, path, behavior }) {
   const folder = path || key;
-  return `/assets/mobs/${folder}/run/sprite_run_two_0.png`;
+  const run = getMobConfig(behavior, folder).animations?.find((animation) => animation.key === 'run');
+  return `/assets/mobs/${folder}/${run.url}0.png`;
 }
 
 // Todos os frames do "run" da espécie (mesma animação que ela usa correndo
@@ -773,7 +800,7 @@ function getCollectionIconSrc({ key, path }) {
 // configurado (mob novo/incompleto), cai pro frame estático de sempre.
 function getCollectionRunFrames(entry) {
   const folder = entry.path || entry.key;
-  const run = getMobConfig(entry.behavior).animations?.find((animation) => animation.key === 'run');
+  const run = getMobConfig(entry.behavior, folder).animations?.find((animation) => animation.key === 'run');
   if (!run) return { frames: [getCollectionIconSrc(entry)], frameRate: 1 };
 
   const frames = Array.from(
@@ -792,14 +819,13 @@ const GALLERY_POSE_LABELS = { idle: 'Parado', run: 'Run', bow: 'Arco', attack: '
 
 // entry.behavior é a mesma key usada em MOBS_CONFIG (ver
 // EnemyBase.killEnemy -> recordEnemyDefeat, que grava enemy.entityConfig.behavior
-// vindo de getMobConfig(type) — cada type do MOBS_CONFIG usa a própria key
-// como valor de "behavior"), então dá pra buscar de volta a lista de
-// animations daquele tipo de mob a partir só do que já está salvo na
-// Coleção (sem precisar de nenhuma cena do Phaser ativa).
+// vindo de getMobConfig(type, mobFolder)) — dá pra buscar de volta a lista de
+// animations REAIS daquela pasta (entry.path || entry.key) a partir só do
+// que já está salvo na Coleção (sem precisar de nenhuma cena do Phaser ativa).
 function getGalleryPoses(entry) {
   if (!entry) return [];
   const folder = entry.path || entry.key;
-  const config = getMobConfig(entry.behavior);
+  const config = getMobConfig(entry.behavior, folder);
 
   return GALLERY_POSE_ORDER
     .map((poseKey) => config.animations?.find((animation) => animation.key === poseKey))

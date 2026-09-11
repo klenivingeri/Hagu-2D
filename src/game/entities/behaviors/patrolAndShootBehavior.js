@@ -95,11 +95,17 @@ function fireAtPlayer(scene, enemy) {
   enemy.nextAttackAt = scene.time.now + getAttackCooldown(enemy);
   if (enemy.isStomped) return;
 
+  const direction = enemy.facingDirection || 1;
+  const bowAnimation = getEntityAnimationKey(enemy.entityKey, 'bow');
+  // Mob sem animação "bow" (ver MOB_SPRITE_SETS) não pode atirar: sem essa
+  // checagem, anims.play() nunca dispara o 'animationcomplete-<key>' que
+  // zera isAttacking, e o inimigo fica travado pra sempre no primeiro
+  // avistamento do player.
+  if (!scene.anims.exists(bowAnimation)) return;
+
   if (enemy.bidirectional) faceTowardsPlayer(scene, enemy);
   enemy.setVelocityX(0);
   enemy.isAttacking = true;
-  const direction = enemy.facingDirection || 1;
-  const bowAnimation = getEntityAnimationKey(enemy.entityKey, 'bow');
   const bowFrame = `${bowAnimation}_3`;
 
   enemy._onBowFrame = (anim, frame) => {

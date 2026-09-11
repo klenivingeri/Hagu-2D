@@ -6,6 +6,7 @@
 import runSummaryTemplate from './runSummaryScreen.html?raw';
 import { getStageLabel } from './mapLabels.js';
 import { getBestiaryEntry } from '../game/config/bestiary.js';
+import { getMobConfig } from '../game/config/entities.js';
 
 let elements = null;
 
@@ -22,15 +23,19 @@ function formatTime(ms = 0) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-// Sprite de "run" (frame 0) de cada tipo de mob já é um PNG estático em
+// Sprite de "run" (frame 0) de cada mob já é um PNG estático em
 // /public/assets/mobs/ (ver preloadEnemyAssets em createEnemy.js — mesma
-// convenção de pasta: config.path + (path || key)). Reaproveitar o mesmo
-// arquivo aqui evita duplicar asset só pra esta tela, e não exige nenhum
-// import de código do Phaser (CLAUDE.md regra 1 — esta tela só lê um
-// arquivo estático, nunca uma textura do Phaser).
-function getMonsterIconSrc({ key, path }) {
+// convenção de pasta: config.path + (path || key)). O nome do arquivo e a
+// contagem de frames variam por mob (ver MOB_SPRITE_SETS em
+// game/config/entities.js), por isso passa por getMobConfig em vez de um
+// caminho fixo. Reaproveitar o mesmo arquivo aqui evita duplicar asset só
+// pra esta tela, e getMobConfig é config pura (sem Phaser) — não fere
+// CLAUDE.md regra 1 (esta tela só lê um arquivo estático, nunca uma
+// textura do Phaser).
+function getMonsterIconSrc({ key, path, behavior }) {
   const folder = path || key;
-  return `/assets/mobs/${folder}/run/sprite_run_two_0.png`;
+  const run = getMobConfig(behavior, folder).animations?.find((animation) => animation.key === 'run');
+  return `/assets/mobs/${folder}/${run.url}0.png`;
 }
 
 function renderStars(container, stars = 0) {
@@ -51,12 +56,12 @@ function renderMonsterKills(wrap, listEl, monsterKills = []) {
   }
   wrap.classList.remove('hidden');
 
-  monsterKills.forEach(({ key, path, count }) => {
+  monsterKills.forEach(({ key, path, behavior, count }) => {
     const item = document.createElement('div');
     item.className = 'flex flex-col items-center gap-1';
 
     const img = document.createElement('img');
-    img.src = getMonsterIconSrc({ key, path });
+    img.src = getMonsterIconSrc({ key, path, behavior });
     img.alt = key;
     img.className = 'h-8 w-8 object-contain [image-rendering:pixelated]';
     // Sprite de mob genérico ("commun") sem run/sprite_run_two_0.png não
@@ -84,12 +89,12 @@ function renderCollectedSprites(wrap, listEl, collectedSprites = []) {
   }
   wrap.classList.remove('hidden');
 
-  collectedSprites.forEach(({ key, path }) => {
+  collectedSprites.forEach(({ key, path, behavior }) => {
     const item = document.createElement('div');
     item.className = 'flex flex-col items-center gap-1';
 
     const img = document.createElement('img');
-    img.src = getMonsterIconSrc({ key, path });
+    img.src = getMonsterIconSrc({ key, path, behavior });
     img.alt = key;
     img.className = 'h-8 w-8 object-contain [image-rendering:pixelated]';
     img.onerror = () => { img.style.visibility = 'hidden'; };
