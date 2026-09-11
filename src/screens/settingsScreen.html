@@ -23,7 +23,14 @@
         <input type="checkbox" class="fullscreen-toggle h-5 w-5 accent-emerald-500" />
       </label>
 
-      <div class="flex items-center justify-between gap-3 text-sm">
+      <div class="flex flex-col gap-3 text-sm">
+        <div class="platform-mode-group flex w-full shrink-0 overflow-hidden rounded-lg border border-white/15">
+          <button type="button" class="platform-mode-btn flex-1 px-3 py-1 text-xs font-bold text-center" data-platform="gameboy">Game Boy</button>
+          <button type="button" class="platform-mode-btn flex-1 border-l border-white/15 px-3 py-1 text-xs font-bold text-center" data-platform="mobile">Mobile</button>
+        </div>
+      </div>
+
+      <div class="camera-zoom-row flex items-center justify-between gap-3 text-sm">
         <span class="whitespace-nowrap">Zoom câmera</span>
         <div class="camera-zoom-group flex shrink-0 overflow-hidden rounded-lg border border-white/15">
           <button type="button" class="camera-zoom-btn shrink-0 px-3 py-1 text-xs font-bold" data-zoom="1">1x</button>

@@ -18,6 +18,7 @@ import {
   equipAbility,
   isAccessoryEquipped,
   equipAccessory,
+  setPlatformMode,
 } from '../managers/GameManager.js';
 import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '../game/config/upgrades.js';
 import { MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
@@ -971,6 +972,16 @@ function renderSettings() {
   elements.settingToggles.forEach((toggle) => {
     toggle.checked = Boolean(gameState.settings[toggle.dataset.setting]);
   });
+  elements.platformModeButtons.forEach((button) => {
+    const isActive = button.dataset.platform === gameState.settings.platformMode;
+    button.classList.toggle('bg-emerald-500', isActive);
+    button.classList.toggle('text-gray-950', isActive);
+    button.classList.toggle('text-gray-300', !isActive);
+  });
+  // No modo Mobile o zoom é sempre 3x/fullscreen automático (ver
+  // setPlatformMode em GameManager.js) — a escolha manual 1x/2x só faz
+  // sentido no Game Boy.
+  elements.cameraZoomRow?.classList.toggle('hidden', gameState.settings.platformMode === 'mobile');
   elements.cameraZoomButtons.forEach((button) => {
     const isActive = Number(button.dataset.zoom) === gameState.settings.cameraZoom;
     button.classList.toggle('bg-emerald-500', isActive);
@@ -1003,6 +1014,11 @@ function handleSettingChange(event) {
 
 function handleCameraZoomChange(event) {
   updateSetting('cameraZoom', Number(event.currentTarget.dataset.zoom));
+  renderSettings();
+}
+
+function handlePlatformModeChange(event) {
+  setPlatformMode(event.currentTarget.dataset.platform);
   renderSettings();
 }
 
@@ -1106,6 +1122,8 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     closeBtn: modalRoot.querySelector('.settings-close-btn'),
     resetStorageBtn: modalRoot.querySelector('.reset-storage-btn'),
     settingToggles: [...modalRoot.querySelectorAll('.setting-toggle')],
+    platformModeButtons: [...modalRoot.querySelectorAll('.platform-mode-btn')],
+    cameraZoomRow: modalRoot.querySelector('.camera-zoom-row'),
     cameraZoomButtons: [...modalRoot.querySelectorAll('.camera-zoom-btn')],
     fullscreenRow: modalRoot.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: modalRoot.querySelector('.fullscreen-toggle'),
@@ -1138,6 +1156,9 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   });
   elements.cameraZoomButtons.forEach((button) => {
     button.addEventListener('click', handleCameraZoomChange);
+  });
+  elements.platformModeButtons.forEach((button) => {
+    button.addEventListener('click', handlePlatformModeChange);
   });
   elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);
   // O player pode sair do fullscreen sem usar o toggle (Esc, gesto do

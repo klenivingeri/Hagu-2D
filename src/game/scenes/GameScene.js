@@ -22,6 +22,32 @@ import { preloadDustTexture, preloadSwordWaveTexture, preloadFireballTexture } f
 import { preloadPortalAssets, createPortalAnimations, createPortals } from '../systems/create/createPortals.js';
 import { createGates } from '../systems/create/createGates.js';
 
+// A opção "3x" em Configurações só escolhe o LAYOUT tela-cheia (ver
+// .game-layout.zoom-3x/applyScaleModeForZoom) — o zoom de câmera real fica
+// bem menor que 3: como o canvas nesse modo passa a ocupar a tela toda no
+// formato real do aparelho (RESIZE, ver applyScaleModeForZoom), um zoom
+// literal 3 deixaria a visão exageradamente grande.
+// Esse valor é só o PISO do zoom: toda fase (ver createWorld.js/map.widthInPixels)
+// tem exatamente 448x448, o mesmo tamanho da resolução lógica base — então em
+// paisagem (tela bem mais larga que alta) 1.6 sozinho deixa a câmera menor
+// que a tela, sobrando fundo vazio nas laterais porque o mapa não tem mais
+// conteúdo pra mostrar ali. getEffectiveCameraZoom soma um zoom mínimo
+// calculado a partir do viewport real (só disponível DEPOIS do RESIZE, ver
+// applyScaleModeForZoom) pra garantir que a câmera cubra tela inteira nos
+// dois eixos, não só o mais curto.
+const FULLSCREEN_CAMERA_ZOOM = 1.6;
+
+function getEffectiveCameraZoom(zoomSetting, scene) {
+  if (zoomSetting !== 3) return zoomSetting;
+
+  const { width: viewportWidth, height: viewportHeight } = scene.scale.gameSize;
+  const { widthInPixels: mapWidth, heightInPixels: mapHeight } = scene.map;
+  const zoomToCoverWidth = viewportWidth / mapWidth;
+  const zoomToCoverHeight = viewportHeight / mapHeight;
+
+  return Math.max(FULLSCREEN_CAMERA_ZOOM, zoomToCoverWidth, zoomToCoverHeight);
+}
+
 export class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
@@ -135,11 +161,23 @@ export class GameScene extends Phaser.Scene {
     // WelcomeScreen.js) mostra só 1/4 da fase, e a câmera passa a seguir o
     // player em vez de ficar estática enquadrando tudo.
     const cameraZoom = gameState.settings.cameraZoom || 1;
-    this.cameras.main.setZoom(cameraZoom);
+    // Precisa rodar ANTES do setZoom/centerOn: no zoom 3x ela troca o canvas
+    // pra RESIZE, o que muda o tamanho da área visível da câmera pro formato
+    // real da tela — getEffectiveCameraZoom lê esse tamanho (scene.scale.
+    // gameSize) pra calcular o zoom mínimo que cobre a tela toda, então
+    // precisa do RESIZE já aplicado. Centralizar antes disso usa o viewport
+    // antigo (FIT) e a câmera nasce enquadrada errada assim que o resize
+    // entra em vigor.
+    this.applyScaleModeForZoom(cameraZoom);
+    this.cameras.main.setZoom(getEffectiveCameraZoom(cameraZoom, this));
     if (cameraZoom > 1) {
       // lerp < 1 faz a câmera "atrasar" atrás do player em vez de grudar
       // nele a cada frame (comportamento seco/instantâneo do default 1).
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+      // Sem isso a câmera nasce enquadrando o canto (0,0) do mapa e só
+      // alcança o player depois de vários frames de lerp — startFollow não
+      // faz esse snap inicial sozinho.
+      this.cameras.main.centerOn(this.player.x, this.player.y);
     } else {
       this.cameras.main.stopFollow();
     }
@@ -310,12 +348,72 @@ export class GameScene extends Phaser.Scene {
   // da próxima partida (ver create(), que só lê gameState.settings.cameraZoom
   // uma vez).
   applyCameraZoom(zoom) {
-    this.cameras.main.setZoom(zoom);
+    // Mesma ordem de create(): RESIZE precisa estar aplicado ANTES de
+    // getEffectiveCameraZoom ler scene.scale.gameSize, senão calcularia o
+    // zoom mínimo de tela cheia em cima do tamanho antigo (FIT).
+    this.applyScaleModeForZoom(zoom);
+    this.cameras.main.setZoom(getEffectiveCameraZoom(zoom, this));
     if (zoom > 1) {
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+      this.cameras.main.centerOn(this.player.x, this.player.y);
     } else {
       this.cameras.main.stopFollow();
     }
+  }
+
+  // FIT (default) letterboxa dentro do parent pra nunca cortar o mapa —
+  // essencial no zoom 1/2, onde a área visível da fase importa pro
+  // gameplay. No zoom 3x o canvas vira tela cheia (.game-layout.zoom-3x, ver
+  // main.css); usamos RESIZE em vez de ENVELOP porque a câmera (setBounds em
+  // createWorld.js) é sempre um quadrado 448x448, e ENVELOP escala esse
+  // quadrado até cobrir a tela cortando o eixo que sobra (retrato corta
+  // esquerda/direita, paisagem corta cima/baixo) — como o corte é sempre em
+  // torno do CENTRO do canvas, e não do player, ele "engole" a câmera
+  // sempre que o player está perto de uma borda do mapa (ver relato: câmera
+  // "no meio" com o player embaixo/nas laterais). RESIZE faz o canvas
+  // assumir o formato real da tela (sem cortar nada) e o zoom passa a
+  // mostrar mais mapa no eixo mais comprido, em vez de esconder pedaço dele.
+  applyScaleModeForZoom(zoom) {
+    const scale = this.scale;
+    const mode = zoom === 3 ? Phaser.Scale.RESIZE : Phaser.Scale.FIT;
+    if (scale.scaleMode === mode) return;
+    const leavingResize = scale.scaleMode === Phaser.Scale.RESIZE;
+    scale.scaleMode = mode;
+    // Size (a classe por trás de displaySize) só reconhece aspectMode 0-4
+    // (NONE/WIDTH_CONTROLS_HEIGHT/HEIGHT_CONTROLS_WIDTH/FIT/ENVELOP) — não
+    // existe um case pra RESIZE (5) no switch dela, então setAspectMode(5)
+    // vira um no-op silencioso e o displaySize FICA TRAVADO no último
+    // tamanho quadrado calculado pelo FIT anterior. RESIZE não usa aspecto
+    // nenhum (o canvas assume width/height do parent direto), então o modo
+    // certo aqui é NONE.
+    scale.displaySize.setAspectMode(mode === Phaser.Scale.RESIZE ? Phaser.Scale.NONE : mode);
+    if (leavingResize) {
+      // RESIZE reescreveu gameSize/baseSize pro tamanho real da tela cheia
+      // anterior. setGameSize restaura a resolução lógica 448x448 (a mesma
+      // do mapa) antes do FIT recalcular o letterbox do zoom 1/2 — senão o
+      // FIT letterboxaria com a proporção errada (a da tela, não a do mapa).
+      scale.setGameSize(448, 448);
+      return;
+    }
+    // updateScale() do Phaser (ScaleManager) só escreve canvas.style.width/
+    // height explicitamente nos modos FIT/NONE/EXPAND — no RESIZE ela mexe
+    // só nos atributos canvas.width/height (resolução interna) e deixa o
+    // style inline como estava. Sem isso o canvas herda o style em px que o
+    // FIT anterior deixou (o quadrado pequeno do zoom 1/2) e o
+    // getBoundingClientRect() usado por updateCenter() também lê esse
+    // tamanho errado — resultado: canvas travado no tamanho antigo, boiando
+    // no meio da tela em vez de ocupá-la inteira. Limpar aqui deixa o
+    // atributo width/height (que RESIZE define certo) mandar no tamanho
+    // renderizado, como um canvas HTML normal sem style explícito.
+    scale.canvas.style.width = '';
+    scale.canvas.style.height = '';
+    // refresh() calcula o novo tamanho a partir do parentSize já conhecido,
+    // que só é atualizado no FIM do próprio refresh — sem reler o
+    // .game-screen aqui antes, ele usaria as medidas de antes da troca de
+    // layout (main.js já trocou a classe zoom-3x, mas o Scale Manager ainda
+    // não sabe), deixando o canvas com tamanho/centralização errados.
+    scale.getParentBounds();
+    scale.refresh();
   }
 }
 

@@ -7,7 +7,7 @@
 // o Phaser só emite o evento, esta tela só escuta (ligada em
 // main.js/BindSettingsEvents).
 import settingsTemplate from './settingsScreen.html?raw';
-import { gameState, updateSetting } from '../managers/GameManager.js';
+import { gameState, updateSetting, setPlatformMode } from '../managers/GameManager.js';
 import { SETTINGS_EVENTS } from '../constants.js';
 import {
   isFullscreenSupported,
@@ -34,6 +34,16 @@ function renderSettings() {
   elements.settingToggles.forEach((toggle) => {
     toggle.checked = Boolean(gameState.settings[toggle.dataset.setting]);
   });
+  elements.platformModeButtons.forEach((button) => {
+    const isActive = button.dataset.platform === gameState.settings.platformMode;
+    button.classList.toggle('bg-emerald-500', isActive);
+    button.classList.toggle('text-gray-950', isActive);
+    button.classList.toggle('text-gray-300', !isActive);
+  });
+  // No modo Mobile o zoom é sempre 3x/fullscreen automático (ver
+  // setPlatformMode em GameManager.js) — a escolha manual 1x/2x só faz
+  // sentido no Game Boy.
+  elements.cameraZoomRow?.classList.toggle('hidden', gameState.settings.platformMode === 'mobile');
   elements.cameraZoomButtons.forEach((button) => {
     const isActive = Number(button.dataset.zoom) === gameState.settings.cameraZoom;
     button.classList.toggle('bg-emerald-500', isActive);
@@ -74,6 +84,8 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
     root,
     closeBtn: root.querySelector('.settings-close-btn'),
     settingToggles: [...root.querySelectorAll('.setting-toggle')],
+    platformModeButtons: [...root.querySelectorAll('.platform-mode-btn')],
+    cameraZoomRow: root.querySelector('.camera-zoom-row'),
     cameraZoomButtons: [...root.querySelectorAll('.camera-zoom-btn')],
     fullscreenRow: root.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: root.querySelector('.fullscreen-toggle'),
@@ -86,6 +98,13 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
   elements.settingToggles.forEach((toggle) => {
     toggle.addEventListener('change', (event) => {
       updateSetting(event.target.dataset.setting, event.target.checked);
+    });
+  });
+  elements.platformModeButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      setPlatformMode(event.currentTarget.dataset.platform);
+      renderSettings();
+      onCameraZoomChange?.(gameState.settings.cameraZoom);
     });
   });
   elements.cameraZoomButtons.forEach((button) => {

@@ -32,7 +32,16 @@ const DEFAULT_SETTINGS = {
   // player (ver GameScene.js) — 1 = mapa inteiro visível, sem zoom nem
   // follow, é o comportamento original.
   cameraZoom: 1,
+  // 'gameboy' = jogador escolhe manualmente entre zoom 1x/2x (ver
+  // camera-zoom-btn em WelcomeScreen.js/SettingsScreen.js). 'mobile' = zoom
+  // fixo em 3x (RESIZE, tela cheia real) — ver setPlatformMode() abaixo.
+  platformMode: 'gameboy',
 };
+
+// Zoom aplicado automaticamente ao trocar de plataforma — 'mobile' sempre
+// força 3x (fullscreen real, ver GameScene.applyScaleModeForZoom), 'gameboy'
+// nunca deve ficar preso no 3x escolhido por um platformMode anterior.
+const PLATFORM_DEFAULT_ZOOM = { gameboy: 1, mobile: 3 };
 
 // O mapa inicial já nasce liberado; todo o resto do grid (ver
 // game/config/maps.js) precisa ser desbloqueado passando pela "gate"
@@ -325,6 +334,18 @@ export function getLevelInfo(exp = gameState.exp) {
 export function updateSetting(key, value) {
   if (!(key in DEFAULT_SETTINGS)) return;
   gameState.settings[key] = value;
+  save('settings', gameState.settings);
+}
+
+// Alterna entre os modos "Game Boy" (zoom manual 1x/2x) e "Mobile" (zoom
+// fixo 3x/fullscreen real). Trocar de plataforma sempre reajusta o
+// cameraZoom pra um valor válido no novo modo, pra nunca deixar o jogador
+// preso num 3x escondido (ao voltar pra Game Boy) ou num 1x/2x quando devia
+// estar em fullscreen (ao ir pra Mobile).
+export function setPlatformMode(mode) {
+  if (!(mode in PLATFORM_DEFAULT_ZOOM)) return;
+  gameState.settings.platformMode = mode;
+  gameState.settings.cameraZoom = PLATFORM_DEFAULT_ZOOM[mode];
   save('settings', gameState.settings);
 }
 

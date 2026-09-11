@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* --app-vw/--app-vh (ver ViewportService.js) refletem o tamanho real da
+   janela (window.innerWidth/innerHeight), não o do documento — evita o gap
+   que `vw`/`dvh` puros deixam ao girar a tela (o documento demora a
+   recalcular o viewport nesse momento). Fallback pro `1vw`/`1dvh` nativo
+   cobre o frame antes do primeiro applyViewportSize() rodar. */
+:root {
+  --app-vw: 1vw;
+  --app-vh: 1dvh;
+  --vw100: calc(var(--app-vw) * 100);
+  --vh100: calc(var(--app-vh) * 100);
+}
+
 @font-face {
   font-family: "PixelOperator8";
   src: url('/assets/font/PixelOperator8.ttf') format('truetype');
@@ -28,7 +40,7 @@ body,
 
 html,
 body {
-  min-height: 100dvh;
+  min-height: var(--vh100);
   overflow: hidden;
   background: #030712;
   font-family: "PixelOperator8", ui-sans-serif, system-ui, sans-serif;
@@ -41,7 +53,7 @@ button {
 .game-layout {
   display: none;
   width: 100%;
-  min-height: 100dvh;
+  min-height: var(--vh100);
   overflow: hidden;
 }
 
@@ -51,9 +63,9 @@ button {
 
 .game-screen {
   position: relative;
-  width: 100vw;
-  height: 100vw;
-  max-height: 100dvh;
+  width: var(--vw100);
+  height: var(--vw100);
+  max-height: var(--vh100);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -480,8 +492,8 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
 /* Responsividade: Portrait (Vertical) */
 @media (orientation: portrait) {
   .game-layout {
-    grid-template-columns: 100vw;
-    grid-template-rows: auto min(100vw, 100dvh) 1fr;
+    grid-template-columns: var(--vw100);
+    grid-template-rows: auto min(var(--vw100), var(--vh100)) 1fr;
     grid-template-areas:
       "hud"
       "game"
@@ -506,8 +518,8 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
 
   .game-screen {
     grid-area: game;
-    width: 100vw;
-    height: min(100vw, 100dvh);
+    width: var(--vw100);
+    height: min(var(--vw100), var(--vh100));
   }
 
   .controls-panel {
@@ -519,8 +531,8 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
 /* Responsividade: Landscape (Horizontal - Estilo Switch) */
 @media (orientation: landscape) {
   .game-layout {
-    grid-template-columns: 1fr 100dvh 1fr;
-    grid-template-rows: 100dvh;
+    grid-template-columns: 1fr var(--vh100) 1fr;
+    grid-template-rows: var(--vh100);
     grid-template-areas: "left game right";
   }
 
@@ -555,8 +567,8 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
 
   .game-screen {
     grid-area: game;
-    width: 100dvh;
-    height: 100dvh;
+    width: var(--vh100);
+    height: var(--vh100);
   }
 
   .controls-panel {
@@ -569,6 +581,7 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
     height: calc(100% - 1.5rem);
     width: calc(100% - 1.5rem);
     background: linear-gradient(90deg, rgba(17,24,39,0.9) 0%, rgba(17,24,39,0) 100%);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
   }
 
   .right-column {
@@ -577,7 +590,141 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
     height: calc(100% - 1.5rem);
     width: calc(100% - 1.5rem);
     background: linear-gradient(-90deg, rgba(17,24,39,0.9) 0%, rgba(17,24,39,0) 100%);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
   }
+}
+
+/* Zoom 3x (ver SettingsScreen.js/main.js — classe aplicada em .game-layout
+   quando gameState.settings.cameraZoom === 3): layout exclusivo, ignora o
+   grid portrait/landscape acima. O canvas ocupa 100% do documento (sem
+   dividir espaço com uma barra de controles opaca) e HUD + controles viram
+   uma camada flutuante por cima dele, com fundo translúcido pra não tampar
+   o jogo. Especificidade (3 classes) já garante que isso vença as regras de
+   orientação sem precisar de !important. */
+.game-layout.zoom-3x {
+  display: block;
+  position: relative;
+  width: var(--vw100);
+  height: var(--vh100);
+}
+
+.game-layout.zoom-3x .game-screen {
+  position: fixed;
+  inset: 0;
+  width: var(--vw100);
+  height: var(--vh100);
+  max-height: none;
+  /* ENVELOP deixa o canvas maior que o container em um dos eixos e o Phaser
+     mesmo centraliza via margin-left/top negativos (ScaleManager.
+     updateCenter) — precisa desligar o flex-centering herdado de
+     .game-screen aqui, senão os dois métodos de centralização somam e o
+     canvas sai descentralizado/parece gigante fora da tela. */
+  display: block;
+}
+
+.game-layout.zoom-3x .hud-bar {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.game-layout.zoom-3x .hud-life-panel {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+}
+
+.game-layout.zoom-3x .hud-attempts {
+  position: absolute;
+  top: 0.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.game-layout.zoom-3x .hud-resources {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+}
+
+/* Controles flutuantes: sem a faixa opaca do controls-panel padrão, cada
+   grupo (D-pad, ações, SELECT/START) vira uma "ilha" translúcida ancorada
+   nos cantos inferiores, deixando o resto do canvas livre de visão. */
+.game-layout.zoom-3x .controls-panel {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0;
+  padding: 0.75rem;
+  background: none;
+  border-top: none;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.game-layout.zoom-3x .control-column {
+  flex: none;
+  width: auto;
+  height: auto;
+  gap: 0.5rem;
+  pointer-events: auto;
+  /* Zera o margin/box-shadow herdados do .left-column/.right-column do modo
+     paisagem "Game Boy" (não-flutuante) — no modo Mobile o respiro até a
+     borda inferior já vem do padding do .controls-panel, senão o horizontal
+     soma os dois e fica com o dobro de distância do vertical. */
+  margin: 0;
+  box-shadow: none;
+}
+
+.game-layout.zoom-3x .meta-panel {
+  width: auto;
+}
+
+.game-layout.zoom-3x .meta-button {
+  width: 72px;
+  height: 20px;
+  background: rgba(31, 41, 55, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.game-layout.zoom-3x .control-group {
+  flex: none;
+  width: auto;
+  height: auto;
+}
+
+.game-layout.zoom-3x .dpad-container,
+.game-layout.zoom-3x .action-container {
+  background: rgba(11, 15, 25, 0.45);
+  backdrop-filter: blur(2px);
+  height: 66px;
+}
+
+/* Larguras iguais às do modo Game Boy (fluido) na mesma orientação — ver
+   .control-column/.control-group/.dpad-container/.action-container padrão
+   acima: portrait divide (100vw - 2*padding do painel - gap entre colunas)
+   por 2; landscape divide (100vw - coluna central 100dvh do jogo) por 2 e
+   desconta a margem de 0.75rem de cada lado do .left-column/.right-column. */
+@media (orientation: portrait) {
+  .game-layout.zoom-3x .dpad-container,
+  .game-layout.zoom-3x .action-container {
+    width: calc((var(--vw100) - 36px) / 2);
+  }
+}
+
+@media (orientation: landscape) {
+  .game-layout.zoom-3x .dpad-container,
+  .game-layout.zoom-3x .action-container {
+    width: calc((var(--vw100) - var(--vh100)) / 2 - 24px);
+  }
+}
+
+.game-layout.zoom-3x .game-button {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
 }
 
 /* Tela de loading (ver LoadingScreen.js): tiles de chão do world_tileset
