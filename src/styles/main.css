@@ -364,6 +364,16 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
   pointer-events: none;
 }
 
+/* Desktop (mouse com precisão, sem touch): teclado já cobre D-Pad e ações
+   (ver createControls.js), então os botões só ocupam espaço/poluem a tela.
+   Some com eles em qualquer variante do layout (normal e .zoom-3x). */
+@media (hover: hover) and (pointer: fine) {
+  .dpad-container,
+  .action-container {
+    display: none;
+  }
+}
+
 /* Botões Principais */
 .game-button {
   flex: 1;
