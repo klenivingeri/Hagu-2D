@@ -6,6 +6,7 @@ import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerD
 import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
 import { createControls } from '../systems/create/createControls.js';
 import { createWorld } from '../systems/create/createWorld.js';
+import { applyMobileFooter } from '../systems/create/createMobileFooter.js';
 
 import { createBulletSystem } from '../systems/create/createBulletSystem.js';
 import { updatePlayerMovement } from '../systems/upgrade/updatePlayerMovement.js'
@@ -136,6 +137,11 @@ export class GameScene extends Phaser.Scene {
     // reatribuído por createWorld/createPlayer/createPortals/etc. abaixo),
     // então ela precisa ser resetada explicitamente.
     this.runCompleted = false;
+    // A faixa preta do modo Mobile (ver createMobileFooter.js) é um
+    // GameObject normal — some sozinha quando scene.restart() (respawn)
+    // recria a cena, mas a referência em si sobreviveria "fantasma" na
+    // instância reaproveitada se não for zerada aqui.
+    this.mobileFooter = null;
 
     // Estado da run atual, usado só pro resumo em RunSummaryScreen.js
     // (tempo de fase, dano recebido, monstros derrotados). Reatribuído do
@@ -158,10 +164,6 @@ export class GameScene extends Phaser.Scene {
     preloadFireballTexture(this);
 
     createWorld(this);
-    createControls(this);
-
-    createPlayerAnimations(this);
-    this.player = createPlayer(this);
 
     // Cada fase (ver createWorld.js) tem exatamente o tamanho da resolução
     // lógica do jogo (448x448 — ver gameConfig.js), então zoom 1 (default)
@@ -169,6 +171,19 @@ export class GameScene extends Phaser.Scene {
     // WelcomeScreen.js) mostra só 1/4 da fase, e a câmera passa a seguir o
     // player em vez de ficar estática enquadrando tudo.
     const cameraZoom = gameState.settings.cameraZoom || 1;
+    // Só no modo Mobile (zoom 3x): estende os bounds da câmera com uma
+    // faixa preta abaixo do mapa real, pra "descolar" a última linha
+    // jogável de baixo dos controles flutuantes (ver createMobileFooter.js
+    // e .game-layout.zoom-3x .controls-panel em main.css). Precisa rodar
+    // logo após createWorld (usa scene.map/scene.cameras.main) e antes do
+    // setZoom/centerOn abaixo, pra já nascer com os bounds corretos.
+    applyMobileFooter(this, cameraZoom === 3);
+
+    createControls(this);
+
+    createPlayerAnimations(this);
+    this.player = createPlayer(this);
+
     // Precisa rodar ANTES do setZoom/centerOn: no zoom 3x ela troca o canvas
     // pra RESIZE, o que muda o tamanho da área visível da câmera pro formato
     // real da tela — getEffectiveCameraZoom lê esse tamanho (scene.scale.
@@ -367,6 +382,9 @@ export class GameScene extends Phaser.Scene {
     // zoom mínimo de tela cheia em cima do tamanho antigo (FIT).
     this.applyScaleModeForZoom(zoom);
     this.cameras.main.setZoom(getEffectiveCameraZoom(zoom, this));
+    // Liga/desliga a faixa preta do rodapé (ver createMobileFooter.js) se o
+    // player trocar entre Game Boy e Mobile com a run em andamento.
+    applyMobileFooter(this, zoom === 3);
     if (zoom > 1) {
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
       this.cameras.main.centerOn(this.player.x, this.player.y);

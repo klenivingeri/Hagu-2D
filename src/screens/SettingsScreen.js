@@ -29,6 +29,30 @@ function parseTemplate(html) {
   return template.content.firstElementChild;
 }
 
+// Ver comentário em main.css ("TEMAS DE BOTÕES"): o atributo fica em #app
+// (não em .game-layout) porque este modal de Configurações vive fora de
+// .game-layout no DOM — os dois são filhos diretos de #app.
+function applyControlsTheme(theme) {
+  document.getElementById('app')?.setAttribute('data-controls-theme', theme);
+}
+
+function switchSettingsTab(tab) {
+  if (!elements) return;
+  elements.settingsTabPanels.forEach((panel) => {
+    panel.classList.toggle('hidden', panel.dataset.tab !== tab);
+  });
+  elements.settingsTabButtons.forEach((button) => {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle('settings-tab-active', active);
+    button.classList.toggle('border-emerald-400', active);
+    button.classList.toggle('bg-emerald-500/10', active);
+    button.classList.toggle('text-emerald-400', active);
+    button.classList.toggle('border-white/15', !active);
+    button.classList.toggle('bg-gray-900/60', !active);
+    button.classList.toggle('text-gray-400', !active);
+  });
+}
+
 function renderSettings() {
   if (!elements) return;
   elements.settingToggles.forEach((toggle) => {
@@ -50,6 +74,15 @@ function renderSettings() {
     button.classList.toggle('text-gray-950', isActive);
     button.classList.toggle('text-gray-300', !isActive);
   });
+
+  elements.controlsThemeButtons.forEach((button) => {
+    const isActive = button.dataset.theme === gameState.settings.controlsTheme;
+    button.classList.toggle('border-emerald-400', isActive);
+    button.classList.toggle('bg-emerald-500/10', isActive);
+    button.classList.toggle('border-white/15', !isActive);
+    button.classList.toggle('bg-gray-900/60', !isActive);
+  });
+  applyControlsTheme(gameState.settings.controlsTheme);
 
   elements.fullscreenRow?.classList.toggle('hidden', !isFullscreenSupported());
   if (elements.fullscreenToggle) {
@@ -83,10 +116,13 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
   elements = {
     root,
     closeBtn: root.querySelector('.settings-close-btn'),
+    settingsTabButtons: [...root.querySelectorAll('.settings-tab-btn')],
+    settingsTabPanels: [...root.querySelectorAll('.settings-tab-panel')],
     settingToggles: [...root.querySelectorAll('.setting-toggle')],
     platformModeButtons: [...root.querySelectorAll('.platform-mode-btn')],
     cameraZoomRow: root.querySelector('.camera-zoom-row'),
     cameraZoomButtons: [...root.querySelectorAll('.camera-zoom-btn')],
+    controlsThemeButtons: [...root.querySelectorAll('.controls-theme-btn')],
     fullscreenRow: root.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: root.querySelector('.fullscreen-toggle'),
   };
@@ -94,6 +130,11 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
   elements.closeBtn.addEventListener('click', () => onClose?.());
   elements.root.addEventListener('click', (event) => {
     if (event.target === elements.root) onClose?.();
+  });
+  elements.settingsTabButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      switchSettingsTab(event.currentTarget.dataset.tab);
+    });
   });
   elements.settingToggles.forEach((toggle) => {
     toggle.addEventListener('change', (event) => {
@@ -113,6 +154,12 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
       updateSetting('cameraZoom', zoom);
       renderSettings();
       onCameraZoomChange?.(zoom);
+    });
+  });
+  elements.controlsThemeButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      updateSetting('controlsTheme', event.currentTarget.dataset.theme);
+      renderSettings();
     });
   });
   elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);

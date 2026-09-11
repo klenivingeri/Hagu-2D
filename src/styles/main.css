@@ -411,6 +411,248 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
   background: linear-gradient(180deg, rgba(239, 68, 68, 0.6) 0%, rgba(185, 28, 28, 0.8) 100%);
 }
 
+/* ==========================================
+   TEMAS DE BOTÕES (aba "Botões" em Configurações — ver
+   WelcomeScreen.js/SettingsScreen.js)
+   ==========================================
+   Skin puramente visual do D-pad/ações/SELECT-START, independente do modo
+   Game Boy/Mobile (zoom-3x) — o jogador escolhe por conforto, então os
+   temas valem nos dois layouts, sem mexer em posição/hitbox de nada.
+   Escopado em #app[data-controls-theme="..."] (setado por
+   applyControlsTheme(), presente tanto em main.js no boot quanto nas duas
+   telas de Configurações) em vez de .game-layout porque o modal de
+   Configurações fica FORA de .game-layout no DOM (ambos são filhos diretos
+   de #app — ver index.html/welcomeScreen.html). O preview do seletor de
+   tema (.controls-theme-preview, mais abaixo) tem regras próprias, à parte
+   dessa cascata — ver comentário dele.
+   'default' não tem nenhuma regra aqui de propósito: é só o visual original
+   de .game-button/.dpad-container/etc, sem override nenhum. */
+
+/* iPhone: vidro fosco translúcido (Control Center), sem cor de destaque. */
+#app[data-controls-theme="iphone"] .dpad-container,
+#app[data-controls-theme="iphone"] .action-container {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+#app[data-controls-theme="iphone"] .game-button {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+#app[data-controls-theme="iphone"] .game-button:active,
+#app[data-controls-theme="iphone"] .game-button.pressed {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+#app[data-controls-theme="iphone"] .meta-button {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #f5f5f7;
+}
+
+/* Game Boy (DMG-01): corpo lavanda-acinzentado, cruz cinza-chumbo, A/B
+   bordô — cores do console original de 1989. */
+#app[data-controls-theme="gameboy"] .dpad-container,
+#app[data-controls-theme="gameboy"] .action-container {
+  background: #cbc6bb;
+  border-color: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+#app[data-controls-theme="gameboy"] .dpad-btn {
+  background: #2b2b2b;
+  color: #cbc6bb;
+  border-color: rgba(0, 0, 0, 0.5);
+}
+#app[data-controls-theme="gameboy"] .action-btn {
+  background: linear-gradient(180deg, #9c3a4a 0%, #6e1f2c 100%);
+  color: #f4dede;
+  border-color: rgba(0, 0, 0, 0.4);
+}
+#app[data-controls-theme="gameboy"] .action-btn:active,
+#app[data-controls-theme="gameboy"] .action-btn.pressed {
+  background: linear-gradient(180deg, #6e1f2c 0%, #4d1620 100%);
+}
+#app[data-controls-theme="gameboy"] .meta-button {
+  background: #a8a39a;
+  color: #2b2b2b;
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+/* Nintendo (SNES): corpo lavanda-cinza, A vermelho, B amarelo — cores do
+   controle original (o jogo só tem 2 botões de ação, então usamos as cores
+   de A/B do SNES real). */
+#app[data-controls-theme="nintendo"] .dpad-container,
+#app[data-controls-theme="nintendo"] .action-container {
+  background: #d9d5e8;
+  border-color: rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+#app[data-controls-theme="nintendo"] .dpad-btn {
+  background: #3a3a3a;
+  color: #d9d5e8;
+  border-color: rgba(0, 0, 0, 0.4);
+}
+#app[data-controls-theme="nintendo"] #btnA {
+  background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+  color: #fff;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+#app[data-controls-theme="nintendo"] #btnB {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  color: #7c2d12;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+#app[data-controls-theme="nintendo"] .meta-button {
+  background: #6b6b7d;
+  color: #e8e6f0;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Switch: Joy-Cons neon — azul (esquerdo, D-pad) e vermelho (direito,
+   ações), botões pretos com aro branco. */
+#app[data-controls-theme="switch"] .dpad-container {
+  background: linear-gradient(180deg, #00c3ff 0%, #0091d5 100%);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+#app[data-controls-theme="switch"] .action-container {
+  background: linear-gradient(180deg, #ff4d6a 0%, #e0193c 100%);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+#app[data-controls-theme="switch"] .game-button {
+  background: #14181f;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+#app[data-controls-theme="switch"] .game-button:active,
+#app[data-controls-theme="switch"] .game-button.pressed {
+  background: #262c36;
+}
+#app[data-controls-theme="switch"] .meta-button {
+  background: #14181f;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Neon Arcade (bônus, gabinete fliperama): fundo quase preto, contornos e
+   texto brilhando em ciano/magenta. */
+#app[data-controls-theme="neon"] .dpad-container,
+#app[data-controls-theme="neon"] .action-container {
+  background: #05010d;
+  border-color: #ff2bd6;
+  box-shadow: 0 0 14px rgba(255, 43, 214, 0.55), inset 0 0 10px rgba(255, 43, 214, 0.2);
+}
+#app[data-controls-theme="neon"] .game-button {
+  background: #0a0416;
+  color: #38f7ff;
+  border-color: #38f7ff;
+  box-shadow: 0 0 8px rgba(56, 247, 255, 0.7), inset 0 0 6px rgba(56, 247, 255, 0.25);
+  text-shadow: 0 0 6px rgba(56, 247, 255, 0.8);
+}
+#app[data-controls-theme="neon"] .game-button:active,
+#app[data-controls-theme="neon"] .game-button.pressed {
+  background: #16092b;
+}
+#app[data-controls-theme="neon"] .meta-button {
+  background: #0a0416;
+  color: #ff2bd6;
+  border-color: #ff2bd6;
+  box-shadow: 0 0 8px rgba(255, 43, 214, 0.6);
+  text-shadow: 0 0 6px rgba(255, 43, 214, 0.7);
+}
+
+/* Seletor de tema em Configurações (.controls-theme-btn, ver
+   settingsScreen.html/welcomeScreen.html): cada opção é um card com um
+   preview dos botões A/B de verdade (.controls-theme-preview), pra jogador
+   ver a cara do tema sem precisar entrar na Run. Regras próprias,
+   independentes da cascata #app[data-controls-theme] acima — o app só tem
+   UM tema ativo por vez, então os outros cards nunca apareceriam se
+   dependessem dela; aqui cada card carrega o próprio data-theme-option.
+   'default' fica na regra base (sem seletor de atributo) igual o tema real
+   — replica o tom avermelhado padrão do .action-btn. */
+.preview-btn {
+  flex: 1;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 0.4rem 0;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.3) 100%);
+}
+.controls-theme-preview {
+  display: flex;
+  gap: 6px;
+}
+
+.controls-theme-preview[data-theme-option="iphone"] {
+  border-radius: 0.5rem;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px) saturate(180%);
+}
+.controls-theme-preview[data-theme-option="iphone"] .preview-btn {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.controls-theme-preview[data-theme-option="gameboy"] {
+  border-radius: 0.5rem;
+  padding: 3px;
+  background: #cbc6bb;
+}
+.controls-theme-preview[data-theme-option="gameboy"] .preview-btn {
+  background: linear-gradient(180deg, #9c3a4a 0%, #6e1f2c 100%);
+  color: #f4dede;
+  border-color: rgba(0, 0, 0, 0.4);
+}
+
+.controls-theme-preview[data-theme-option="nintendo"] {
+  border-radius: 0.5rem;
+  padding: 3px;
+  background: #d9d5e8;
+}
+.controls-theme-preview[data-theme-option="nintendo"] .preview-btn:nth-child(1) {
+  background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+  color: #fff;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+.controls-theme-preview[data-theme-option="nintendo"] .preview-btn:nth-child(2) {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  color: #7c2d12;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.controls-theme-preview[data-theme-option="switch"] {
+  border-radius: 0.5rem;
+  padding: 3px;
+  background: linear-gradient(180deg, #ff4d6a 0%, #e0193c 100%);
+}
+.controls-theme-preview[data-theme-option="switch"] .preview-btn {
+  background: #14181f;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.controls-theme-preview[data-theme-option="neon"] {
+  border-radius: 0.5rem;
+  padding: 3px;
+  background: #05010d;
+  box-shadow: 0 0 8px rgba(255, 43, 214, 0.5);
+}
+.controls-theme-preview[data-theme-option="neon"] .preview-btn {
+  background: #0a0416;
+  color: #38f7ff;
+  border-color: #38f7ff;
+  box-shadow: 0 0 4px rgba(56, 247, 255, 0.6);
+  text-shadow: 0 0 4px rgba(56, 247, 255, 0.7);
+}
+
 /* Toda section da Welcome (home/shop/collection) precisa ser "positioned"
    pra pintar por cima do .stage-preview-viewport (ver welcomeScreen.html):
    ele é absolute dentro do mesmo <main>, e um elemento posicionado sempre
@@ -682,12 +924,19 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
   height: auto;
   gap: 0.5rem;
   pointer-events: auto;
-  /* Zera o margin/box-shadow herdados do .left-column/.right-column do modo
-     paisagem "Game Boy" (não-flutuante) — no modo Mobile o respiro até a
-     borda inferior já vem do padding do .controls-panel, senão o horizontal
-     soma os dois e fica com o dobro de distância do vertical. */
+  /* Zera o margin/box-shadow/background herdados do .left-column/
+     .right-column do modo paisagem "Game Boy" (não-flutuante) — no modo
+     Mobile o respiro até a borda inferior já vem do padding do
+     .controls-panel (senão o horizontal soma os dois e fica com o dobro de
+     distância do vertical), e o degradê preto-pra-transparente daquele modo
+     não faz sentido aqui: só existe em paisagem porque o Game Boy usa
+     colunas laterais opacas — no Mobile os botões já são ilhas translúcidas
+     próprias (dpad-container/action-container), então herdar esse fundo só
+     criava uma sombra a mais, sem existir no retrato (mesmo motivo do
+     próprio usuário: "só na horizontal, não vejo na vertical"). */
   margin: 0;
   box-shadow: none;
+  background: none;
 }
 
 .game-layout.zoom-3x .meta-panel {
@@ -711,7 +960,7 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
 .game-layout.zoom-3x .action-container {
   background: rgba(11, 15, 25, 0.45);
   backdrop-filter: blur(2px);
-  height: 66px;
+  height: 84px;
 }
 
 /* Larguras iguais às do modo Game Boy (fluido) na mesma orientação — ver

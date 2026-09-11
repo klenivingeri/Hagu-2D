@@ -967,6 +967,30 @@ function switchEquipmentSubview(subview) {
   });
 }
 
+// Ver comentário em main.css ("TEMAS DE BOTÕES"): o atributo fica em #app
+// (não em .game-layout) porque este modal de Configurações vive fora de
+// .game-layout no DOM — os dois são filhos diretos de #app.
+function applyControlsTheme(theme) {
+  document.getElementById('app')?.setAttribute('data-controls-theme', theme);
+}
+
+function switchSettingsTab(tab) {
+  if (!elements) return;
+  elements.settingsTabPanels.forEach((panel) => {
+    panel.classList.toggle('hidden', panel.dataset.tab !== tab);
+  });
+  elements.settingsTabButtons.forEach((button) => {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle('settings-tab-active', active);
+    button.classList.toggle('border-emerald-400', active);
+    button.classList.toggle('bg-emerald-500/10', active);
+    button.classList.toggle('text-emerald-400', active);
+    button.classList.toggle('border-white/15', !active);
+    button.classList.toggle('bg-gray-900/60', !active);
+    button.classList.toggle('text-gray-400', !active);
+  });
+}
+
 function renderSettings() {
   if (!elements) return;
   elements.settingToggles.forEach((toggle) => {
@@ -988,6 +1012,15 @@ function renderSettings() {
     button.classList.toggle('text-gray-950', isActive);
     button.classList.toggle('text-gray-300', !isActive);
   });
+
+  elements.controlsThemeButtons.forEach((button) => {
+    const isActive = button.dataset.theme === gameState.settings.controlsTheme;
+    button.classList.toggle('border-emerald-400', isActive);
+    button.classList.toggle('bg-emerald-500/10', isActive);
+    button.classList.toggle('border-white/15', !isActive);
+    button.classList.toggle('bg-gray-900/60', !isActive);
+  });
+  applyControlsTheme(gameState.settings.controlsTheme);
 
   // Navegadores sem Fullscreen API (ex: Safari iOS) escondem a opção em vez
   // de mostrar um toggle que nunca funciona.
@@ -1020,6 +1053,15 @@ function handleCameraZoomChange(event) {
 function handlePlatformModeChange(event) {
   setPlatformMode(event.currentTarget.dataset.platform);
   renderSettings();
+}
+
+function handleControlsThemeChange(event) {
+  updateSetting('controlsTheme', event.currentTarget.dataset.theme);
+  renderSettings();
+}
+
+function handleSettingsTabClick(event) {
+  switchSettingsTab(event.currentTarget.dataset.tab);
 }
 
 // Não usa updateSetting/gameState.settings: fullscreen não é uma preferência
@@ -1121,10 +1163,13 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     settingsModal: modalRoot,
     closeBtn: modalRoot.querySelector('.settings-close-btn'),
     resetStorageBtn: modalRoot.querySelector('.reset-storage-btn'),
+    settingsTabButtons: [...modalRoot.querySelectorAll('.settings-tab-btn')],
+    settingsTabPanels: [...modalRoot.querySelectorAll('.settings-tab-panel')],
     settingToggles: [...modalRoot.querySelectorAll('.setting-toggle')],
     platformModeButtons: [...modalRoot.querySelectorAll('.platform-mode-btn')],
     cameraZoomRow: modalRoot.querySelector('.camera-zoom-row'),
     cameraZoomButtons: [...modalRoot.querySelectorAll('.camera-zoom-btn')],
+    controlsThemeButtons: [...modalRoot.querySelectorAll('.controls-theme-btn')],
     fullscreenRow: modalRoot.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: modalRoot.querySelector('.fullscreen-toggle'),
     views: [...screenRoot.querySelectorAll('.welcome-view')],
@@ -1151,6 +1196,9 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   elements.settingsModal.addEventListener('click', (event) => {
     if (event.target === elements.settingsModal) closeSettings();
   });
+  elements.settingsTabButtons.forEach((button) => {
+    button.addEventListener('click', handleSettingsTabClick);
+  });
   elements.settingToggles.forEach((toggle) => {
     toggle.addEventListener('change', handleSettingChange);
   });
@@ -1159,6 +1207,9 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   });
   elements.platformModeButtons.forEach((button) => {
     button.addEventListener('click', handlePlatformModeChange);
+  });
+  elements.controlsThemeButtons.forEach((button) => {
+    button.addEventListener('click', handleControlsThemeChange);
   });
   elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);
   // O player pode sair do fullscreen sem usar o toggle (Esc, gesto do

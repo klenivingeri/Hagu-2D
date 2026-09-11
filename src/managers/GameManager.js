@@ -36,6 +36,12 @@ const DEFAULT_SETTINGS = {
   // camera-zoom-btn em WelcomeScreen.js/SettingsScreen.js). 'mobile' = zoom
   // fixo em 3x (RESIZE, tela cheia real) — ver setPlatformMode() abaixo.
   platformMode: 'gameboy',
+  // Skin visual do D-pad/botões de ação/SELECT-START (aba "Botões" em
+  // Configurações, ver WelcomeScreen.js/SettingsScreen.js). Puramente
+  // estético — aplicado via atributo data-controls-theme em #app (ver
+  // main.css), nunca muda hitbox/posição dos controles. 'default' é o
+  // visual original, sem nenhuma regra extra em main.css pra ele.
+  controlsTheme: 'default',
 };
 
 // Zoom aplicado automaticamente ao trocar de plataforma — 'mobile' sempre

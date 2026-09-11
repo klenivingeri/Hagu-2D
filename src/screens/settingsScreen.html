@@ -5,7 +5,12 @@
       <button type="button" class="settings-close-btn text-xl leading-none text-gray-400" aria-label="Fechar">×</button>
     </div>
 
-    <div class="flex flex-col gap-3">
+    <div class="settings-tabbar mb-3 flex shrink-0 gap-2">
+      <button type="button" class="settings-tab-btn settings-tab-active flex-1 rounded-lg border border-emerald-400 bg-emerald-500/10 py-1.5 text-xs font-bold text-emerald-400" data-tab="general">Geral</button>
+      <button type="button" class="settings-tab-btn flex-1 rounded-lg border border-white/15 bg-gray-900/60 py-1.5 text-xs font-bold text-gray-400" data-tab="buttons">Botões</button>
+    </div>
+
+    <div class="settings-tab-panel flex flex-col gap-3" data-tab="general">
       <label class="flex items-center justify-between gap-3 text-sm">
         <span>Vibração</span>
         <input type="checkbox" class="setting-toggle h-5 w-5 accent-emerald-500" data-setting="vibrationEnabled" />
@@ -37,6 +42,45 @@
           <button type="button" class="camera-zoom-btn shrink-0 border-l border-white/15 px-3 py-1 text-xs font-bold" data-zoom="2">2x</button>
         </div>
       </div>
+    </div>
+
+    <div class="settings-tab-panel hidden grid grid-cols-2 gap-2" data-tab="buttons">
+      <button type="button" class="controls-theme-btn rounded-lg border border-white/15 bg-gray-900/60 p-2" data-theme="default">
+        <span class="controls-theme-preview" data-theme-option="default">
+          <span class="preview-btn">A</span>
+          <span class="preview-btn">B</span>
+        </span>
+      </button>
+      <button type="button" class="controls-theme-btn rounded-lg border border-white/15 bg-gray-900/60 p-2" data-theme="iphone">
+        <span class="controls-theme-preview" data-theme-option="iphone">
+          <span class="preview-btn">A</span>
+          <span class="preview-btn">B</span>
+        </span>
+      </button>
+      <button type="button" class="controls-theme-btn rounded-lg border border-white/15 bg-gray-900/60 p-2" data-theme="gameboy">
+        <span class="controls-theme-preview" data-theme-option="gameboy">
+          <span class="preview-btn">A</span>
+          <span class="preview-btn">B</span>
+        </span>
+      </button>
+      <button type="button" class="controls-theme-btn rounded-lg border border-white/15 bg-gray-900/60 p-2" data-theme="nintendo">
+        <span class="controls-theme-preview" data-theme-option="nintendo">
+          <span class="preview-btn">A</span>
+          <span class="preview-btn">B</span>
+        </span>
+      </button>
+      <button type="button" class="controls-theme-btn rounded-lg border border-white/15 bg-gray-900/60 p-2" data-theme="switch">
+        <span class="controls-theme-preview" data-theme-option="switch">
+          <span class="preview-btn">A</span>
+          <span class="preview-btn">B</span>
+        </span>
+      </button>
+      <button type="button" class="controls-theme-btn rounded-lg border border-white/15 bg-gray-900/60 p-2" data-theme="neon">
+        <span class="controls-theme-preview" data-theme-option="neon">
+          <span class="preview-btn">A</span>
+          <span class="preview-btn">B</span>
+        </span>
+      </button>
     </div>
   </div>
 </div>

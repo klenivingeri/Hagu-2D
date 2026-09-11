@@ -34,6 +34,18 @@ function applyZoomLayout(zoom) {
   gameLayout?.classList.toggle('zoom-3x', zoom === 3);
 }
 
+// Skin visual do D-pad/ações/SELECT-START (aba "Botões" em Configurações,
+// ver WelcomeScreen.js/SettingsScreen.js/main.css "TEMAS DE BOTÕES").
+// Escopado em #app (não em .game-layout) porque os modais de Configurações
+// ficam fora de .game-layout no DOM. Chamado aqui uma vez no boot pra os
+// controles já nascerem com o tema salvo, antes de qualquer modal abrir —
+// depois disso, cada tela de Configurações reaplica sozinha ao trocar o
+// tema (não passa por main.js, é puramente CSS/DOM, sem nada do Phaser
+// envolvido).
+function applyControlsTheme(theme) {
+  document.getElementById('app')?.setAttribute('data-controls-theme', theme);
+}
+
 function startMatch(mapKey) {
   HideWelcomeScreen();
   if (gameLayout) gameLayout.classList.add('is-active');
@@ -115,6 +127,7 @@ RegisterServiceWorker();
 // persistido — StorageService/futuro banco local), só depois a Welcome.
 ShowLoadingScreen('Carregando jogo...', 'player');
 loadPersistedState().finally(() => {
+  applyControlsTheme(gameState.settings.controlsTheme);
   HideLoadingScreen();
   ShowWelcomeScreen({ onPlay: startMatch });
 });
