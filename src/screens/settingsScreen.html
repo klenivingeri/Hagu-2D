@@ -19,14 +19,6 @@
         <span>Som do jogo</span>
         <input type="checkbox" class="setting-toggle h-5 w-5 accent-emerald-500" data-setting="soundEnabled" />
       </label>
-      <label class="flex items-center justify-between gap-3 text-sm">
-        <span>Modo daltônico</span>
-        <input type="checkbox" class="setting-toggle h-5 w-5 accent-emerald-500" data-setting="colorblindMode" />
-      </label>
-      <label class="flex items-center justify-between gap-3 text-sm">
-        <span>Filtro Game Boy</span>
-        <input type="checkbox" class="gameboy-filter-toggle h-5 w-5 accent-emerald-500" data-setting="gameboyFilterEnabled" />
-      </label>
       <label class="fullscreen-setting-row flex items-center justify-between gap-3 text-sm">
         <span>Tela cheia</span>
         <input type="checkbox" class="fullscreen-toggle h-5 w-5 accent-emerald-500" />
@@ -38,7 +30,6 @@
           <button type="button" class="platform-mode-btn flex-1 border-l border-white/15 px-3 py-1 text-xs font-bold text-center" data-platform="mobile">Mobile</button>
         </div>
       </div>
-
       <div class="camera-zoom-row flex items-center justify-between gap-3 text-sm">
         <span class="whitespace-nowrap">Zoom câmera</span>
         <div class="camera-zoom-group flex shrink-0 overflow-hidden rounded-lg border border-white/15">
@@ -46,6 +37,16 @@
           <button type="button" class="camera-zoom-btn shrink-0 border-l border-white/15 px-3 py-1 text-xs font-bold" data-zoom="2">2x</button>
         </div>
       </div>
+      <div class="visual-filter-row flex flex-col gap-2 text-sm">
+        <span class="whitespace-nowrap">Filtro de tela</span>
+        <div class="visual-filter-group flex w-full shrink-0 overflow-hidden rounded-lg border border-white/15">
+          <button type="button" class="visual-filter-btn flex-1 px-2 py-1 text-[10px] font-bold text-center" data-filter="none">Normal</button>
+          <button type="button" class="visual-filter-btn flex-1 border-l border-white/15 px-2 py-1 text-[10px] font-bold text-center" data-filter="colorblind">Daltônico</button>
+          <button type="button" class="visual-filter-btn flex-1 border-l border-white/15 px-2 py-1 text-[10px] font-bold text-center" data-filter="gameboy">Game Boy</button>
+        </div>
+      </div>
+
+
     </div>
 
     <div class="settings-tab-panel hidden grid grid-cols-2 gap-2" data-tab="buttons">

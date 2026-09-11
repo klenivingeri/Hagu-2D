@@ -27,27 +27,32 @@ import {
 const DEFAULT_SETTINGS = {
   vibrationEnabled: true,
   soundEnabled: true,
-  colorblindMode: false,
   // Quantas fatias (NxN) a fase é dividida pra câmera da Run seguir o
   // player (ver GameScene.js) — 1 = mapa inteiro visível, sem zoom nem
   // follow, é o comportamento original.
   cameraZoom: 1,
   // 'gameboy' = jogador escolhe manualmente entre zoom 1x/2x (ver
-  // camera-zoom-btn em WelcomeScreen.js/SettingsScreen.js). 'mobile' = zoom
-  // fixo em 3x (RESIZE, tela cheia real) — ver setPlatformMode() abaixo.
+  // camera-zoom-btn em SettingsScreen.js). 'mobile' = zoom fixo em 3x
+  // (RESIZE, tela cheia real) — ver setPlatformMode() abaixo.
   platformMode: 'gameboy',
   // Skin visual do D-pad/botões de ação/SELECT-START (aba "Botões" em
-  // Configurações, ver WelcomeScreen.js/SettingsScreen.js). Puramente
-  // estético — aplicado via atributo data-controls-theme em #app (ver
-  // main.css), nunca muda hitbox/posição dos controles. 'default' é o
-  // visual original, sem nenhuma regra extra em main.css pra ele.
+  // Configurações, ver SettingsScreen.js). Puramente estético — aplicado
+  // via atributo data-controls-theme em #app (ver main.css), nunca muda
+  // hitbox/posição dos controles. 'default' é o visual original, sem
+  // nenhuma regra extra em main.css pra ele.
   controlsTheme: 'default',
-  // Filtro "tela verde" do Game Boy clássico (DMG-01) aplicado na câmera da
-  // Run (ver createGameboyFilter.js) — recolore o jogo inteiro pra 4 tons de
-  // verde. Só afeta o canvas do Phaser, nunca o HUD/telas em HTML (CLAUDE.md
-  // regra 1). Independente do controlsTheme/platformMode: são preferências
-  // visuais separadas, o jogador pode combinar como quiser.
-  gameboyFilterEnabled: false,
+  // Filtro visual aplicado na câmera da Run (ver createVisualFilters.js/
+  // setVisualFilter() abaixo) — mutuamente exclusivo por natureza (um valor
+  // só, nunca dois ao mesmo tempo):
+  // - 'none': sem filtro, visual original.
+  // - 'colorblind': correção "Daltonize" pra deuteranopia (a forma mais
+  //   comum de daltonismo) — não simula, compensa: redistribui a diferença
+  //   de cor no eixo vermelho-verde pro canal azul.
+  // - 'gameboy': recolore o jogo inteiro pra 4 tons de verde, estilo tela
+  //   LCD do DMG-01 clássico.
+  // Só afeta o canvas do Phaser, nunca o HUD/telas em HTML (CLAUDE.md
+  // regra 1).
+  visualFilter: 'none',
 };
 
 // Zoom aplicado automaticamente ao trocar de plataforma — 'mobile' sempre
@@ -346,6 +351,18 @@ export function getLevelInfo(exp = gameState.exp) {
 export function updateSetting(key, value) {
   if (!(key in DEFAULT_SETTINGS)) return;
   gameState.settings[key] = value;
+  save('settings', gameState.settings);
+}
+
+// 'none' | 'colorblind' | 'gameboy' — ver createVisualFilters.js. Um valor
+// só (em vez de vários booleans) já garante que nunca dois filtros fiquem
+// ativos ao mesmo tempo; use isto em vez de updateSetting() pra validar o
+// valor contra as opções conhecidas.
+const VISUAL_FILTER_VALUES = ['none', 'colorblind', 'gameboy'];
+
+export function setVisualFilter(value) {
+  if (!VISUAL_FILTER_VALUES.includes(value)) return;
+  gameState.settings.visualFilter = value;
   save('settings', gameState.settings);
 }
 

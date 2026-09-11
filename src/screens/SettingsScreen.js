@@ -1,13 +1,13 @@
 // Modal de configurações em HTML/Tailwind, mostrado durante a Run quando o
 // player aperta SELECT (ver GameScene.openSettingsMenu() / SETTINGS_EVENTS
-// em constants.js). Mesmas opções (som, vibração, daltonismo, zoom da
-// câmera) do modal de Configurações da Welcome (ver WelcomeScreen.js), só
-// que sem o botão de resetar dados — destrutivo demais pra ficar acessível
-// no meio de uma partida. UI fora do Phaser vive aqui (CLAUDE.md regra 1) —
-// o Phaser só emite o evento, esta tela só escuta (ligada em
-// main.js/BindSettingsEvents).
+// em constants.js). Concentra as preferências ligadas ao gameplay (modo
+// Game Boy/Mobile, filtro de tela, skin dos botões) — a Welcome (ver
+// WelcomeScreen.js) só tem o básico de dispositivo (som, vibração, tela
+// cheia, resetar dados), porque essas aqui só fazem sentido vendo o jogo
+// rodando. UI fora do Phaser vive aqui (CLAUDE.md regra 1) — o Phaser só
+// emite o evento, esta tela só escuta (ligada em main.js/BindSettingsEvents).
 import settingsTemplate from './settingsScreen.html?raw';
-import { gameState, updateSetting, setPlatformMode } from '../managers/GameManager.js';
+import { gameState, updateSetting, setPlatformMode, setVisualFilter } from '../managers/GameManager.js';
 import { SETTINGS_EVENTS } from '../constants.js';
 import {
   isFullscreenSupported,
@@ -84,9 +84,12 @@ function renderSettings() {
   });
   applyControlsTheme(gameState.settings.controlsTheme);
 
-  if (elements.gameboyFilterToggle) {
-    elements.gameboyFilterToggle.checked = Boolean(gameState.settings.gameboyFilterEnabled);
-  }
+  elements.visualFilterButtons.forEach((button) => {
+    const isActive = button.dataset.filter === gameState.settings.visualFilter;
+    button.classList.toggle('bg-emerald-500', isActive);
+    button.classList.toggle('text-gray-950', isActive);
+    button.classList.toggle('text-gray-300', !isActive);
+  });
 
   elements.fullscreenRow?.classList.toggle('hidden', !isFullscreenSupported());
   if (elements.fullscreenToggle) {
@@ -105,7 +108,7 @@ function handleFullscreenToggle() {
 // `onClose` decide o que fazer com a Run pausada (ver main.js): retomar a
 // GameScene. `onCameraZoomChange` deixa a câmera da fase em andamento
 // refletir o zoom escolhido na hora, sem esperar a próxima partida.
-export function ShowSettingsScreen({ onClose, onCameraZoomChange, onGameboyFilterChange } = {}) {
+export function ShowSettingsScreen({ onClose, onCameraZoomChange, onVisualFilterChange } = {}) {
   const app = document.getElementById('app');
   if (!app) {
     console.warn('[SettingsScreen] #app não encontrado no DOM — modal de configurações não será exibido.');
@@ -127,7 +130,7 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange, onGameboyFilte
     cameraZoomRow: root.querySelector('.camera-zoom-row'),
     cameraZoomButtons: [...root.querySelectorAll('.camera-zoom-btn')],
     controlsThemeButtons: [...root.querySelectorAll('.controls-theme-btn')],
-    gameboyFilterToggle: root.querySelector('.gameboy-filter-toggle'),
+    visualFilterButtons: [...root.querySelectorAll('.visual-filter-btn')],
     fullscreenRow: root.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: root.querySelector('.fullscreen-toggle'),
   };
@@ -167,9 +170,12 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange, onGameboyFilte
       renderSettings();
     });
   });
-  elements.gameboyFilterToggle?.addEventListener('change', (event) => {
-    updateSetting('gameboyFilterEnabled', event.target.checked);
-    onGameboyFilterChange?.(event.target.checked);
+  elements.visualFilterButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      setVisualFilter(event.currentTarget.dataset.filter);
+      renderSettings();
+      onVisualFilterChange?.();
+    });
   });
   elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);
   // O player pode sair do fullscreen sem usar o toggle (Esc, gesto do
@@ -190,11 +196,11 @@ export function HideSettingsScreen() {
 // vez por Phaser.Game (main.js chama a cada startMatch, um Game novo por
 // partida). Idempotente: chamar de novo com o mesmo `game` não duplica
 // listeners.
-export function BindSettingsEvents(game, { onClose, onCameraZoomChange, onGameboyFilterChange } = {}) {
+export function BindSettingsEvents(game, { onClose, onCameraZoomChange, onVisualFilterChange } = {}) {
   if (boundGames.has(game)) return;
   boundGames.add(game);
 
   game.events.on(SETTINGS_EVENTS.OPEN, () => {
-    ShowSettingsScreen({ onClose, onCameraZoomChange, onGameboyFilterChange });
+    ShowSettingsScreen({ onClose, onCameraZoomChange, onVisualFilterChange });
   });
 }

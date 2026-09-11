@@ -80,8 +80,8 @@ function startMatch(mapKey) {
       applyZoomLayout(zoom);
       game.scene.getScene('GameScene')?.applyCameraZoom(zoom);
     },
-    onGameboyFilterChange: (enabled) => {
-      game.scene.getScene('GameScene')?.applyGameboyFilterEnabled(enabled);
+    onVisualFilterChange: () => {
+      game.scene.getScene('GameScene')?.refreshVisualFilters();
     },
   });
   BindGameOverEvents(game, {

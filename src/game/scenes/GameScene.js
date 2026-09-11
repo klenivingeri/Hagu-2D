@@ -7,7 +7,7 @@ import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../syst
 import { createControls } from '../systems/create/createControls.js';
 import { createWorld } from '../systems/create/createWorld.js';
 import { applyMobileFooter } from '../systems/create/createMobileFooter.js';
-import { applyGameboyFilter } from '../systems/create/createGameboyFilter.js';
+import { applyVisualFilters } from '../systems/create/createVisualFilters.js';
 
 import { createBulletSystem } from '../systems/create/createBulletSystem.js';
 import { updatePlayerMovement } from '../systems/upgrade/updatePlayerMovement.js'
@@ -179,10 +179,10 @@ export class GameScene extends Phaser.Scene {
     // logo após createWorld (usa scene.map/scene.cameras.main) e antes do
     // setZoom/centerOn abaixo, pra já nascer com os bounds corretos.
     applyMobileFooter(this, cameraZoom === 3);
-    // Filtro "tela verde" do Game Boy (ver createGameboyFilter.js) —
-    // independente do cameraZoom/platformMode, é só uma preferência visual
-    // separada.
-    applyGameboyFilter(this, gameState.settings.gameboyFilterEnabled);
+    // Filtros "tela verde" do Game Boy / correção de daltonismo (ver
+    // createVisualFilters.js) — independentes do cameraZoom/platformMode,
+    // são só preferências visuais separadas.
+    applyVisualFilters(this, gameState.settings);
 
     createControls(this);
 
@@ -399,13 +399,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   // Chamado pelo SettingsScreen (ver main.js) quando o player liga/desliga
-  // o filtro Game Boy com a Run em andamento — sem isso, a escolha só
-  // valeria a partir da próxima partida (ver create(), que só lê
-  // gameState.settings.gameboyFilterEnabled uma vez). Nome distinto do
-  // helper importado (applyGameboyFilter) de propósito, pra não confundir
-  // com uma recursão — aqui dentro `this` é a Scene, lá é `(scene, enabled)`.
-  applyGameboyFilterEnabled(enabled) {
-    applyGameboyFilter(this, enabled);
+  // o filtro Game Boy ou a correção de daltonismo com a Run em andamento —
+  // sem isso, a escolha só valeria a partir da próxima partida (ver
+  // create(), que só lê gameState.settings uma vez). Sempre relê
+  // gameState.settings inteiro (já atualizado por updateSetting antes desta
+  // chamada) em vez de receber um valor por parâmetro, pra um único ponto
+  // de entrada cobrir qualquer combinação dos dois filtros.
+  refreshVisualFilters() {
+    applyVisualFilters(this, gameState.settings);
   }
 
   // FIT (default) letterboxa dentro do parent pra nunca cortar o mapa —
