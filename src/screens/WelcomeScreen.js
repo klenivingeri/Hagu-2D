@@ -1022,6 +1022,10 @@ function renderSettings() {
   });
   applyControlsTheme(gameState.settings.controlsTheme);
 
+  if (elements.gameboyFilterToggle) {
+    elements.gameboyFilterToggle.checked = Boolean(gameState.settings.gameboyFilterEnabled);
+  }
+
   // Navegadores sem Fullscreen API (ex: Safari iOS) escondem a opção em vez
   // de mostrar um toggle que nunca funciona.
   elements.fullscreenRow?.classList.toggle('hidden', !isFullscreenSupported());
@@ -1058,6 +1062,14 @@ function handlePlatformModeChange(event) {
 function handleControlsThemeChange(event) {
   updateSetting('controlsTheme', event.currentTarget.dataset.theme);
   renderSettings();
+}
+
+// Sem callback de "run em andamento" aqui — na Welcome nunca existe um
+// Phaser.Game ativo (CLAUDE.md regra 4), então não tem câmera pra atualizar
+// ao vivo; o filtro só é lido de novo quando GameScene.create() rodar (ver
+// GameScene.js/createGameboyFilter.js).
+function handleGameboyFilterChange(event) {
+  updateSetting('gameboyFilterEnabled', event.target.checked);
 }
 
 function handleSettingsTabClick(event) {
@@ -1170,6 +1182,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     cameraZoomRow: modalRoot.querySelector('.camera-zoom-row'),
     cameraZoomButtons: [...modalRoot.querySelectorAll('.camera-zoom-btn')],
     controlsThemeButtons: [...modalRoot.querySelectorAll('.controls-theme-btn')],
+    gameboyFilterToggle: modalRoot.querySelector('.gameboy-filter-toggle'),
     fullscreenRow: modalRoot.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: modalRoot.querySelector('.fullscreen-toggle'),
     views: [...screenRoot.querySelectorAll('.welcome-view')],
@@ -1211,6 +1224,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   elements.controlsThemeButtons.forEach((button) => {
     button.addEventListener('click', handleControlsThemeChange);
   });
+  elements.gameboyFilterToggle?.addEventListener('change', handleGameboyFilterChange);
   elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);
   // O player pode sair do fullscreen sem usar o toggle (Esc, gesto do
   // navegador) — resincroniza o checkbox nesses casos.

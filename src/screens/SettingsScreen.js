@@ -84,6 +84,10 @@ function renderSettings() {
   });
   applyControlsTheme(gameState.settings.controlsTheme);
 
+  if (elements.gameboyFilterToggle) {
+    elements.gameboyFilterToggle.checked = Boolean(gameState.settings.gameboyFilterEnabled);
+  }
+
   elements.fullscreenRow?.classList.toggle('hidden', !isFullscreenSupported());
   if (elements.fullscreenToggle) {
     elements.fullscreenToggle.checked = isFullscreenActive();
@@ -101,7 +105,7 @@ function handleFullscreenToggle() {
 // `onClose` decide o que fazer com a Run pausada (ver main.js): retomar a
 // GameScene. `onCameraZoomChange` deixa a câmera da fase em andamento
 // refletir o zoom escolhido na hora, sem esperar a próxima partida.
-export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
+export function ShowSettingsScreen({ onClose, onCameraZoomChange, onGameboyFilterChange } = {}) {
   const app = document.getElementById('app');
   if (!app) {
     console.warn('[SettingsScreen] #app não encontrado no DOM — modal de configurações não será exibido.');
@@ -123,6 +127,7 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
     cameraZoomRow: root.querySelector('.camera-zoom-row'),
     cameraZoomButtons: [...root.querySelectorAll('.camera-zoom-btn')],
     controlsThemeButtons: [...root.querySelectorAll('.controls-theme-btn')],
+    gameboyFilterToggle: root.querySelector('.gameboy-filter-toggle'),
     fullscreenRow: root.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: root.querySelector('.fullscreen-toggle'),
   };
@@ -162,6 +167,10 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange } = {}) {
       renderSettings();
     });
   });
+  elements.gameboyFilterToggle?.addEventListener('change', (event) => {
+    updateSetting('gameboyFilterEnabled', event.target.checked);
+    onGameboyFilterChange?.(event.target.checked);
+  });
   elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);
   // O player pode sair do fullscreen sem usar o toggle (Esc, gesto do
   // navegador) — resincroniza o checkbox nesses casos.
@@ -181,11 +190,11 @@ export function HideSettingsScreen() {
 // vez por Phaser.Game (main.js chama a cada startMatch, um Game novo por
 // partida). Idempotente: chamar de novo com o mesmo `game` não duplica
 // listeners.
-export function BindSettingsEvents(game, { onClose, onCameraZoomChange } = {}) {
+export function BindSettingsEvents(game, { onClose, onCameraZoomChange, onGameboyFilterChange } = {}) {
   if (boundGames.has(game)) return;
   boundGames.add(game);
 
   game.events.on(SETTINGS_EVENTS.OPEN, () => {
-    ShowSettingsScreen({ onClose, onCameraZoomChange });
+    ShowSettingsScreen({ onClose, onCameraZoomChange, onGameboyFilterChange });
   });
 }

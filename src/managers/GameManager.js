@@ -42,6 +42,12 @@ const DEFAULT_SETTINGS = {
   // main.css), nunca muda hitbox/posição dos controles. 'default' é o
   // visual original, sem nenhuma regra extra em main.css pra ele.
   controlsTheme: 'default',
+  // Filtro "tela verde" do Game Boy clássico (DMG-01) aplicado na câmera da
+  // Run (ver createGameboyFilter.js) — recolore o jogo inteiro pra 4 tons de
+  // verde. Só afeta o canvas do Phaser, nunca o HUD/telas em HTML (CLAUDE.md
+  // regra 1). Independente do controlsTheme/platformMode: são preferências
+  // visuais separadas, o jogador pode combinar como quiser.
+  gameboyFilterEnabled: false,
 };
 
 // Zoom aplicado automaticamente ao trocar de plataforma — 'mobile' sempre

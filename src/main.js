@@ -80,6 +80,9 @@ function startMatch(mapKey) {
       applyZoomLayout(zoom);
       game.scene.getScene('GameScene')?.applyCameraZoom(zoom);
     },
+    onGameboyFilterChange: (enabled) => {
+      game.scene.getScene('GameScene')?.applyGameboyFilterEnabled(enabled);
+    },
   });
   BindGameOverEvents(game, {
     // "Tentar novamente": tentativas só resetam num Phaser.Game novo (ver
