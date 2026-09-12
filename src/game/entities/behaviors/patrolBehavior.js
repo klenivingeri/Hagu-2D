@@ -1,5 +1,5 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
-import { turnEnemy, isAboutToFall, isKnockedBack } from '../EnemyBase.js';
+import { turnEnemy, isKnockedBack, patrolGroundTurn, getAttackCooldownMs } from '../EnemyBase.js';
 
 // ==========================================
 // patrol
@@ -34,14 +34,7 @@ export const patrolBehavior = {
     // parede na mesma direção até a animação acabar. Só a ANIMAÇÃO fica
     // travada (ver turnEnemy em EnemyBase.js).
     if (enemy.patrol && !isKnockedBack(scene, enemy)) {
-      if (enemy.body.blocked.left) {
-        turnEnemy(enemy, enemy.status.speed, 1);
-      } else if (enemy.body.blocked.right) {
-        turnEnemy(enemy, -enemy.status.speed, -1);
-      } else if (isAboutToFall(scene, enemy)) {
-        const goingLeft = enemy.body.velocity.x < 0;
-        turnEnemy(enemy, goingLeft ? enemy.status.speed : -enemy.status.speed, goingLeft ? 1 : -1);
-      }
+      patrolGroundTurn(scene, enemy);
     }
 
     tryMeleeAttack(scene, enemy);
@@ -56,7 +49,7 @@ function tryMeleeAttack(scene, enemy) {
   const attackDistance = Number.isFinite(Number(attack.rangePx))
     ? Math.max(0, Number(attack.rangePx))
     : DEFAULT_MELEE_ATTACK_DISTANCE;
-  const attackCooldown = getAttackCooldown(enemy);
+  const attackCooldown = getAttackCooldownMs(enemy, DEFAULT_MELEE_ATTACK_COOLDOWN);
   if (scene.time.now < (enemy.nextMeleeAttackAt || 0)) return;
 
   const player = scene.player;
@@ -89,9 +82,4 @@ function tryMeleeAttack(scene, enemy) {
       enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
     }
   });
-}
-
-function getAttackCooldown(enemy) {
-  const attackCooldown = enemy.entityConfig?.attack?.cooldown;
-  return Number.isFinite(Number(attackCooldown)) ? Math.max(0, Number(attackCooldown)) : DEFAULT_MELEE_ATTACK_COOLDOWN;
 }

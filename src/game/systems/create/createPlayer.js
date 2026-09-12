@@ -151,7 +151,7 @@ export function setupPlayerDamage(scene, player, enemies) {
   );
 }
 
-function hitByEnemy(scene, player, enemy) {
+export function hitByEnemy(scene, player, enemy) {
   if (player.isDead) return;
   if (!enemy || !enemy.active) return;
 
@@ -208,7 +208,7 @@ export function damagePlayer(scene, damage = 1) {
 // Como o overlap player x enemy não separa os corpos fisicamente (só
 // dispara o dano), não dá pra usar body.blocked/touching aqui — por isso
 // a checagem é por posição + direção do movimento.
-function isStomp(player, enemy) {
+export function isStomp(player, enemy) {
   const isFalling = player.body.velocity.y > 0;
   const stompLine = enemy.body.top + enemy.body.height * STOMP_TOLERANCE_RATIO;
   return isFalling && player.body.bottom <= stompLine;

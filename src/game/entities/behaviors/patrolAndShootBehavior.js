@@ -1,5 +1,7 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
-import { turnEnemy, isAboutToFall, isKnockedBack, isPlayerInVision, updateVisionDebug } from '../EnemyBase.js';
+import { turnEnemy, isKnockedBack, isPlayerInVision, updateVisionDebug, patrolGroundTurn, getAttackCooldownMs } from '../EnemyBase.js';
+
+const DEFAULT_RANGED_ATTACK_COOLDOWN = 1500;
 
 // ==========================================
 // patrol_and_shoot
@@ -52,14 +54,7 @@ export const patrolAndShootBehavior = {
         turnEnemy(enemy, enemy.facingDirection * enemy.status.speed, enemy.facingDirection);
       }
     } else if (enemy.patrol && !isKnockedBack(scene, enemy)) {
-      if (enemy.body.blocked.left) {
-        turnEnemy(enemy, enemy.status.speed, 1);
-      } else if (enemy.body.blocked.right) {
-        turnEnemy(enemy, -enemy.status.speed, -1);
-      } else if (isAboutToFall(scene, enemy)) {
-        const goingLeft = enemy.body.velocity.x < 0;
-        turnEnemy(enemy, goingLeft ? enemy.status.speed : -enemy.status.speed, goingLeft ? 1 : -1);
-      }
+      patrolGroundTurn(scene, enemy);
     } else if (!enemy.patrol) {
       enemy.setVelocityX(0);
     }
@@ -92,8 +87,7 @@ function updatePatrolAnimation(enemy) {
 }
 
 function fireAtPlayer(scene, enemy) {
-  console.log('[DBG] fireAtPlayer', enemy.entityKey, 'isAttacking=', enemy.isAttacking, 'isStomped=', enemy.isStomped);
-  enemy.nextAttackAt = scene.time.now + getAttackCooldown(enemy);
+  enemy.nextAttackAt = scene.time.now + getAttackCooldownMs(enemy, DEFAULT_RANGED_ATTACK_COOLDOWN);
   if (enemy.isStomped) return;
 
   const direction = enemy.facingDirection || 1;
@@ -140,9 +134,4 @@ function fireAtPlayer(scene, enemy) {
       }
     }
   });
-}
-
-function getAttackCooldown(enemy) {
-  const cooldown = enemy.entityConfig?.attack?.cooldown;
-  return Number.isFinite(Number(cooldown)) ? Math.max(0, Number(cooldown)) : 1500;
 }

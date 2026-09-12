@@ -1,5 +1,5 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
-import { isKnockedBack, isPlayerInVision, updateVisionDebug } from '../EnemyBase.js';
+import { isKnockedBack, isPlayerInVision, updateVisionDebug, playRunAnimationIfFree } from '../EnemyBase.js';
 
 // ==========================================
 // patrol_fly (substitui o antigo aggro_fly)
@@ -58,7 +58,7 @@ export const patrolFlyBehavior = {
     // aplicada pelo EnemyBase em paz (senão o "espantar" nunca aparece,
     // já que este update roda todo frame).
     if (isKnockedBack(scene, enemy)) {
-      updatePlayAnimation(enemy);
+      playRunAnimationIfFree(enemy);
       return;
     }
 
@@ -117,7 +117,7 @@ export const patrolFlyBehavior = {
       enemy.setPosition(enemy.flyOriginX, enemy.flyOriginY);
     }
 
-    updatePlayAnimation(enemy);
+    playRunAnimationIfFree(enemy);
   },
 
   // Hook chamado pelo EnemyBase (applyDamage) sempre que esse inimigo leva
@@ -164,11 +164,5 @@ function moveFlyTowards(enemy, targetX, targetY, speed) {
   if (Math.abs(dx) > 0.5) {
     enemy.facingDirection = dx < 0 ? -1 : 1;
     enemy.setFlipX(dx < 0);
-  }
-}
-
-function updatePlayAnimation(enemy) {
-  if (!enemy.isStomped && !enemy.isAttacking) {
-    enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
   }
 }

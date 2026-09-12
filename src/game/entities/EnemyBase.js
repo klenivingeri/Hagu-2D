@@ -364,9 +364,43 @@ export function turnEnemy(enemy, velocityX, facingDirection) {
   enemy.setVelocityX(velocityX);
   enemy.facingDirection = facingDirection;
   enemy.setFlipX(facingDirection < 0);
+  playRunAnimationIfFree(enemy);
+}
 
+// Toca a animação "run" só se o inimigo não estiver tombado (stomp) nem no
+// meio de um ataque — usada tanto por turnEnemy quanto por behaviors que
+// mexem na velocidade sem virar direção (ex: patrol_fly perseguindo/voltando
+// pra origem, ver patrolFlyBehavior.js).
+export function playRunAnimationIfFree(enemy) {
   if (!enemy.isStomped && !enemy.isAttacking) {
     enemy.anims.play(getEntityAnimationKey(enemy.entityKey, 'run'), true);
+  }
+}
+
+// --------------------------------------------------------------
+// Cooldown de ataque (melee ou à distância): lê o override do Object Layer
+// do Tiled (attack.cooldown, já resolvido em MOBS_CONFIG/getMobConfig) e
+// cai pro default do próprio type quando não vier definido.
+// --------------------------------------------------------------
+export function getAttackCooldownMs(enemy, defaultMs) {
+  const cooldown = enemy.entityConfig?.attack?.cooldown;
+  return Number.isFinite(Number(cooldown)) ? Math.max(0, Number(cooldown)) : defaultMs;
+}
+
+// --------------------------------------------------------------
+// Virada em parede/beira de plataforma (patrol de chão): usada por qualquer
+// type que patrulhe andando (patrol, patrol_and_shoot). NÃO decide SE deve
+// patrulhar agora (isso fica a cargo de cada behavior, que já sabe lidar
+// com knockback/mustFacePlayer/etc antes de chamar isto).
+// --------------------------------------------------------------
+export function patrolGroundTurn(scene, enemy) {
+  if (enemy.body.blocked.left) {
+    turnEnemy(enemy, enemy.status.speed, 1);
+  } else if (enemy.body.blocked.right) {
+    turnEnemy(enemy, -enemy.status.speed, -1);
+  } else if (isAboutToFall(scene, enemy)) {
+    const goingLeft = enemy.body.velocity.x < 0;
+    turnEnemy(enemy, goingLeft ? enemy.status.speed : -enemy.status.speed, goingLeft ? 1 : -1);
   }
 }
 
