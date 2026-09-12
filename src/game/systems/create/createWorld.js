@@ -62,7 +62,17 @@ const {
     if (layers[layerName]) layers[layerName].setDepth(depth);
   });
 
-  scene.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+  // O limite de física é mais alto que o mapa visual/câmera (+2 tiles de
+  // margem embaixo): sem essa folga, um chão de verdade colocado na ÚLTIMA
+  // linha de tiles do mapa (ex: map_ice_1) fica exatamente sobre o limite
+  // inferior do mundo. Aí QUALQUER ajuste de física em cima desse chão
+  // dispara o evento 'worldbounds' com down=true, matando o player pela
+  // regra de "caiu no vazio" (ver setupWorldBoundsDeath em createPlayer.js)
+  // mesmo ele estando em pé, num loop infinito de morte/respawn no mesmo
+  // lugar — e com isso preso pra sempre em isSpawning=true (fire() nunca
+  // atira enquanto isSpawning, ver createBulletSystem.js).
+  const worldBoundsMarginPx = map.tileHeight * 2;
+  scene.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels + worldBoundsMarginPx);
   scene.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
   const enemyLimits = layers[LIMITS];

@@ -86,6 +86,34 @@ describe('cleanupProjectile', () => {
     cleanupProjectile(makeSceneForCleanup(), projectile);
     expect(projectile.setActive).not.toHaveBeenCalled();
   });
+
+  // Bug real: no modo "mobile" (Phaser.Scale.RESIZE, ver
+  // GameScene.applyScaleModeForZoom), scene.scale.width vira o tamanho real
+  // da TELA do aparelho (ex: 390px), não o do MAPA (ex: 448px) — diferente
+  // do modo "gameboy" (FIT), onde os dois coincidem por acaso. Como
+  // projectile.x é coordenada de MUNDO, comparar com scale.width destruía
+  // qualquer bullet assim que o player chegava perto da borda direita do
+  // mapa, bem antes do fim de verdade — só reproduzia no mobile porque só lá
+  // scale.width < largura do mapa.
+  it('viewport (scale.width) menor que o mapa não destrói bullet ainda dentro do mundo (regressão modo mobile)', () => {
+    const scene = makeSceneForCleanup({ scale: { width: 390, height: 390 }, map: { widthInPixels: 448, heightInPixels: 448 } });
+    const projectile = makeProjectile({ x: 420 }); // dentro do mapa (448), fora do viewport (390)
+    cleanupProjectile(scene, projectile);
+    expect(projectile.setActive).not.toHaveBeenCalled();
+  });
+
+  it('destrói ao sair de verdade do mundo, mesmo com viewport menor que o mapa', () => {
+    const scene = makeSceneForCleanup({ scale: { width: 390, height: 390 }, map: { widthInPixels: 448, heightInPixels: 448 } });
+    const projectile = makeProjectile({ x: 450 }); // além da largura real do mapa
+    cleanupProjectile(scene, projectile);
+    expect(projectile.setActive).toHaveBeenCalledWith(false);
+  });
+
+  it('sem scene.map (cenário de teste antigo), cai de volta pro scale.width', () => {
+    const projectile = makeProjectile({ x: 900 });
+    cleanupProjectile(makeSceneForCleanup(), projectile);
+    expect(projectile.setActive).toHaveBeenCalledWith(false);
+  });
 });
 
 // createBulletSystem(scene) monta vários colliders/overlaps na criação —
@@ -211,5 +239,80 @@ describe('fireEnemy', () => {
 
     expect(recycledBullet.active).toBe(true);
     expect(recycledBullet.setActive).not.toHaveBeenCalledWith(false);
+  });
+});
+
+// update() também limpa fireball/bomba com o mesmo bug de scale.width vs
+// mundo (ver cleanupProjectile) — cobrindo os dois aqui em vez de duplicar
+// os cenários de cleanupProjectile.
+describe('update() — limpeza de fireball/bomba fora do mundo', () => {
+  function makeFireball(overrides = {}) {
+    return { active: true, x: 0, y: 0, lastGroundY: 0, setActive: vi.fn(), setVisible: vi.fn(), setPosition: vi.fn(), body: { stop: vi.fn(), enable: true }, ...overrides };
+  }
+
+  function makeBomb(overrides = {}) {
+    return { active: true, _armed: false, x: 0, y: 0, setActive: vi.fn(), setVisible: vi.fn(), setPosition: vi.fn(), body: { stop: vi.fn(), enable: true }, ...overrides };
+  }
+
+  // emitFireballTrail/emitBombTrail (dustTrail.js) pedem um emissor de
+  // partículas de verdade — pré-populamos scene._dustEmitter pra pular a
+  // criação (scene.add.particles), que esta cena de teste não tem.
+  const fakeDustEmitter = { emitParticleAt: vi.fn(), alive: [{}] };
+
+  it('fireball dentro do mapa mas fora do viewport (mobile/RESIZE) não é destruída', () => {
+    const fireball = makeFireball({ x: 420 });
+    const scene = makeSceneForBulletSystem({
+      scale: { width: 390, height: 390 },
+      map: { tileWidth: 16, widthInPixels: 448, heightInPixels: 448 },
+      time: { now: 0 },
+      _dustEmitter: fakeDustEmitter,
+      bullets: { getChildren: () => [] },
+      swordWaves: { getChildren: () => [] },
+      fireballs: { getChildren: () => [fireball] },
+      bombs: { getChildren: () => [] },
+    });
+    const system = createBulletSystem(scene);
+
+    system.update();
+
+    expect(fireball.setActive).not.toHaveBeenCalled();
+  });
+
+  it('fireball que realmente saiu do mapa é destruída', () => {
+    const fireball = makeFireball({ x: 460 });
+    const scene = makeSceneForBulletSystem({
+      scale: { width: 390, height: 390 },
+      map: { tileWidth: 16, widthInPixels: 448, heightInPixels: 448 },
+      time: { now: 0 },
+      _dustEmitter: fakeDustEmitter,
+      bullets: { getChildren: () => [] },
+      swordWaves: { getChildren: () => [] },
+      fireballs: { getChildren: () => [fireball] },
+      bombs: { getChildren: () => [] },
+    });
+    const system = createBulletSystem(scene);
+
+    system.update();
+
+    expect(fireball.setActive).toHaveBeenCalledWith(false);
+  });
+
+  it('bomba dentro do mapa mas fora do viewport (mobile/RESIZE) não é destruída', () => {
+    const bomb = makeBomb({ x: 420, y: 420 });
+    const scene = makeSceneForBulletSystem({
+      scale: { width: 390, height: 390 },
+      map: { tileWidth: 16, widthInPixels: 448, heightInPixels: 448 },
+      time: { now: 0 },
+      _dustEmitter: fakeDustEmitter,
+      bullets: { getChildren: () => [] },
+      swordWaves: { getChildren: () => [] },
+      fireballs: { getChildren: () => [] },
+      bombs: { getChildren: () => [bomb] },
+    });
+    const system = createBulletSystem(scene);
+
+    system.update();
+
+    expect(bomb.setActive).not.toHaveBeenCalled();
   });
 });

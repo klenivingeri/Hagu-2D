@@ -576,20 +576,25 @@ export function createBulletSystem(scene) {
       // Bola de fogo do Cajado: não usa maxRangePx (o collider com
       // scene.platforms acima já cuida do repique/destruição em paredes,
       // teto e quedas de mais de 1 tile) — aqui só cobre o caso que o
-      // collider não vê: sair da tela sem nunca ter colidido com nada.
+      // collider não vê: sair do MUNDO sem nunca ter colidido com nada.
+      // Compara com scene.map.widthInPixels, não scene.scale.width (ver
+      // cleanupProjectile acima pro motivo — o mesmo bug afetava fireball/
+      // bomba no modo mobile/RESIZE).
+      const worldWidth = scene.map?.widthInPixels ?? scene.scale.width;
+      const worldHeight = scene.map?.heightInPixels ?? scene.scale.height;
       const fireballList = scene.fireballs.getChildren();
       for (let i = 0; i < fireballList.length; i += 1) {
         const fireball = fireballList[i];
         if (!fireball?.active) continue;
         emitFireballTrail(scene, fireball);
 
-        if (fireball.x > scene.scale.width || fireball.x < 0) {
+        if (fireball.x > worldWidth || fireball.x < 0) {
           destroyProjectile(fireball);
         }
       }
 
       // Bomba ainda em voo/quicando (não armada): rastro de fumaça (ver
-      // emitBombTrail) + a mesma checagem de "saiu da tela sem nunca tocar
+      // emitBombTrail) + a mesma checagem de "saiu do mundo sem nunca tocar
       // o cenário" das outras armas — sem isso o collider com
       // scene.platforms nunca chega a armar o pavio (ver armBomb), e ela
       // ficaria voando pra sempre. Destrói silenciosamente nesse caso, sem
@@ -599,7 +604,7 @@ export function createBulletSystem(scene) {
         const bomb = bombList[i];
         if (!bomb?.active || bomb._armed) continue;
         emitBombTrail(scene, bomb);
-        if (bomb.x > scene.scale.width || bomb.x < 0 || bomb.y > scene.scale.height) {
+        if (bomb.x > worldWidth || bomb.x < 0 || bomb.y > worldHeight) {
           destroyProjectile(bomb);
         }
       }
@@ -651,17 +656,26 @@ function emitEnergyHud(scene, player) {
 
 // Mesma checagem de alcance/borda vale pra bullet (arco/arma) e sword wave
 // (espada) — só bullets de player e a wave têm maxRangePx setado.
-// IMPORTANTE: checa as duas bordas da tela. Bullets de player sempre têm
-// maxRangePx como rede de segurança, mas bullets de INIMIGO não (ver
-// createBulletSystem/fireEnemy) — um inimigo virado pra esquerda
-// (facingDirection -1) atira bullets com velocity.x negativo, e sem checar
-// `x < 0` eles nunca eram destruídos, vazando um slot do pool compartilhado
-// `scene.bullets` (maxSize: 10) até ele esgotar e travar os tiros de todo
-// mundo (player incluso).
+// IMPORTANTE: compara com o MUNDO (scene.map.widthInPixels), não com
+// scene.scale.width/height — scale é o tamanho do CANVAS, que muda com o
+// modo de câmera (ver GameScene.applyScaleModeForZoom): no modo "gameboy"
+// (FIT) ele fica travado em 448x448 e por coincidência bate com mapas desse
+// tamanho, mas no modo "mobile" (RESIZE) vira o tamanho real da tela do
+// aparelho — normalmente MENOR que o mapa (ex: 390px de viewport x 448px de
+// mapa). Comparar bullet.x (coordenada de MUNDO) contra esse valor menor
+// destruía qualquer tiro assim que o player chegava perto da borda direita
+// do mapa, mesmo bem longe do fim de verdade (bug visto só no modo mobile).
+// Bullets de player sempre têm maxRangePx como rede de segurança, mas
+// bullets de INIMIGO não (ver createBulletSystem/fireEnemy) — um inimigo
+// virado pra esquerda (facingDirection -1) atira bullets com velocity.x
+// negativo, e sem checar `x < 0` eles nunca eram destruídos, vazando um
+// slot do pool compartilhado `scene.bullets` (maxSize: 10) até ele esgotar
+// e travar os tiros de todo mundo (player incluso).
 export function cleanupProjectile(scene, projectile) {
   if (!projectile || !projectile.active) return;
 
-  if (projectile.x > scene.scale.width || projectile.x < 0) {
+  const worldWidth = scene.map?.widthInPixels ?? scene.scale.width;
+  if (projectile.x > worldWidth || projectile.x < 0) {
     destroyProjectile(projectile);
     return;
   }
