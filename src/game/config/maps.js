@@ -55,19 +55,9 @@ export const MAPS = {
     tilemapUrl: '/assets/tiledmap/map_forest_3.tmj',
     ...TILESET_DEFAULTS,
   },
-  map_forest_4: {
-    key: 'map_forest_3',
-    tilemapUrl: '/assets/tiledmap/map_forest_3.tmj',
-    ...TILESET_DEFAULTS,
-  },
   map_desert_1: {
     key: 'map_desert_1',
     tilemapUrl: '/assets/tiledmap/map_desert_1.tmj',
-    ...TILESET_DEFAULTS,
-  },
-  map_desert_2: {
-    key: 'map_desert_2',
-    tilemapUrl: '/assets/tiledmap/map_desert_2.tmj',
     ...TILESET_DEFAULTS,
   },
   map_ice_1: {
@@ -75,19 +65,9 @@ export const MAPS = {
     tilemapUrl: '/assets/tiledmap/map_ice_1.tmj',
     ...TILESET_DEFAULTS,
   },
-  map_ice_2: {
-    key: 'map_ice_2',
-    tilemapUrl: '/assets/tiledmap/map_ice_2.tmj',
-    ...TILESET_DEFAULTS,
-  },
   map_fire_1: {
     key: 'map_fire_1',
     tilemapUrl: '/assets/tiledmap/map_fire_1.tmj',
-    ...TILESET_DEFAULTS,
-  },
-  map_fire_2: {
-    key: 'map_fire_2',
-    tilemapUrl: '/assets/tiledmap/map_fire_2.tmj',
     ...TILESET_DEFAULTS,
   },
 };
@@ -100,11 +80,11 @@ export const MAPS = {
 // linha = "down", andar uma coluna = "left"/"right". map_0 é o hub central;
 // gelo/fogo esticam pra cima/baixo, floresta/deserto esticam pros lados.
 export const MAP_GRID = [
-  [null,           null,           'map_ice_2',    null,            'map_forest_4'],
-  [null,           null,           'map_ice_1',    null,            'map_forest_3'],
-  ['map_desert_2', 'map_desert_1', 'map_0',        'map_forest_1',  'map_forest_2'],
-  [null,           null,           'map_fire_1',   null,            null],
-  [null,           null,           'map_fire_2',   null,            null],
+  [null,           null,           null,           'map_ice_2',    null,            'map_forest_4', null],
+  [null,           null,           null,           'map_ice_1',    null,            'map_forest_3', null],
+  [null,           'map_desert_2', 'map_desert_1', 'map_0',        'map_forest_1',  'map_forest_2', null],
+  [null,           null,           null,           'map_fire_1',   null,            null,           null],
+  [null,           null,           null,           'map_fire_2',   null,            null,           null],
 ];
 
 export const DEFAULT_MAP_KEY = 'map_0';

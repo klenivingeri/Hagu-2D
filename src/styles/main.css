@@ -741,32 +741,48 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
   animation: stage-unlock-pop 900ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Botão "Jogar" da WelcomeScreen: encolhe e some enquanto o boneco corre
-   pelo grid (ver hidePlayButton em WelcomeScreen.js) e volta com um "yoyo"
+/* Contador regressivo (HH:MM:SS) exibido embaixo do número de fichas quando
+   elas zeram (ver WelcomeScreen.js/renderTicketsDisplay) — letter-spacing
+   negativo pra nunca estourar a largura de .tickets-display. */
+.tickets-countdown {
+  letter-spacing: -0.02em;
+}
+
+/* Chuva de fichas exibida sobre o .tickets-empty-panel quando uma compra
+   dá certo (ver spawnTicketsRain em WelcomeScreen.js) — feedback de que a
+   compra funcionou sem fechar o modal, já que o jogador pode querer comprar
+   mais de uma vez seguida. Cada ficha é um <img> criado dinamicamente com
+   left/duration/delay aleatórios via inline style e removido ao fim da
+   queda (ver 'animationend' no JS). */
+.tickets-rain-drop {
+  position: absolute;
+  top: -10%;
+  width: 22px; /* fallback; tamanho real varia por instância (ver spawnTicketsRain) */
+  image-rendering: pixelated;
+  animation: tickets-rain-fall linear forwards;
+}
+
+@keyframes tickets-rain-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(320px) rotate(220deg); opacity: 0; }
+}
+
+/* Botão "Jogar" da WelcomeScreen: fica sempre visível e só dá um "yoyo"
    (pop + oscilação de escala, feito à mão em keyframes já que aqui é CSS puro
-   e não uma tween do Phaser) quando ele chega na fase e ela é selecionada. */
+   e não uma tween do Phaser) como feedback de que a fase selecionada mudou
+   (ver pulsePlayButton em WelcomeScreen.js). */
 .play-btn {
   transform: scale(1);
   opacity: 1;
-  transition:
-    transform 220ms ease-in,
-    opacity 220ms ease-in;
-}
-
-.play-btn-hidden {
-  transform: scale(0);
-  opacity: 0;
-  pointer-events: none;
 }
 
 @keyframes play-btn-yoyo {
   0% {
-    transform: scale(0);
-    opacity: 0;
+    transform: scale(1);
   }
   40% {
     transform: scale(1.2);
-    opacity: 1;
   }
   60% {
     transform: scale(0.9);

@@ -81,6 +81,20 @@ const DEFAULT_DIAMANT = 100;
 // dá pra platinar upgrades e testar builds sem precisar farmar fase por fase.
 const DEFAULT_COINS = 10000;
 
+// Fichas (ver welcomeScreen.html play-btn) consumidas ao iniciar uma fase.
+// Começa com 3 e volta pra 3 todo dia (ver resetDailyTicketsIfNeeded), mas só
+// se o player estiver ZERADO — nunca reduz quem ainda tem fichas sobrando
+// (inclusive acima de 3, compradas com ouro/diamante/anúncio).
+const DEFAULT_TICKETS = 3;
+
+// Custo de 1 ficha extra fora do reset diário (ver modal "Sem fichas" em
+// welcomeScreen.html) — comprável com moeda, diamante, ou de graça assistindo
+// um anúncio (ver purchaseTicketWithCoins/purchaseTicketWithDiamant/
+// grantTicketFromAd abaixo). Calibrado barato de propósito: é só um "desafogo"
+// pra quem zerou as 3 fichas do dia, não uma fonte de progressão paralela.
+export const TICKET_COST_COINS = 20;
+export const TICKET_COST_DIAMANT = 5;
+
 // Nível 0 (ainda não comprado) pra cada upgrade do catálogo. Sempre uma
 // cópia nova (buildDefaultUpgradeLevels()) — nunca reutilize este objeto
 // como referência direta, senão resetProgress() e o gameState inicial
@@ -143,7 +157,24 @@ export const gameState = {
   // ver recordEnemyDefeat()/unlockEnemySprite() abaixo. Populado de verdade
   // por loadPersistedState().
   collection: {},
+
+  // Fichas disponíveis pra iniciar uma fase (ver consumeTicket() abaixo).
+  // Populado de verdade por loadPersistedState().
+  tickets: DEFAULT_TICKETS,
+  // Data (YYYY-MM-DD, fuso local) da última vez que as fichas foram
+  // resetadas — usada por resetDailyTicketsIfNeeded() pra só resetar uma vez
+  // por dia. Populado de verdade por loadPersistedState().
+  ticketsLastReset: null,
 };
+
+// YYYY-MM-DD no fuso local (não UTC) — evita resetar as fichas antes/depois
+// da meia-noite local por causa do fuso do toISOString().
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // Carrega o estado persistido (StorageService) por cima dos defaults.
 // `await`-ável mesmo hoje sendo síncrono (localStorage), para já ficar
@@ -169,7 +200,80 @@ export async function loadPersistedState() {
   gameState.equippedAbility = await load('equippedAbility', gameState.equippedAbility);
   gameState.equippedAccessory = await load('equippedAccessory', gameState.equippedAccessory);
   gameState.collection = await load('collection', gameState.collection);
+  gameState.tickets = await load('tickets', gameState.tickets);
+  gameState.ticketsLastReset = await load('ticketsLastReset', gameState.ticketsLastReset);
+  resetDailyTicketsIfNeeded();
   return gameState;
+}
+
+// ==========================================
+// FICHAS (INICIAR FASE)
+// ==========================================
+// Reseta as fichas pra DEFAULT_TICKETS uma vez por dia (fuso local), mas só
+// se o player estiver ZERADO — nunca mexe em quem ainda tem 1+ ficha sobrando,
+// nem "desconta" quem acumulou mais que DEFAULT_TICKETS comprando fichas
+// extra (ver purchaseTicketWithCoins/purchaseTicketWithDiamant/
+// grantTicketFromAd). Chamado no load inicial (loadPersistedState) e de novo
+// sempre que a Welcome é mostrada (ShowWelcomeScreen), pra pegar a virada do
+// dia mesmo se a aba ficar aberta madrugada adentro.
+export function resetDailyTicketsIfNeeded() {
+  const today = getLocalDateString();
+  if (gameState.ticketsLastReset === today) return;
+
+  if (gameState.tickets <= 0) {
+    gameState.tickets = DEFAULT_TICKETS;
+    save('tickets', gameState.tickets);
+  }
+  gameState.ticketsLastReset = today;
+  save('ticketsLastReset', gameState.ticketsLastReset);
+}
+
+export function getTickets() {
+  return gameState.tickets;
+}
+
+// Consome 1 ficha ao iniciar uma fase (ver handlePlayClick em
+// WelcomeScreen.js). Retorna false sem gastar nada se não houver ficha
+// disponível.
+export function consumeTicket() {
+  if (gameState.tickets <= 0) return false;
+  gameState.tickets -= 1;
+  save('tickets', gameState.tickets);
+  return true;
+}
+
+function addTicket() {
+  gameState.tickets += 1;
+  save('tickets', gameState.tickets);
+}
+
+// Compra 1 ficha extra com moeda (ver modal "Sem fichas"). Retorna false sem
+// cobrar nada se faltar saldo.
+export function purchaseTicketWithCoins() {
+  if (gameState.coins < TICKET_COST_COINS) return false;
+  gameState.coins -= TICKET_COST_COINS;
+  save('coins', gameState.coins);
+  addTicket();
+  return true;
+}
+
+// Mesmo esquema de purchaseTicketWithCoins, pago em diamante.
+export function purchaseTicketWithDiamant() {
+  if (gameState.diamant < TICKET_COST_DIAMANT) return false;
+  gameState.diamant -= TICKET_COST_DIAMANT;
+  save('diamant', gameState.diamant);
+  addTicket();
+  return true;
+}
+
+// Concede 1 ficha de graça em troca de assistir um anúncio recompensado.
+// Ainda não há SDK de anúncio integrado (CLAUDE.md: arquitetura mobile via
+// WebView/Capacitor ainda pendente) — por ora sempre concede a ficha na hora;
+// quando o SDK real entrar, este é o ponto a trocar pelo callback de
+// "anúncio assistido até o fim" antes de chamar addTicket().
+export function grantTicketFromAd() {
+  addTicket();
+  return true;
 }
 
 // Chamado quando o player passa pela "gate" (camada de objetos "gate" no
@@ -463,4 +567,6 @@ export function resetProgress() {
   gameState.equippedAbility = null;
   gameState.equippedAccessory = DEFAULT_EQUIPPED_ACCESSORY;
   gameState.collection = {};
+  gameState.tickets = DEFAULT_TICKETS;
+  gameState.ticketsLastReset = getLocalDateString();
 }

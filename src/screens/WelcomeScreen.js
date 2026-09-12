@@ -18,6 +18,13 @@ import {
   equipAbility,
   isAccessoryEquipped,
   equipAccessory,
+  resetDailyTicketsIfNeeded,
+  consumeTicket,
+  purchaseTicketWithCoins,
+  purchaseTicketWithDiamant,
+  grantTicketFromAd,
+  TICKET_COST_COINS,
+  TICKET_COST_DIAMANT,
 } from '../managers/GameManager.js';
 import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '../game/config/upgrades.js';
 import { MAPS, MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
@@ -142,6 +149,7 @@ let runnerFrameTimer = null;
 let runnerRow = 0;
 let runnerCol = 0;
 let runnerMoving = false;
+let runnerMoveToken = 0;
 
 // Timers dos ícones animados do grid da Coleção (ver buildCollectionCard) —
 // precisam ser limpos manualmente porque trocam img.src via setInterval,
@@ -252,21 +260,13 @@ function findStagePath(grid, from, to) {
   return [from, to];
 }
 
-// Some com o botão "Jogar" enquanto o boneco corre pelo grid — some de novo
-// com showPlayButton() quando ele chega na fase escolhida (ver
-// moveRunnerAlongPath). A classe cuida do encolher+sumir via transition.
-function hidePlayButton() {
-  elements.playBtn?.classList.add('play-btn-hidden');
-}
-
-// Reaparece com um "yoyo" (pop + oscilação de escala, igual efeito
-// yoyo:true de uma tween do Phaser) quando o boneco chega na fase e ela é
-// selecionada. Reinicia a classe pra permitir tocar de novo em seleções
-// seguidas (animationend remove sozinha, como em stage-cell-unlock).
-function showPlayButton() {
+// Botão "Jogar" fica sempre visível — só dá um "yoyo" (pop + oscilação de
+// escala, igual efeito yoyo:true de uma tween do Phaser) como feedback de
+// que a fase selecionada mudou. Reinicia a classe pra permitir tocar de novo
+// em seleções seguidas (animationend remove sozinha, como em stage-cell-unlock).
+function pulsePlayButton() {
   const btn = elements.playBtn;
   if (!btn) return;
-  btn.classList.remove('play-btn-hidden');
   btn.classList.remove('play-btn-yoyo');
   void btn.offsetWidth; // força reflow pra poder re-adicionar a classe já removida
   btn.classList.add('play-btn-yoyo');
@@ -283,8 +283,14 @@ function moveRunnerAlongPath(path, onArrive) {
     return;
   }
 
+  // Token pra invalidar uma corrida anterior ainda em andamento: a seleção
+  // agora é imediata (não espera o boneco chegar), então um segundo clique
+  // durante o trajeto precisa cancelar os passos pendentes da corrida
+  // antiga em vez de deixá-los continuar em paralelo com a nova.
+  runnerMoveToken += 1;
+  const token = runnerMoveToken;
+
   runnerMoving = true;
-  hidePlayButton();
   startRunnerFrames(PLAYER_RUN_SPRITE);
 
   let stepIndex = 1;
@@ -294,6 +300,7 @@ function moveRunnerAlongPath(path, onArrive) {
 
     const handleStepArrive = () => {
       runnerEl.removeEventListener('transitionend', handleStepArrive);
+      if (token !== runnerMoveToken) return;
       runnerRow = row;
       runnerCol = col;
       stepIndex += 1;
@@ -320,13 +327,13 @@ function moveRunnerToStage(mapKey, cells) {
   const target = cells.find((cell) => cell.mapKey === mapKey);
   if (!target) return;
 
+  selectedMapKey = mapKey;
+  renderStages();
+  updateMapPreview(mapKey, elements.stagePreviewViewport);
+  pulsePlayButton();
+
   const path = findStagePath(buildStageGraph(cells), { row: runnerRow, col: runnerCol }, { row: target.row, col: target.col });
-  moveRunnerAlongPath(path, () => {
-    selectedMapKey = mapKey;
-    renderStages();
-    updateMapPreview(mapKey, elements.stagePreviewViewport);
-    showPlayButton();
-  });
+  moveRunnerAlongPath(path, () => {});
 }
 
 function parseTemplate(html) {
@@ -343,6 +350,66 @@ function renderPlayerInfo() {
   elements.expFill.style.width = `${percent}%`;
   elements.diamondTotal.textContent = String(gameState.diamant);
   elements.coinTotal.textContent = String(gameState.coins);
+  renderTicketsDisplay();
+}
+
+let ticketsCountdownTimer = null;
+
+function stopTicketsCountdown() {
+  window.clearInterval(ticketsCountdownTimer);
+  ticketsCountdownTimer = null;
+}
+
+// Meia-noite local (não UTC) — precisa bater com o fuso usado por
+// GameManager.resetDailyTicketsIfNeeded() (getLocalDateString), senão o
+// contador chegaria a 00:00:00 num instante diferente do reset de verdade.
+function getMsUntilNextLocalMidnight() {
+  const now = new Date();
+  const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  return nextMidnight - now;
+}
+
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+// Chamado a cada segundo enquanto as fichas estiverem zeradas — quando o
+// contador chega em zero, aciona o reset diário na hora (sem esperar o
+// player reabrir a Welcome) e some com o contador (renderPlayerInfo já
+// reflete o número de fichas cheio de novo).
+function tickTicketsCountdown() {
+  if (!elements) return;
+  const msLeft = getMsUntilNextLocalMidnight();
+  if (msLeft <= 0) {
+    resetDailyTicketsIfNeeded();
+    renderPlayerInfo();
+    return;
+  }
+  elements.ticketsCountdown.textContent = formatCountdown(msLeft);
+}
+
+// O número de fichas (inclusive "0") sempre fica visível; quando zeradas,
+// mostra também o contador regressivo até a meia-noite local LOGO ABAIXO
+// dele (ver tickTicketsCountdown), atualizado a cada segundo.
+function renderTicketsDisplay() {
+  if (!elements) return;
+  elements.ticketsCount.textContent = String(gameState.tickets);
+
+  if (gameState.tickets > 0) {
+    stopTicketsCountdown();
+    elements.ticketsCountdown.classList.add('hidden');
+    return;
+  }
+
+  elements.ticketsCountdown.classList.remove('hidden');
+  tickTicketsCountdown();
+  if (!ticketsCountdownTimer) {
+    ticketsCountdownTimer = window.setInterval(tickTicketsCountdown, 1000);
+  }
 }
 
 const STAGE_CELL_PX = 76; // tamanho de cada célula do grid, em px (ver grid-template no renderStages)
@@ -468,14 +535,17 @@ function renderStages() {
       }, { once: true });
     }
     cell.addEventListener('click', () => {
-      if (mapKey === selectedMapKey || runnerMoving) return;
+      if (mapKey === selectedMapKey) return;
+      // Seleção é imediata — o boneco só corre pela trilha como feedback
+      // visual por trás, sem travar o jogador nem o botão "Jogar" (ver
+      // moveRunnerAlongPath, que cancela sozinho um trajeto anterior ainda
+      // em andamento se essa fase mudar de novo antes dele terminar).
       const path = findStagePath(buildStageGraph(cells), { row: runnerRow, col: runnerCol }, { row, col });
-      moveRunnerAlongPath(path, () => {
-        selectedMapKey = mapKey;
-        renderStages();
-        updateMapPreview(mapKey, elements.stagePreviewViewport);
-        showPlayButton();
-      });
+      selectedMapKey = mapKey;
+      renderStages();
+      updateMapPreview(mapKey, elements.stagePreviewViewport);
+      pulsePlayButton();
+      moveRunnerAlongPath(path, () => {});
     });
     elements.stageGrid.append(cell);
     if (isSelected) selectedCell = cell;
@@ -973,13 +1043,103 @@ function closeMapUnavailableModal() {
   elements?.mapUnavailableModal.classList.remove('flex');
 }
 
+// Atualiza o texto/estado (afford ou não) dos botões de comprar ficha —
+// chamado toda vez que o modal abre e de novo após cada compra, já que
+// comprar gasta moeda/diamante e pode "desabilitar" o próprio botão que
+// acabou de ser clicado (ver renderTicketsEmptyModal).
+function renderTicketsEmptyModal() {
+  if (!elements) return;
+  const isEmpty = gameState.tickets <= 0;
+  elements.ticketsEmptyTitle.textContent = isEmpty ? 'Sem fichas' : 'Fichas';
+  elements.ticketsEmptyDescription.textContent = isEmpty
+    ? 'Você não tem mais fichas pra jogar. Elas voltam amanhã, ou consiga mais uma agora:'
+    : 'Consiga mais fichas com ouro, diamante ou assistindo um anúncio.';
+
+  const canAffordCoins = gameState.coins >= TICKET_COST_COINS;
+  const canAffordDiamant = gameState.diamant >= TICKET_COST_DIAMANT;
+
+  elements.ticketsBuyCoinsCost.textContent = String(TICKET_COST_COINS);
+  elements.ticketsBuyCoinsBtn.disabled = !canAffordCoins;
+  elements.ticketsBuyCoinsBtn.classList.toggle('opacity-40', !canAffordCoins);
+
+  elements.ticketsBuyDiamantCost.textContent = String(TICKET_COST_DIAMANT);
+  elements.ticketsBuyDiamantBtn.disabled = !canAffordDiamant;
+  elements.ticketsBuyDiamantBtn.classList.toggle('opacity-40', !canAffordDiamant);
+}
+
+function openTicketsEmptyModal() {
+  renderTicketsEmptyModal();
+  elements?.ticketsEmptyModal.classList.remove('hidden');
+  elements?.ticketsEmptyModal.classList.add('flex');
+}
+
+function closeTicketsEmptyModal() {
+  elements?.ticketsEmptyModal.classList.add('hidden');
+  elements?.ticketsEmptyModal.classList.remove('flex');
+}
+
+// Número de fichas "caindo" a cada compra confirmada (ver spawnTicketsRain).
+const TICKETS_RAIN_DROP_COUNT = 14;
+
+// Dispara a chuva de fichas sobre o modal como feedback visual de compra
+// confirmada — o modal fica aberto (ver handleBuyTicketWithCoins etc.) pra
+// permitir comprar de novo em seguida, então a única forma de mostrar que a
+// compra funcionou é essa animação, e não fechando o modal.
+function spawnTicketsRain() {
+  const container = elements?.ticketsRain;
+  if (!container) return;
+  for (let i = 0; i < TICKETS_RAIN_DROP_COUNT; i += 1) {
+    const drop = document.createElement('img');
+    drop.src = 'assets/image/tickets.png';
+    drop.alt = '';
+    drop.className = 'tickets-rain-drop';
+    drop.style.left = `${Math.random() * 92}%`;
+    drop.style.width = `${16 + Math.random() * 16}px`;
+    drop.style.animationDuration = `${900 + Math.random() * 600}ms`;
+    drop.style.animationDelay = `${Math.random() * 300}ms`;
+    drop.addEventListener('animationend', () => drop.remove());
+    container.append(drop);
+  }
+}
+
+// Handlers dos 3 jeitos de conseguir 1 ficha extra fora do reset diário (ver
+// GameManager.purchaseTicketWithCoins/purchaseTicketWithDiamant/
+// grantTicketFromAd) — todos atualizam o HUD (moeda/diamante/fichas) e o
+// próprio modal, e disparam a chuva de fichas quando a compra realmente
+// acontece, mas o modal permanece aberto pra permitir comprar de novo.
+function handleBuyTicketWithCoins() {
+  if (!purchaseTicketWithCoins()) return;
+  renderPlayerInfo();
+  renderTicketsEmptyModal();
+  spawnTicketsRain();
+}
+
+function handleBuyTicketWithDiamant() {
+  if (!purchaseTicketWithDiamant()) return;
+  renderPlayerInfo();
+  renderTicketsEmptyModal();
+  spawnTicketsRain();
+}
+
+function handleWatchAdForTicket() {
+  grantTicketFromAd();
+  renderPlayerInfo();
+  renderTicketsEmptyModal();
+  spawnTicketsRain();
+}
+
 // Handler do botão "Jogar": só entrega o controle pra quem chamou
 // ShowWelcomeScreen (ver onPlay) depois de confirmar que o mapa selecionado
-// está disponível — senão mostra o modal de manutenção e mantém o player na
-// Welcome, pra ele poder tentar outra rota.
+// está disponível e que há ficha disponível (ver GameManager.consumeTicket)
+// — senão mostra o modal correspondente e mantém o player na Welcome.
 async function handlePlayClick(onPlay) {
   const btn = elements?.playBtn;
   if (!btn || btn.disabled) return;
+
+  if (gameState.tickets <= 0) {
+    openTicketsEmptyModal();
+    return;
+  }
 
   const mapKey = selectedMapKey;
   btn.disabled = true;
@@ -990,6 +1150,9 @@ async function handlePlayClick(onPlay) {
     openMapUnavailableModal();
     return;
   }
+
+  consumeTicket();
+  renderPlayerInfo();
   onPlay?.(mapKey);
 }
 
@@ -1116,8 +1279,8 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
 
   HideWelcomeScreen();
 
-  const [screenRoot, modalRoot, collectionModalRoot, mapUnavailableModalRoot] = parseTemplate(welcomeTemplate);
-  app.append(screenRoot, modalRoot, collectionModalRoot, mapUnavailableModalRoot);
+  const [screenRoot, modalRoot, collectionModalRoot, ticketsEmptyModalRoot, mapUnavailableModalRoot] = parseTemplate(welcomeTemplate);
+  app.append(screenRoot, modalRoot, collectionModalRoot, ticketsEmptyModalRoot, mapUnavailableModalRoot);
 
   elements = {
     screenRoot,
@@ -1128,6 +1291,9 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     expFill: screenRoot.querySelector('.exp-bar-fill'),
     diamondTotal: screenRoot.querySelector('.diamond-total'),
     coinTotal: screenRoot.querySelector('.coin-total'),
+    ticketsCount: screenRoot.querySelector('.tickets-count'),
+    ticketsCountdown: screenRoot.querySelector('.tickets-countdown'),
+    ticketsIconCard: screenRoot.querySelector('.tickets-icon-card'),
     gearBtn: screenRoot.querySelector('.settings-gear-btn'),
     stagePreviewViewport: screenRoot.querySelector('.stage-preview-viewport'),
     stageGridViewport: screenRoot.querySelector('.stage-grid-viewport'),
@@ -1161,6 +1327,17 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     mapUnavailableModalRoot,
     mapUnavailableModal: mapUnavailableModalRoot,
     mapUnavailableClose: mapUnavailableModalRoot.querySelector('.map-unavailable-close'),
+    ticketsEmptyModalRoot,
+    ticketsEmptyModal: ticketsEmptyModalRoot,
+    ticketsEmptyClose: ticketsEmptyModalRoot.querySelector('.tickets-empty-close'),
+    ticketsEmptyTitle: ticketsEmptyModalRoot.querySelector('.tickets-empty-title'),
+    ticketsEmptyDescription: ticketsEmptyModalRoot.querySelector('.tickets-empty-description'),
+    ticketsRain: ticketsEmptyModalRoot.querySelector('.tickets-rain'),
+    ticketsBuyCoinsBtn: ticketsEmptyModalRoot.querySelector('.tickets-buy-coins-btn'),
+    ticketsBuyCoinsCost: ticketsEmptyModalRoot.querySelector('.tickets-buy-coins-cost'),
+    ticketsBuyDiamantBtn: ticketsEmptyModalRoot.querySelector('.tickets-buy-diamant-btn'),
+    ticketsBuyDiamantCost: ticketsEmptyModalRoot.querySelector('.tickets-buy-diamant-cost'),
+    ticketsWatchAdBtn: ticketsEmptyModalRoot.querySelector('.tickets-watch-ad-btn'),
   };
 
   elements.gearBtn.addEventListener('click', openSettings);
@@ -1194,6 +1371,14 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   elements.mapUnavailableModal.addEventListener('click', (event) => {
     if (event.target === elements.mapUnavailableModal) closeMapUnavailableModal();
   });
+  elements.ticketsEmptyClose.addEventListener('click', closeTicketsEmptyModal);
+  elements.ticketsEmptyModal.addEventListener('click', (event) => {
+    if (event.target === elements.ticketsEmptyModal) closeTicketsEmptyModal();
+  });
+  elements.ticketsBuyCoinsBtn.addEventListener('click', handleBuyTicketWithCoins);
+  elements.ticketsBuyDiamantBtn.addEventListener('click', handleBuyTicketWithDiamant);
+  elements.ticketsWatchAdBtn.addEventListener('click', handleWatchAdForTicket);
+  elements.ticketsIconCard.addEventListener('click', () => openTicketsEmptyModal());
   elements.zoomResetBtn.addEventListener('click', () => {
     stageZoom = getDefaultStageZoom();
     applyStageZoom();
@@ -1205,6 +1390,10 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   // acontece de novo se o player clicar numa fase.
   ({ row: runnerRow, col: runnerCol } = findMapGridPosition(DEFAULT_MAP_KEY));
   runnerEl = createRunnerElement();
+
+  // Pega a virada do dia mesmo se a aba tiver ficado aberta (loadPersistedState
+  // já chama isso uma vez no boot, mas a Welcome pode reaparecer horas depois).
+  resetDailyTicketsIfNeeded();
 
   renderPlayerInfo();
   renderSettings();
@@ -1219,6 +1408,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
 export function HideWelcomeScreen() {
   if (!elements) return;
   stopIdleAnimation();
+  stopTicketsCountdown();
   window.clearInterval(runnerFrameTimer);
   runnerFrameTimer = null;
   runnerEl = null;
@@ -1229,6 +1419,7 @@ export function HideWelcomeScreen() {
   elements.screenRoot.remove();
   elements.modalRoot.remove();
   elements.collectionModalRoot.remove();
+  elements.ticketsEmptyModalRoot.remove();
   elements.mapUnavailableModalRoot.remove();
   elements = null;
   hasCenteredStageGrid = false;
