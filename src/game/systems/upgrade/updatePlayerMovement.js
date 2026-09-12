@@ -92,8 +92,6 @@ export const updatePlayerMovement = (scene) => {
     if (wasGrounded) {
         player.lastWallSide = 0;
     }
-    // blocked.left/right sozinho não informa qual layer causou o contato.
-    // Este valor só é preenchido pelo collider de obstacles.
     let startedJump = false;
 
     // Ao apertar pulo na parede, lança o player para o lado oposto ao contato.
@@ -118,11 +116,11 @@ export const updatePlayerMovement = (scene) => {
     // --- Movimento Horizontal ---
     if (!startedJump && left) {
       player.setVelocityX(-player.status.speed);
-      player.setFlipX(true); // Vira a imagem para a esquerda
+      player.setFlipX(true);
       scene.lastDirection = -1;
     } else if (!startedJump && right) {
       player.setVelocityX(player.status.speed);
-      player.setFlipX(false); // Mantém a imagem normal para a direita
+      player.setFlipX(false);
       scene.lastDirection = 1;
     } else if (!startedJump) {
       player.setVelocityX(0);
@@ -154,7 +152,6 @@ export const updatePlayerMovement = (scene) => {
       scene.sound.play('jump');
       emitDustTrail(scene, player, 'horizontal', true);
       startedJump = true;
-      //scene.player.setTexture('run_0'); // Define um frame estático de parado
     }
 
     // Um pulo extra fica disponível durante todo o período no ar: tanto faz

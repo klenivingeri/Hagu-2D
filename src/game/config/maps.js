@@ -109,7 +109,6 @@ export const MAP_GRID = [
 
 export const DEFAULT_MAP_KEY = 'map_0';
 
-// Acha [row, col] de uma map key dentro de MAP_GRID.
 function findMapPosition(mapKey) {
   for (let row = 0; row < MAP_GRID.length; row += 1) {
     const col = MAP_GRID[row].indexOf(mapKey);

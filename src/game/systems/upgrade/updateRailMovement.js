@@ -1,4 +1,3 @@
-// systems/upgrade/updateRails.js
 export const updateRailMovement = (scene, rail) => {
   if (rail && rail.active) {
     // 1. Inverte apenas ao atingir os limites do mundo Phaser.

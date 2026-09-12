@@ -165,7 +165,10 @@ function hitByEnemy(scene, player, enemy) {
   // Checado antes do invulnerable: dano de SAÍDA (o player pisando no
   // inimigo) nunca deve ser bloqueado pelo i-frame, que só protege o
   // player de dano de ENTRADA.
-  if (isStomp(player, enemy)) {
+  // Obstáculo tipo "serra" (noStomp, ver hazard_fly em game/config/
+  // entities.js): nunca faz o bounce de "pisou em cima" — todo contato,
+  // inclusive caindo por cima, cai direto pro dano normal abaixo.
+  if (!enemy.entityConfig?.noStomp && isStomp(player, enemy)) {
     stompEnemy(scene, player, enemy);
     return;
   }

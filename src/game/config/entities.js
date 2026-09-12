@@ -29,10 +29,12 @@ const PLAYER_ANIMATION_SETTINGS = {
 };
 
 // Cada skin descreve, por animação, o nome do arquivo (pasta assets/player/
-// <animação>/<url>.png) e o ÚLTIMO índice de frame da spritesheet (o
-// primeiro frame sempre começa em 0 — ex: "frame: 3" = 4 frames, 0..3).
-// Pra criar uma skin nova: cadastre as mesmas 12 chaves aqui com os assets
-// dela e aponte PLAYERS_CONFIG.<key>.skin pro nome escolhido.
+// <skin>/<animação>/<url>.png, igual ao mobFolder dos mobs — ver
+// MOB_SPRITE_SETS) e o ÚLTIMO índice de frame da spritesheet (o primeiro
+// frame sempre começa em 0 — ex: "frame: 3" = 4 frames, 0..3).
+// Pra criar uma skin nova: exporte os sprites em assets/player/<novo_nome>/,
+// cadastre as mesmas 12 chaves aqui com os assets dela e aponte
+// PLAYERS_CONFIG.<key>.skin pro nome escolhido.
 export const PLAYER_SKINS = {
   default: {
     arrow: { url: 'sprite_weapon_bow_tall_fire_fast', frame: 6 },
@@ -74,7 +76,7 @@ export function getPlayerAnimationAsset(entityKey, animationKey) {
   const { frameRate, repeat } = PLAYER_ANIMATION_SETTINGS[animationKey] || {};
   return {
     key: animationKey,
-    url: `${config.path}${animationKey}/${animation.url}.png`,
+    url: `${config.path}${config.skin}/${animationKey}/${animation.url}.png`,
     lastFrame: animation.frame,
     totalFrames: animation.frame + 1,
     frameRate,
@@ -175,11 +177,13 @@ export const MOB_SPRITE_SETS = {
       { key: 'spark', shared: true, url: 'commons/spark/sprite_z_die_spark', frame: 5, frameRate: 20, repeat: 0 },
     ],
   },
-  shadow: {
+  saw: {
+    frameWidth: 38,
+    frameHeight: 38,
+    scale: 0.5,
     animations: [
-      { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
-      { key: 'stomp', url: 'stomp/sprite_re_land_squash_', frames: 0, frameRate: 10, repeat: 0 },
-      { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 5, frameRate: 20, repeat: 0 },
+      { key: 'run', url: 'sprite_run_two', frame: 7, frameRate: 20, repeat: -1 },
+      { key: 'idle', asset: 'run', frame: 7, frameRate: 20, repeat: -1 },
     ],
   },
   tank: {
@@ -250,6 +254,29 @@ export const MOBS_CONFIG = {
     stats: { life: 5, type: 'brute', className: 'melee', speed: 50, chaseSpeed: 50 },
     ai: { visionRangeTilesWidth: 7, visionRangeTilesHeight: 7, bidirectional: true },
     noGravity: true,
+    behavior: 'patrol_fly',
+    debug: false,
+  },
+  // Obstáculo voador tipo "serra" (ver saw em MOB_SPRITE_SETS): mesma
+  // mecânica de voo/patrulha do patrol_fly, mas `indestructible` (ver
+  // applyDamage em EnemyBase.js) faz ele nunca perder vida — bullet/stomp/
+  // burn simplesmente não fazem nada —, `noStomp` (ver hitByEnemy em
+  // createPlayer.js) faz o player levar dano ao tocar em QUALQUER lado dele,
+  // mesmo caindo por cima, em vez do bounce normal de "pisar no inimigo" —
+  // e `noChase` (ver patrolFlyBehavior.js) desliga a perseguição: com
+  // visionRangeTilesWidth/Height em 0, a "visão" vira o próprio collider
+  // (ver isPlayerInVision em EnemyBase.js), então SEM noChase o player
+  // encostar nele já bastaria pra entrar em modo persegue-o-player — e como
+  // o player estaria colado nele, a velocidade calculada fica zero,
+  // travando a patrulha no lugar (só a animação de giro continua rodando).
+  hazard_fly: {
+    path: 'assets/mobs/',
+    stats: { life: 5, type: 'brute', className: 'melee', speed: 50, chaseSpeed: 50 },
+    ai: { visionRangeTilesWidth: 0, visionRangeTilesHeight: 0, bidirectional: false },
+    noGravity: true,
+    indestructible: true,
+    noStomp: true,
+    noChase: true,
     behavior: 'patrol_fly',
     debug: false,
   },
@@ -325,8 +352,13 @@ export function getMobConfig(type = DEFAULT_MOB_TYPE, mobFolder = DEFAULT_MOB_KE
   // preloadSpriteSheetAnimations em animationUtils.js).
   const frameWidth = resolvedSpriteSet.frameWidth || PLAYER_FRAME_WIDTH;
   const frameHeight = resolvedSpriteSet.frameHeight || PLAYER_FRAME_HEIGHT;
+  // Escala visual do sprite (ver spawnEnemyBase em entities/EnemyBase.js) —
+  // aplicada ANTES do collider ser dimensionado, pra hitbox acompanhar o
+  // tamanho reduzido em vez de ficar grande demais pro visual. Default 1
+  // (tamanho nativo da spritesheet) quando o mob não define `scale`.
+  const scale = resolvedSpriteSet.scale || 1;
 
-  return { ...behaviorConfig, animations, frameWidth, frameHeight };
+  return { ...behaviorConfig, animations, frameWidth, frameHeight, scale };
 }
 
 export function getEntityAnimationKey(entityKey, animationKey) {

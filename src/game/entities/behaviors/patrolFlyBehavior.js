@@ -16,6 +16,9 @@ import { isKnockedBack, isPlayerInVision, updateVisionDebug } from '../EnemyBase
 // knockback termina.
 
 const FLY_RETURN_EPSILON = 2;
+// Tempo mínimo entre duas viradas de patrulha (ver update() abaixo) — evita
+// o jitter de blocked.left/right alternando frame a frame numa borda.
+const FLY_PATROL_TURN_COOLDOWN_MS = 200;
 
 export const patrolFlyBehavior = {
   init(scene, enemy) {
@@ -60,8 +63,10 @@ export const patrolFlyBehavior = {
     }
 
     // Qualquer type que não seja patrol_and_shoot persegue ao ver o
-    // player (ver contrato em EnemyBase.isPlayerInVision).
-    const canSeePlayer = isPlayerInVision(scene, enemy);
+    // player (ver contrato em EnemyBase.isPlayerInVision) — EXCETO com
+    // `noChase` (ver hazard_fly em game/config/entities.js): obstáculos
+    // como a serra nunca devem perseguir, então a visão nem é checada.
+    const canSeePlayer = !enemy.entityConfig?.noChase && isPlayerInVision(scene, enemy);
     updateVisionDebug(scene, enemy, canSeePlayer);
 
     const player = scene.player;
@@ -85,10 +90,21 @@ export const patrolFlyBehavior = {
       enemy.flyState = 'patrol';
       enemy.setVelocityX(enemy.flyPatrolDirection * enemy.status.speed);
       enemy.setVelocityY(0);
-      if (enemy.body.blocked.left || enemy.body.touching.left) {
+      // Cooldown depois de virar: sem ele, ficar bem na borda de duas
+      // colisões (plataforma + limite, ou um corredor mais estreito que o
+      // collider) faz blocked.left/right alternarem frame a frame — o
+      // inimigo fica "martelando" a parede e virando o sprite sem sair do
+      // lugar. Só `blocked` aqui (não `touching`, que fica true mesmo sem
+      // travar movimento de verdade) reduz falsos positivos; o cooldown
+      // garante um tempo mínimo pra ele de fato se afastar da parede antes
+      // de poder virar de novo.
+      const canTurn = scene.time.now >= (enemy.flyTurnLockedUntil || 0);
+      if (canTurn && enemy.body.blocked.left) {
         setFlyPatrolDirection(enemy, 1);
-      } else if (enemy.body.blocked.right || enemy.body.touching.right) {
+        enemy.flyTurnLockedUntil = scene.time.now + FLY_PATROL_TURN_COOLDOWN_MS;
+      } else if (canTurn && enemy.body.blocked.right) {
         setFlyPatrolDirection(enemy, -1);
+        enemy.flyTurnLockedUntil = scene.time.now + FLY_PATROL_TURN_COOLDOWN_MS;
       }
       enemy.setY(enemy.flyOriginY);
     } else {

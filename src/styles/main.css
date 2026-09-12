@@ -1127,7 +1127,7 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
      de trocar background-image a cada %, como .loading-actor--enemy ainda
      faz (mobs continuam um arquivo por frame). Box é 40x60 = frame nativo
      16x24 * 2.5, então a folha inteira (6 frames) mede 240x60. */
-  background-image: url('/assets/player/run/sprite_run_two.png');
+  background-image: url('/assets/player/default/run/sprite_run_two.png');
   background-repeat: no-repeat;
   background-position: 0 0;
   background-size: 240px 60px;

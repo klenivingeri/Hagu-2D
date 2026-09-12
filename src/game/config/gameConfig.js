@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 // Configuração central do Phaser.
-// O jogo usa uma resolução lógica quadrada de 480x480 e o CSS decide o tamanho visual.
+// O jogo usa uma resolução lógica quadrada de 448x448 e o CSS decide o tamanho visual.
 export const gameConfig = {
   type: Phaser.AUTO,
   parent: 'phaser-content',

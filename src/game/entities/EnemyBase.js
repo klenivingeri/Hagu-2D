@@ -125,6 +125,10 @@ export function spawnEnemyBase(scene, x, y, { key, path = '', type, properties }
   enemy.setFlipX(enemy.facingDirection < 0);
   enemy.setCollideWorldBounds(true);
   if (config.noGravity) enemy.body.setAllowGravity(false);
+  // Precisa vir ANTES de resizeCollider: ele lê enemy.width/height (display
+  // size, já afetado pela escala) pra calcular a hitbox — escalar depois
+  // deixaria o collider grande demais pro visual reduzido.
+  if (config.scale !== 1) enemy.setScale(config.scale);
 
   const { newWidth, newHeight, offsetX, offsetY } = resizeCollider(enemy);
   enemy.body.setSize(newWidth * 0.7, newHeight);
@@ -193,6 +197,10 @@ export function applyBurn(enemy, tickDamage, ticks, intervalMs) {
 function applyDamage(enemy, damage, source, bulletDirection = 0) {
   if (!enemy || !enemy.active) return;
   if (enemy.isDead) return;        // já morrendo/morto: nunca mais recebe dano
+  // Obstáculo indestrutível (ver hazard_fly em game/config/entities.js) —
+  // bullet/stomp/burn nunca fazem efeito nele, sem flash/knockback/vida
+  // perdida, nem chance de matar (killEnemy nunca é chamado).
+  if (enemy.entityConfig?.indestructible) return;
   // Queimadura ignora o cooldown de invulnerabilidade do bullet/stomp —
   // senão os próprios ticks (mais frequentes que ENEMY_DAMAGE_COOLDOWN_MS)
   // se bloqueariam uns aos outros.

@@ -4,6 +4,7 @@ const COINS_LAYER_NAME = 'coins';
 const COIN_TILESET_NAME = 'coin';
 const COIN_FRAME_COUNT = 12;
 const COIN_DEPTH = 50;
+const COIN_SCALE = 0.7;
 import { HUD_EVENTS } from '../../../constants.js';
 
 export function preloadCoinAssets(scene) {
@@ -21,8 +22,8 @@ export function createCoinAnimations(scene) {
       start: 0,
       end: COIN_FRAME_COUNT - 1,
     }),
-    frameRate: 12,
-    repeat: -1, // moeda fica girando/brilhando em loop
+    frameRate: 5,
+    repeat: -1,
   });
 }
 
@@ -46,6 +47,7 @@ export function createCoins(scene) {
       if (tile.index === -1) return; // célula vazia, sem coin aqui
 
       const coinSprite = coins.create(tile.getCenterX(), tile.getCenterY(), 'coin');
+      coinSprite.setScale(COIN_SCALE);
       coinSprite.body.setSize(8, 12);
       coinSprite.body.setOffset(4, 2);
       coinSprite.setDepth(COIN_DEPTH);

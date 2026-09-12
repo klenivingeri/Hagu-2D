@@ -16,8 +16,6 @@ const {
   RAIL,
   GATE
 } = MAP_LAYERS
-    // O primeiro argumento é o nome do tileset lá no Tiled.
-    // O segundo argumento é a chave da imagem que você definiu no preload.
     const worldTileset = map.addTilesetImage(scene.mapConfig.tilesetName, scene.mapConfig.tilesetImageKey);
     const backgroundTileset = map.addTilesetImage(
       'world_tileset_background',
@@ -35,8 +33,6 @@ const {
       shadow32Tileset,
       tileset32,
     ].filter(Boolean);
-  
-    // Cria a camada ('ground' é o nome da camada no seu JSON)
 
   const layerOrder = Object.values(MAP_LAYERS);
 
@@ -69,8 +65,6 @@ const {
   scene.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
   scene.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-  // Usado por createPlayer/createEnemy para o collider com physics.add.collider(entidade, scene.platforms)
-
   const enemyLimits = layers[LIMITS];
   enemyLimits.setCollisionByExclusion([-1])
 
@@ -88,7 +82,7 @@ const {
   scene.obstacles = layers[OBSTACLES] || null;
   scene.deadZoneLayer = deadZone;
   scene.limits = enemyLimits;
-  scene.enemyLayer = enemyObjectLayer// Guardamos a referência da camada enemy aqui!
+  scene.enemyLayer = enemyObjectLayer
   scene.playerLayer = playerObjectLayer
   if (scene.playerLayer) {
     scene.playerLayer.key = getTiledProperty(playerObjectLayer.properties, 'key');
