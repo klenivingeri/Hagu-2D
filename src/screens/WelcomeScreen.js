@@ -20,7 +20,7 @@ import {
   equipAccessory,
 } from '../managers/GameManager.js';
 import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '../game/config/upgrades.js';
-import { MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
+import { MAPS, MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
 import { getStageLabel, getStageNumber } from './mapLabels.js';
 import { showMapPreview, updateMapPreview, destroyMapPreview } from './mapPreview.js';
 import {
@@ -946,6 +946,53 @@ function closeCollectionModal() {
   elements?.collectionModal.classList.remove('flex');
 }
 
+// Confere se o .tmj do mapa realmente existe antes de deixar o player entrar
+// na fase (ver MAPS/tilemapUrl em game/config/maps.js) — alguns mapas
+// cadastrados ainda não têm o arquivo publicado em public/assets/tiledmap/,
+// e sem essa checagem o player só descobre isso com a tela de loading presa
+// (GameScene.preload -> load.tilemapTiledJSON falhando silenciosamente).
+async function isMapReachable(mapKey) {
+  const mapConfig = MAPS[mapKey];
+  if (!mapConfig) return false;
+
+  try {
+    const response = await fetch(mapConfig.tilemapUrl, { method: 'HEAD', cache: 'no-store' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function openMapUnavailableModal() {
+  elements?.mapUnavailableModal.classList.remove('hidden');
+  elements?.mapUnavailableModal.classList.add('flex');
+}
+
+function closeMapUnavailableModal() {
+  elements?.mapUnavailableModal.classList.add('hidden');
+  elements?.mapUnavailableModal.classList.remove('flex');
+}
+
+// Handler do botão "Jogar": só entrega o controle pra quem chamou
+// ShowWelcomeScreen (ver onPlay) depois de confirmar que o mapa selecionado
+// está disponível — senão mostra o modal de manutenção e mantém o player na
+// Welcome, pra ele poder tentar outra rota.
+async function handlePlayClick(onPlay) {
+  const btn = elements?.playBtn;
+  if (!btn || btn.disabled) return;
+
+  const mapKey = selectedMapKey;
+  btn.disabled = true;
+  const reachable = await isMapReachable(mapKey);
+  btn.disabled = false;
+
+  if (!reachable) {
+    openMapUnavailableModal();
+    return;
+  }
+  onPlay?.(mapKey);
+}
+
 function switchEquipmentSubview(subview) {
   if (!elements) return;
   elements.equipmentSubviews.forEach((panel) => {
@@ -1069,8 +1116,8 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
 
   HideWelcomeScreen();
 
-  const [screenRoot, modalRoot, collectionModalRoot] = parseTemplate(welcomeTemplate);
-  app.append(screenRoot, modalRoot, collectionModalRoot);
+  const [screenRoot, modalRoot, collectionModalRoot, mapUnavailableModalRoot] = parseTemplate(welcomeTemplate);
+  app.append(screenRoot, modalRoot, collectionModalRoot, mapUnavailableModalRoot);
 
   elements = {
     screenRoot,
@@ -1111,6 +1158,9 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     collectionModalSpriteGallery: collectionModalRoot.querySelector('.collection-modal-sprite-gallery'),
     collectionModalSpriteHint: collectionModalRoot.querySelector('.collection-modal-sprite-hint'),
     collectionModalKills: collectionModalRoot.querySelector('.collection-modal-kills'),
+    mapUnavailableModalRoot,
+    mapUnavailableModal: mapUnavailableModalRoot,
+    mapUnavailableClose: mapUnavailableModalRoot.querySelector('.map-unavailable-close'),
   };
 
   elements.gearBtn.addEventListener('click', openSettings);
@@ -1139,7 +1189,11 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   elements.collectionModal.addEventListener('click', (event) => {
     if (event.target === elements.collectionModal) closeCollectionModal();
   });
-  elements.playBtn.addEventListener('click', () => onPlay?.(selectedMapKey));
+  elements.playBtn.addEventListener('click', () => handlePlayClick(onPlay));
+  elements.mapUnavailableClose.addEventListener('click', closeMapUnavailableModal);
+  elements.mapUnavailableModal.addEventListener('click', (event) => {
+    if (event.target === elements.mapUnavailableModal) closeMapUnavailableModal();
+  });
   elements.zoomResetBtn.addEventListener('click', () => {
     stageZoom = getDefaultStageZoom();
     applyStageZoom();
@@ -1175,6 +1229,7 @@ export function HideWelcomeScreen() {
   elements.screenRoot.remove();
   elements.modalRoot.remove();
   elements.collectionModalRoot.remove();
+  elements.mapUnavailableModalRoot.remove();
   elements = null;
   hasCenteredStageGrid = false;
   stageZoom = getDefaultStageZoom();
