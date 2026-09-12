@@ -186,6 +186,14 @@ export const MOB_SPRITE_SETS = {
       { key: 'idle', asset: 'run', frame: 7, frameRate: 20, repeat: -1 },
     ],
   },
+  trap: {
+    frameWidth: 16,
+    frameHeight: 16,
+    animations: [
+      { key: 'run', url: 'sprite_run_two', frame: 0, frameRate: 0, repeat: 0 },
+      { key: 'idle', asset: 'run', frame: 0, frameRate: 0, repeat: 0 },
+    ],
+  },
   tank: {
     animations: [
       { key: 'run', url: 'run/sprite_weapon_shield_run_', frames: 3, frameRate: 10, repeat: -1 },
@@ -242,7 +250,7 @@ export const MOBS_CONFIG = {
     path: 'assets/mobs/',
     stats: { life: 2, type: 'ranger', className: 'ranged', speed: 45 },
     ai: { visionRangeTilesWidth: 3, visionRangeTilesHeight: 1, bidirectional: false },
-    debug: false,
+    debug: true,
     attack: { damage: 1, cooldown: 1500 },
     projectile: { key: 'arrow', speed: 130 },
     behavior: 'patrol_and_shoot',

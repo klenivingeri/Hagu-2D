@@ -222,7 +222,14 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit(HUD_EVENTS.HEALTH_CHANGED, this.player.status.life, gameState.maxlife);
     this.game.events.emit(HUD_EVENTS.ENERGY_CHANGED, this.player.status.currentEnergy, this.player.status.maxEnergy);
 
-    this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 10 });
+    // maxSize compartilhado entre as flechas do player E o tiro de TODO
+    // inimigo patrol_and_shoot (ver fireEnemy em createBulletSystem.js) — um
+    // valor baixo demais faz scene.bullets.get() retornar undefined quando o
+    // pool está cheio, e fireEnemy silenciosamente desiste (a animação do
+    // arco já tinha tocado inteira, só o projétil em si nunca nasce). 10
+    // esgotava rápido com o player atirando em rajada (upgrade 'sequence')
+    // perto de qualquer inimigo à distância.
+    this.bullets = this.physics.add.group({ defaultKey: 'bullet', maxSize: 32 });
     // Efeito de "meia lua" do acessório Espada (ver ACCESSORY_UPGRADE_IDS em
     // game/config/upgrades.js) — grupo próprio porque não usa munição da
     // aljava nem a textura genérica 'bullet' (ver createBulletSystem.js).

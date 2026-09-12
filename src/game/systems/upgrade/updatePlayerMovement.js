@@ -2,9 +2,14 @@ import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitDustTrail } from '../../commons/dustTrail.js';
 import { updateJetpackFuelBar } from '../../commons/jetpackBar.js';
 import { killPlayer } from '../create/createPlayer.js';
+import { getTiledProperty } from '../../commons/tiledUtils.js';
 
 // Folga (px/s) em torno de velocity.y=0 considerada "ápice" do pulo.
 const JUMP_APEX_THRESHOLD = 20;
+// Ganho/perda de velocidade horizontal (px/s²) enquanto o player está sobre
+// um tile de gelo. Quanto menor, mais ele escorrega antes de parar ou
+// atingir a velocidade máxima.
+const ICE_ACCELERATION = 250;
 
 export const updatePlayerMovement = (scene) => {
     const player = scene.player;
@@ -114,16 +119,33 @@ export const updatePlayerMovement = (scene) => {
     }
     
     // --- Movimento Horizontal ---
-    if (!startedJump && left) {
-      player.setVelocityX(-player.status.speed);
-      player.setFlipX(true);
-      scene.lastDirection = -1;
-    } else if (!startedJump && right) {
-      player.setVelocityX(player.status.speed);
-      player.setFlipX(false);
-      scene.lastDirection = 1;
-    } else if (!startedJump) {
-      player.setVelocityX(0);
+    // No chão, olha o tile de GROUND embaixo dos pés: se tiver a propriedade
+    // "ice", o ganho/perda de velocidade vira gradual (escorrega) em vez de
+    // instantâneo.
+    const groundTile = wasGrounded && scene.groundLayer
+      ? scene.groundLayer.getTileAtWorldXY(player.body.center.x, player.body.bottom + 1)
+      : null;
+    const isOnIce = !!getTiledProperty(groundTile?.properties, 'ice');
+
+    if (!startedJump) {
+      const targetVelocityX = left ? -player.status.speed : right ? player.status.speed : 0;
+
+      if (isOnIce) {
+        const maxDelta = ICE_ACCELERATION * (scene.game.loop.delta / 1000);
+        const diff = targetVelocityX - player.body.velocity.x;
+        const change = Math.sign(diff) * Math.min(Math.abs(diff), maxDelta);
+        player.setVelocityX(player.body.velocity.x + change);
+      } else {
+        player.setVelocityX(targetVelocityX);
+      }
+
+      if (left) {
+        player.setFlipX(true);
+        scene.lastDirection = -1;
+      } else if (right) {
+        player.setFlipX(false);
+        scene.lastDirection = 1;
+      }
     }
 
     // Enquanto houver contato lateral e o player estiver no ar, limita a queda.

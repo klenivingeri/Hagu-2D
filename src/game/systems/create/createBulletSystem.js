@@ -72,6 +72,7 @@ export function createBulletSystem(scene) {
     scene.physics.add.collider(scene.bullets, colliderLayer, (bullet) => {
       if (!bullet?.active) return;
 
+      console.log('[DBG] bullet hit TILE', Math.round(bullet.x), Math.round(bullet.y), 'owner=', bullet.owner);
       emitBulletImpactDust(scene, bullet, Math.sign(bullet.body?.velocity.x || scene.lastDirection));
       scene.sound.play(bullet.impactSoundKey || 'tap');
       destroyProjectile(bullet);
@@ -129,6 +130,7 @@ export function createBulletSystem(scene) {
 
   scene.physics.add.overlap(scene.bullets, scene.player, (player, bullet) => {
     if (!bullet?.active || bullet.owner !== 'enemy') return;
+    console.log('[DBG] bullet HIT PLAYER', Math.round(bullet.x), Math.round(bullet.y), 'damage=', bullet.damage);
     destroyProjectile(bullet);
     scene.damagePlayer?.(bullet.damage || 1);
   });
@@ -500,6 +502,8 @@ export function createBulletSystem(scene) {
     fireUp,
     fireEnemy(enemy, direction) {
       const bullet = scene.bullets.get(enemy.body.center.x + direction * 8, enemy.body.center.y, 'bullet');
+      const activeCount = scene.bullets.getChildren().filter((b) => b.active).length;
+      console.log('[DBG] fireEnemy', enemy.entityKey, 'got bullet?', !!bullet, 'poolActive=', activeCount, '/', scene.bullets.maxSize);
       if (!bullet) return;
       const config = enemy.entityConfig?.projectile || {};
       bullet.setActive(true).setVisible(true);
@@ -507,6 +511,15 @@ export function createBulletSystem(scene) {
       bullet.body.allowGravity = false;
       bullet.body.setVelocityX((Number(config.speed) || 300) * direction);
       bullet.owner = 'enemy';
+      // scene.bullets é compartilhado com o player (ver createBulletSystem
+      // acima) — um bullet reciclado do pool pode ter `maxRangePx`/`spawnX`
+      // de um disparo ANTERIOR do player ainda grudados nele. Sem zerar
+      // aqui, cleanupProjectile() calcula a distância a partir daquele
+      // spawnX antigo (de onde o player estava há muito tempo) e destrói o
+      // tiro do inimigo quase instantaneamente, antes de percorrer qualquer
+      // distância visível — parece "não sair do lugar".
+      bullet.maxRangePx = 0;
+      bullet.spawnX = undefined;
       bullet.damage = Number(enemy.entityConfig?.attack?.damage ?? config.damage) || 1;
       bullet.angle = direction < 0 ? 270 : 90;
       bullet.setDepth(enemy.depth ?? MAP_DEPTHS.PLAYER);
@@ -552,6 +565,9 @@ export function createBulletSystem(scene) {
       // regra 5) — mesmo cuidado já tomado em GameScene.update().
       const bulletList = scene.bullets.getChildren();
       for (let i = 0; i < bulletList.length; i += 1) {
+        if (bulletList[i]?.active && bulletList[i].owner === 'enemy') {
+          console.log('[DBG] enemy bullet pos', Math.round(bulletList[i].x), Math.round(bulletList[i].y), 'vx=', bulletList[i].body.velocity.x);
+        }
         cleanupProjectile(scene, bulletList[i]);
       }
 
@@ -653,12 +669,14 @@ function cleanupProjectile(scene, projectile) {
   if (!projectile || !projectile.active) return;
 
   if (projectile.x > scene.scale.width || projectile.x < 0) {
+    if (projectile.owner === 'enemy') console.log('[DBG] enemy bullet OFFSCREEN cleanup', Math.round(projectile.x), 'scaleWidth=', scene.scale.width);
     destroyProjectile(projectile);
     return;
   }
 
   if (projectile.maxRangePx
     && Math.abs(projectile.x - projectile.spawnX) >= projectile.maxRangePx) {
+    if (projectile.owner === 'enemy') console.log('[DBG] enemy bullet RANGE cleanup (stale spawnX/maxRangePx?)', 'x=', Math.round(projectile.x), 'spawnX=', projectile.spawnX, 'maxRangePx=', projectile.maxRangePx);
     // Fim de alcance sem acertar nada: some sem efeito/som — a explosão e
     // o dust trail só acontecem em colisão de verdade (ver colliders acima).
     destroyProjectile(projectile);

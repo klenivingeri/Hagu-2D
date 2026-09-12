@@ -92,6 +92,7 @@ function updatePatrolAnimation(enemy) {
 }
 
 function fireAtPlayer(scene, enemy) {
+  console.log('[DBG] fireAtPlayer', enemy.entityKey, 'isAttacking=', enemy.isAttacking, 'isStomped=', enemy.isStomped);
   enemy.nextAttackAt = scene.time.now + getAttackCooldown(enemy);
   if (enemy.isStomped) return;
 
@@ -106,13 +107,25 @@ function fireAtPlayer(scene, enemy) {
   if (enemy.bidirectional) faceTowardsPlayer(scene, enemy);
   enemy.setVelocityX(0);
   enemy.isAttacking = true;
-  const bowFrame = `${bowAnimation}_3`;
+  // Duas convenções de animação coexistem em MOB_SPRITE_SETS (ver comentário
+  // lá em cima): spritesheet ("frame" singular — mob_1/dino/bat) faz TODO
+  // frame compartilhar o mesmo frame.textureKey, e o índice real vem em
+  // frame.textureFrame (mesmo gotcha documentado em createBulletSystem.js/
+  // SWORD_TRIGGER_FRAME). Já o sistema antigo ("frames" plural — tank, e o
+  // "bow" dele clonado do "attack") carrega uma imagem por frame, então
+  // textureFrame não tem o índice, só o sufixo em textureKey. Sem checar as
+  // duas formas, um dos dois sistemas nunca detecta o frame de disparo.
+  const BOW_TRIGGER_FRAME = 3;
+  const bowTriggerTextureKey = `${bowAnimation}_${BOW_TRIGGER_FRAME}`;
 
   enemy._onBowFrame = (anim, frame) => {
-    if (anim.key === bowAnimation && frame.textureKey === bowFrame) {
-      scene.bulletSystem.fireEnemy(enemy, direction);
-      enemy.off('animationupdate', enemy._onBowFrame);
-    }
+    if (anim.key !== bowAnimation) return;
+    const isTriggerFrame = frame.textureFrame === BOW_TRIGGER_FRAME
+      || frame.textureKey === bowTriggerTextureKey;
+    if (!isTriggerFrame) return;
+
+    scene.bulletSystem.fireEnemy(enemy, direction);
+    enemy.off('animationupdate', enemy._onBowFrame);
   };
   enemy.on('animationupdate', enemy._onBowFrame);
   enemy.anims.play(bowAnimation, true);

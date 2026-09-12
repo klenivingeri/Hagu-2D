@@ -54,6 +54,7 @@ function startMatch(mapKey) {
 
   const game = new Phaser.Game(gameConfig);
   activeGame = game;
+  window.__debugGame = game;
   BindHudEvents(game);
   BindLoadingEvents(game);
   BindPauseEvents(game, {
