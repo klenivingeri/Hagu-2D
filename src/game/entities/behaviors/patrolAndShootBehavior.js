@@ -90,7 +90,6 @@ function fireAtPlayer(scene, enemy) {
   enemy.nextAttackAt = scene.time.now + getAttackCooldownMs(enemy, DEFAULT_RANGED_ATTACK_COOLDOWN);
   if (enemy.isStomped) return;
 
-  const direction = enemy.facingDirection || 1;
   const bowAnimation = getEntityAnimationKey(enemy.entityKey, 'bow');
   // Mob sem animação "bow" (ver MOB_SPRITE_SETS) não pode atirar: sem essa
   // checagem, anims.play() nunca dispara o 'animationcomplete-<key>' que
@@ -98,7 +97,11 @@ function fireAtPlayer(scene, enemy) {
   // avistamento do player.
   if (!scene.anims.exists(bowAnimation)) return;
 
+  // Vira ANTES de ler facingDirection: bidirectional pode inverter a
+  // direção aqui, e a flecha tem que sair pro lado pra onde o enemy
+  // acabou de virar, não pra onde ele estava olhando ao avistar o player.
   if (enemy.bidirectional) faceTowardsPlayer(scene, enemy);
+  const direction = enemy.facingDirection || 1;
   enemy.setVelocityX(0);
   enemy.isAttacking = true;
   // Duas convenções de animação coexistem em MOB_SPRITE_SETS (ver comentário
