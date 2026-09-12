@@ -250,7 +250,7 @@ export const MOBS_CONFIG = {
     path: 'assets/mobs/',
     stats: { life: 2, type: 'ranger', className: 'ranged', speed: 45 },
     ai: { visionRangeTilesWidth: 3, visionRangeTilesHeight: 1, bidirectional: false },
-    debug: true,
+    debug: false,
     attack: { damage: 1, cooldown: 1500 },
     projectile: { key: 'arrow', speed: 130 },
     behavior: 'patrol_and_shoot',
@@ -399,7 +399,7 @@ export function resolveMobFrameAsset(behavior, folder, animationKey) {
       sheet: false,
       frames: Array.from(
         { length: animation.frames + 1 },
-        (_, i) => `/assets/mobs/${folder}/${animation.url}${i}.png`
+        (_, i) => `assets/mobs/${folder}/${animation.url}${i}.png`
       ),
       frameRate: animation.frameRate,
     };
@@ -409,7 +409,7 @@ export function resolveMobFrameAsset(behavior, folder, animationKey) {
   // padrão — mesma regra de preloadSpriteSheetAnimations em animationUtils.js.
   return {
     sheet: true,
-    url: animation.shared ? `/assets/${animation.url}.png` : `/assets/mobs/${folder}/${animation.url}.png`,
+    url: animation.shared ? `assets/${animation.url}.png` : `assets/mobs/${folder}/${animation.url}.png`,
     totalFrames: animation.frame + 1,
     frameRate: animation.frameRate,
     frameWidth: animation.shared ? PLAYER_FRAME_WIDTH : config.frameWidth,

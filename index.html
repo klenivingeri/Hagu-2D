@@ -4,15 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#111827" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" href="/icons/favicon.ico" sizes="any" />
-    <link rel="icon" href="/icons/favicon-16x16.png" type="image/png" sizes="16x16" />
-    <link rel="icon" href="/icons/favicon-32x32.png" type="image/png" sizes="32x32" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./icons/favicon.ico" sizes="any" />
+    <link rel="icon" href="./icons/favicon-16x16.png" type="image/png" sizes="16x16" />
+    <link rel="icon" href="./icons/favicon-32x32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="HAGU" />
     <title>HAGU</title>
+    <!--
+      SDK da CrazyGames — precisa carregar como script clássico (não
+      type="module", não defer/async) ANTES do bundle do Vite, senão
+      window.CrazyGames ainda não existiria quando CrazyGamesService.js
+      chama init() no boot (ver main.js). Fora da plataforma CrazyGames
+      (dev local, outro host) esta tag simplesmente falha e o service
+      degrada sem quebrar o jogo (ver CrazyGamesService.js).
+    -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
     <!--
       CSS crítico inline: em dev, o <script type="module"> é deferred e o
       CSS (importado dentro do JS) só é injetado depois que o módulo roda,

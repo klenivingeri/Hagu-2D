@@ -62,7 +62,7 @@ function createTileElement(tileset, gid, col, row) {
   tile.style.top = `${row * PREVIEW_TILE_PX}px`;
   tile.style.width = `${PREVIEW_TILE_PX}px`;
   tile.style.height = `${PREVIEW_TILE_PX}px`;
-  tile.style.backgroundImage = `url(/assets/tiledmap/${tileset.image})`;
+  tile.style.backgroundImage = `url(assets/tiledmap/${tileset.image})`;
   tile.style.backgroundPosition = `-${tileCol * PREVIEW_TILE_PX}px -${tileRow * PREVIEW_TILE_PX}px`;
   tile.style.backgroundSize = `${tileset.imagewidth * scale}px ${tileset.imageheight * scale}px`;
   return tile;

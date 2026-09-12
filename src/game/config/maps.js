@@ -31,43 +31,43 @@ export const DEFAULT_STAR_TIME_LIMIT_MS = 90000;
 const TILESET_DEFAULTS = {
   tilesetName: 'world_tileset', // precisa bater com o nome do tileset dentro do .tmj
   tilesetImageKey: 'world_tileset_image',
-  tilesetImageUrl: '/assets/tiledmap/world_tileset.png',
+  tilesetImageUrl: 'assets/tiledmap/world_tileset.png',
 };
 
 export const MAPS = {
   map_0: {
     key: 'map_0',
-    tilemapUrl: '/assets/tiledmap/map_0.tmj',
+    tilemapUrl: 'assets/tiledmap/map_0.tmj',
     ...TILESET_DEFAULTS,
   },
   map_forest_1: {
     key: 'map_forest_1',
-    tilemapUrl: '/assets/tiledmap/map_forest_1.tmj',
+    tilemapUrl: 'assets/tiledmap/map_forest_1.tmj',
     ...TILESET_DEFAULTS,
   },
   map_forest_2: {
     key: 'map_forest_2',
-    tilemapUrl: '/assets/tiledmap/map_forest_2.tmj',
+    tilemapUrl: 'assets/tiledmap/map_forest_2.tmj',
     ...TILESET_DEFAULTS,
   },
   map_forest_3: {
     key: 'map_forest_3',
-    tilemapUrl: '/assets/tiledmap/map_forest_3.tmj',
+    tilemapUrl: 'assets/tiledmap/map_forest_3.tmj',
     ...TILESET_DEFAULTS,
   },
   map_desert_1: {
     key: 'map_desert_1',
-    tilemapUrl: '/assets/tiledmap/map_desert_1.tmj',
+    tilemapUrl: 'assets/tiledmap/map_desert_1.tmj',
     ...TILESET_DEFAULTS,
   },
   map_ice_1: {
     key: 'map_ice_1',
-    tilemapUrl: '/assets/tiledmap/map_ice_1.tmj',
+    tilemapUrl: 'assets/tiledmap/map_ice_1.tmj',
     ...TILESET_DEFAULTS,
   },
   map_fire_1: {
     key: 'map_fire_1',
-    tilemapUrl: '/assets/tiledmap/map_fire_1.tmj',
+    tilemapUrl: 'assets/tiledmap/map_fire_1.tmj',
     ...TILESET_DEFAULTS,
   },
 };

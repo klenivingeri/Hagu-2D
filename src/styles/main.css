@@ -12,9 +12,16 @@
   --vh100: calc(var(--app-vh) * 100);
 }
 
+/* url() aqui e no resto do arquivo aponta pra dentro de /public/assets/ via
+   caminho relativo ao PRÓPRIO main.css (../../public/...), não "/assets/..."
+   absoluto — precisa ser assim pro Vite tratar como asset de verdade
+   (resolve, copia, corrige o caminho final) em vez de deixar a string
+   passar intacta. Path absoluto só funciona hospedado na raiz do domínio;
+   a CrazyGames (e qualquer preview local) serve o build de dentro de uma
+   subpasta, então "/assets/..." vira 404 (era a causa da tela branca). */
 @font-face {
   font-family: "PixelOperator8";
-  src: url('/assets/font/PixelOperator8.ttf') format('truetype');
+  src: url('../../public/assets/font/PixelOperator8.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -22,7 +29,7 @@
 
 @font-face {
   font-family: "PixelOperator8";
-  src: url('/assets/font/PixelOperator8-Bold.ttf') format('truetype');
+  src: url('../../public/assets/font/PixelOperator8-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -1143,7 +1150,7 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
      de trocar background-image a cada %, como .loading-actor--enemy ainda
      faz (mobs continuam um arquivo por frame). Box é 40x60 = frame nativo
      16x24 * 2.5, então a folha inteira (6 frames) mede 240x60. */
-  background-image: url('/assets/player/default/run/sprite_run_two.png');
+  background-image: url('../../public/assets/player/default/run/sprite_run_two.png');
   background-repeat: no-repeat;
   background-position: 0 0;
   background-size: 240px 60px;
@@ -1214,7 +1221,7 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
    ambas a 40px por frame). Nunca toca transform/opacity — isso é só do
    boot-enemy-path, que roda em paralelo (ver .loading-actor--enemy). */
 @keyframes boot-enemy-sprite {
-  0%   { background-image: url('/assets/mobs/mob_1/run/sprite_run_two.png'); background-size: 160px 60px; background-position-x: 0; }
+  0%   { background-image: url('../../public/assets/mobs/mob_1/run/sprite_run_two.png'); background-size: 160px 60px; background-position-x: 0; }
   3%   { background-position-x: -40px; }
   6%   { background-position-x: -80px; }
   9%   { background-position-x: -120px; }
@@ -1229,10 +1236,10 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
   36%  { background-position-x: 0; }
   39%  { background-position-x: -40px; }
   42%  { background-position-x: -80px; }
-  43%  { background-image: url('/assets/commons/spark/sprite_z_die_spark.png'); background-size: 240px 60px; background-position-x: 0; }
+  43%  { background-image: url('../../public/assets/commons/spark/sprite_z_die_spark.png'); background-size: 240px 60px; background-position-x: 0; }
   44%  { background-position-x: -80px; }
   45%  { background-position-x: -200px; }
-  100% { background-image: url('/assets/mobs/mob_1/run/sprite_run_two.png'); background-size: 160px 60px; background-position-x: 0; }
+  100% { background-image: url('../../public/assets/mobs/mob_1/run/sprite_run_two.png'); background-size: 160px 60px; background-position-x: 0; }
 }
 
 /* Entra correndo (0-15%), segura posição enquanto o inimigo chega e leva os

@@ -13,6 +13,13 @@ import { BindGameOverEvents, HideGameOverScreen } from './screens/GameOverScreen
 import { loadPersistedState, gameState } from './managers/GameManager.js';
 import { RegisterServiceWorker } from './services/registerServiceWorker.js';
 import { startViewportSync } from './services/ViewportService.js';
+import {
+  initCrazyGamesSdk,
+  notifyLoadingStart,
+  notifyLoadingStop,
+  notifyGameplayStart,
+  BindCrazyGamesEvents,
+} from './services/CrazyGamesService.js';
 
 // Precisa rodar antes de qualquer tela ser mostrada: as unidades --app-vw/
 // --app-vh (ver ViewportService.js) substituem vw/dvh no CSS pra evitar o
@@ -50,6 +57,7 @@ function startMatch(mapKey) {
   HideWelcomeScreen();
   if (gameLayout) gameLayout.classList.add('is-active');
   applyZoomLayout(gameState.settings.cameraZoom);
+  notifyLoadingStart();
   ShowLoadingScreen('Criando mapa...');
 
   const game = new Phaser.Game(gameConfig);
@@ -57,10 +65,12 @@ function startMatch(mapKey) {
   window.__debugGame = game;
   BindHudEvents(game);
   BindLoadingEvents(game);
+  BindCrazyGamesEvents(game);
   BindPauseEvents(game, {
     onResume: () => {
       HidePauseScreen();
       game.scene.resume('GameScene');
+      notifyGameplayStart();
     },
     onBackToMap: () => {
       HidePauseScreen();
@@ -71,6 +81,7 @@ function startMatch(mapKey) {
     onClose: () => {
       HideSettingsScreen();
       game.scene.resume('GameScene');
+      notifyGameplayStart();
     },
     onCameraZoomChange: (zoom) => {
       // Precisa trocar o layout ANTES de mexer na câmera/scale mode do
@@ -125,13 +136,44 @@ function backToWelcome() {
   ShowWelcomeScreen({ onPlay: startMatch });
 }
 
+// Pausa automaticamente a Run quando o app vai pra segundo plano (CLAUDE.md,
+// arquitetura multiplataforma item 2) — essencial em WebViews Android/iOS,
+// que não pausam JS/áudio sozinhas ao minimizar, e é o mesmo sinal que a
+// CrazyGames usa pra decidir se o jogo ainda está "gameplay ativo". Só
+// resume quem foi pausado por ESTA função (pausedByVisibility) — nunca
+// reabre a Run por baixo de um modal de pausa/configurações/game over já
+// aberto pelo próprio player.
+let pausedByVisibility = false;
+
+function handleVisibilityChange() {
+  const scene = activeGame?.scene.getScene('GameScene');
+  if (!scene) return;
+
+  if (document.hidden) {
+    if (activeGame.scene.isPaused('GameScene')) return;
+    pausedByVisibility = true;
+    scene.scene.pause();
+    return;
+  }
+
+  if (!pausedByVisibility) return;
+  pausedByVisibility = false;
+  scene.scene.resume();
+  notifyGameplayStart();
+}
+
+document.addEventListener('visibilitychange', handleVisibilityChange);
+
 RegisterServiceWorker();
 
 // Boot inicial: loading primeiro (aqui entra qualquer leitura de dado
-// persistido — StorageService/futuro banco local), só depois a Welcome.
+// persistido — StorageService/futuro banco local — e a inicialização do SDK
+// da CrazyGames), só depois a Welcome.
+notifyLoadingStart();
 ShowLoadingScreen('Carregando jogo...', 'player');
-loadPersistedState().finally(() => {
+Promise.all([initCrazyGamesSdk(), loadPersistedState()]).finally(() => {
   applyControlsTheme(gameState.settings.controlsTheme);
   HideLoadingScreen();
+  notifyLoadingStop();
   ShowWelcomeScreen({ onPlay: startMatch });
 });

@@ -2,8 +2,8 @@
   "name": "HAGU",
   "short_name": "HAGU",
   "description": "HAGU - Jogo 2D de aventura",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "fullscreen",
   "orientation": "any",
   "background_color": "#111827",
@@ -11,25 +11,25 @@
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "/icons/android-chrome-192x192.png",
+      "src": "icons/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/android-chrome-512x512.png",
+      "src": "icons/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/android-chrome-192x192.png",
+      "src": "icons/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/android-chrome-512x512.png",
+      "src": "icons/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

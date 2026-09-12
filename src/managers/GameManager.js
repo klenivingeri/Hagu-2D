@@ -74,12 +74,11 @@ const DEFAULT_DROP_DIAMANT = getUpgradeValue(findUpgradeDef('dropChance'), 0);
 // bater com o nível 0 do catálogo pra loja e gameState iniciarem iguais.
 const DEFAULT_MAX_ENERGY = getUpgradeValue(findUpgradeDef('maxEnergy'), 0);
 // Diamante inicial do player, usado tanto no gameState quanto no reset (ver
-// resetProgress()) — dá pra comprar/testar habilidades e armas sem precisar
-// jogar uma run primeiro.
-const DEFAULT_DIAMANT = 100;
-// Moedas (🪙, "ouro") iniciais do player, mesmo esquema do diamante acima —
-// dá pra platinar upgrades e testar builds sem precisar farmar fase por fase.
-const DEFAULT_COINS = 10000;
+// resetProgress()). Zerado pra produção — o player começa sem nada e
+// progride jogando/assistindo anúncio (ver grantTicketFromAd).
+const DEFAULT_DIAMANT = 0;
+// Moedas (🪙, "ouro") iniciais do player, mesmo esquema do diamante acima.
+const DEFAULT_COINS = 0;
 
 // Fichas (ver welcomeScreen.html play-btn) consumidas ao iniciar uma fase.
 // Começa com 3 e volta pra 3 todo dia (ver resetDailyTicketsIfNeeded), mas só
@@ -266,11 +265,11 @@ export function purchaseTicketWithDiamant() {
   return true;
 }
 
-// Concede 1 ficha de graça em troca de assistir um anúncio recompensado.
-// Ainda não há SDK de anúncio integrado (CLAUDE.md: arquitetura mobile via
-// WebView/Capacitor ainda pendente) — por ora sempre concede a ficha na hora;
-// quando o SDK real entrar, este é o ponto a trocar pelo callback de
-// "anúncio assistido até o fim" antes de chamar addTicket().
+// Concede 1 ficha de graça em troca de assistir um anúncio recompensado até
+// o fim — só chamada por WelcomeScreen.handleWatchAdForTicket() DEPOIS de
+// CrazyGamesService.requestRewardedAd() confirmar que o anúncio terminou
+// (ou que não há SDK, ver comentário lá). Esta função em si só concede,
+// nunca decide se o anúncio foi assistido.
 export function grantTicketFromAd() {
   addTicket();
   return true;

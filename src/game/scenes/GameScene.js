@@ -23,6 +23,7 @@ import { updateGroundFakeVisibility } from '../systems/upgrade/updateGroundFakeV
 import { preloadDustTexture, preloadSwordWaveTexture, preloadFireballTexture } from '../commons/dustTrail.js';
 import { preloadPortalAssets, createPortalAnimations, createPortals } from '../systems/create/createPortals.js';
 import { createGates } from '../systems/create/createGates.js';
+import { celebrate, reportCompletionPercentage } from '../../services/CrazyGamesService.js';
 
 // A opção "3x" em Configurações só escolhe o LAYOUT tela-cheia (ver
 // .game-layout.zoom-3x/applyScaleModeForZoom) — o zoom de câmera real fica
@@ -346,6 +347,14 @@ export class GameScene extends Phaser.Scene {
     });
     addGlobalCoins(this.player.levelCoins || 0);
     addGlobalDiamant(this.player.levelDiamants || 0);
+
+    // Confete no site da CrazyGames reservado pro resultado perfeito (3
+    // estrelas) — usar em toda fase concluída seria banal demais (ver
+    // recomendação da própria CrazyGames em CrazyGamesService.js).
+    if (stars === 3) celebrate();
+    // Progresso geral reportado à plataforma: fases desbloqueadas sobre o
+    // total do jogo, não a fase em si (que já tem as estrelas).
+    reportCompletionPercentage((gameState.unlockedMaps.length / Object.keys(MAPS).length) * 100);
 
     this.game.events.emit(RUN_EVENTS.COMPLETE, {
       mapKey: this.mapKey,

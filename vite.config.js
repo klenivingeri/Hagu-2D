@@ -3,6 +3,13 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Relativo, não '/': a CrazyGames (e qualquer preview local via file://)
+  // serve o build de dentro de uma subpasta própria, nunca na raiz do
+  // domínio — com base absoluta os <script>/<link> gerados apontariam pra
+  // "/assets/..." da raiz DELES (404 em tudo, tela branca). Com './' os
+  // caminhos ficam relativos ao próprio index.html, funcionando em
+  // qualquer profundidade de pasta.
+  base: './',
   plugins: [
     tailwindcss(),
     VitePWA({

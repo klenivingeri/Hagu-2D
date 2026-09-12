@@ -38,6 +38,7 @@ beforeEach(() => {
 
 describe('purchaseUpgrade', () => {
   it('desconta a moeda certa e sobe o nível do upgrade', () => {
+    gameState.coins = 999999;
     const before = gameState.coins;
     const cost = getUpgradeState('damage').cost;
 
@@ -230,14 +231,14 @@ describe('coleção (bestiário)', () => {
 
 describe('resetProgress', () => {
   it('devolve moedas, upgrades e equipamentos para o estado inicial', () => {
-    gameState.coins = 0;
+    gameState.coins = 500;
     gameState.upgrade.damage = 5;
     gameState.equippedAccessory = 'sword';
     gameState.mapStars = { floresta_1: 3 };
 
     resetProgress();
 
-    expect(gameState.coins).toBeGreaterThan(0);
+    expect(gameState.coins).toBe(0);
     expect(getUpgradeLevel('damage')).toBe(0);
     expect(gameState.equippedAccessory).toBe('defaultWeapon');
     expect(gameState.mapStars).toEqual({});

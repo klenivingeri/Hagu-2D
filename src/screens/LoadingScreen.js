@@ -55,7 +55,9 @@ function createFallingTile(index) {
   tile.style.setProperty('--i', index);
   tile.style.width = `${TILE_DISPLAY_SIZE}px`;
   tile.style.height = `${TILE_DISPLAY_SIZE}px`;
-  tile.style.backgroundImage = "url('/assets/tiledmap/world_tileset.png')";
+  // Relativo ao documento (sem barra inicial) — ver comentário em maps.js
+  // sobre por que "/assets/..." absoluto quebra fora da raiz do domínio.
+  tile.style.backgroundImage = "url('assets/tiledmap/world_tileset.png')";
   tile.style.backgroundSize = `${TILE_SHEET_COLS * TILE_DISPLAY_SIZE}px ${TILE_SHEET_COLS * TILE_DISPLAY_SIZE}px`;
   tile.style.backgroundPosition = `-${col * TILE_DISPLAY_SIZE}px -${row * TILE_DISPLAY_SIZE}px`;
   return tile;

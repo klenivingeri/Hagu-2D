@@ -10,7 +10,6 @@ import {
   getLevelInfo,
   updateSetting,
   isMapUnlocked,
-  resetProgress,
   getUpgradeState,
   purchaseUpgrade,
   getMapStars,
@@ -26,6 +25,7 @@ import {
   TICKET_COST_COINS,
   TICKET_COST_DIAMANT,
 } from '../managers/GameManager.js';
+import { requestRewardedAd } from '../services/CrazyGamesService.js';
 import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '../game/config/upgrades.js';
 import { MAPS, MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
 import { getStageLabel, getStageNumber } from './mapLabels.js';
@@ -49,6 +49,10 @@ let idleAnimationTimer = null;
 let selectedMapKey = DEFAULT_MAP_KEY;
 let hasCenteredStageGrid = false;
 let stageZoom = 1;
+// Aba atualmente visível (ver switchView) — usado por updateTabAffordBadges()
+// pra nunca mostrar a bolinha vermelha na aba em que o player já está: ela só
+// faz sentido como aviso pra abrir uma aba que ele ainda não olhou.
+let currentWelcomeView = 'home';
 // Baseline pra detectar fases que acabaram de ser desbloqueadas (ver
 // renderStages). Começa null: a primeira renderização da sessão só define a
 // baseline, nunca anima — só a partir da segunda é que uma key nova nesse
@@ -351,6 +355,7 @@ function renderPlayerInfo() {
   elements.diamondTotal.textContent = String(gameState.diamant);
   elements.coinTotal.textContent = String(gameState.coins);
   renderTicketsDisplay();
+  updateTabAffordBadges();
 }
 
 let ticketsCountdownTimer = null;
@@ -668,16 +673,42 @@ function renderUpgradePips(maxLevel, level) {
   }).join('');
 }
 
+// Pulo duplo/paraquedas/jetpack/parede/armas saíram da Loja pra aba "Equip."
+// (ver renderEquipmentAbilities/renderEquipmentAccessories) — usado tanto por
+// renderShop() quanto por hasAffordableShopItem() pra filtrar o mesmo jeito.
+const EXCLUDED_FROM_SHOP = new Set([...ABILITY_UPGRADE_IDS, ...ACCESSORY_UPGRADE_IDS]);
+
+// Bolinha vermelha nas abas "Loja"/"Equip." (ver welcomeScreen.html
+// [data-afford-badge]) — sinaliza que há saldo suficiente pra comprar algo
+// nessa aba, sem precisar entrar pra descobrir. Chamado sempre que
+// renderPlayerInfo() roda, ou seja, toda vez que moeda/diamante mudam.
+function hasAffordableShopItem() {
+  return UPGRADES_CATALOG.filter((def) => !EXCLUDED_FROM_SHOP.has(def.id)).some((def) => {
+    const state = getUpgradeState(def.id);
+    return !state.isMaxed && gameState[state.currency] >= state.cost;
+  });
+}
+
+function hasAffordableEquipItem() {
+  return [...ABILITY_UPGRADE_IDS, ...ACCESSORY_UPGRADE_IDS].some((id) => {
+    const state = getUpgradeState(id);
+    return state.level === 0 && gameState[state.currency] >= state.cost;
+  });
+}
+
+function updateTabAffordBadges() {
+  if (!elements) return;
+  const showShopBadge = currentWelcomeView !== 'shop' && hasAffordableShopItem();
+  const showEquipmentBadge = currentWelcomeView !== 'equipment' && hasAffordableEquipItem();
+  elements.shopTabBadge?.classList.toggle('hidden', !showShopBadge);
+  elements.equipmentTabBadge?.classList.toggle('hidden', !showEquipmentBadge);
+}
+
 function renderShop() {
   if (!elements) return;
 
   elements.shopList.innerHTML = '';
 
-  // Pulo duplo/paraquedas/jetpack/parede/armas saíram da Loja pra aba "Equip." (ver
-  // renderEquipmentAbilities/renderEquipmentAccessories) — só um item de
-  // cada grupo fica ativo por vez, então usam o fluxo comprar-depois-equipar,
-  // não o botão de compra normal.
-  const EXCLUDED_FROM_SHOP = new Set([...ABILITY_UPGRADE_IDS, ...ACCESSORY_UPGRADE_IDS]);
   UPGRADES_CATALOG.filter((def) => !EXCLUDED_FROM_SHOP.has(def.id)).forEach((def) => {
     const state = getUpgradeState(def.id);
     const canAfford = !state.isMaxed && gameState[state.currency] >= state.cost;
@@ -697,7 +728,10 @@ function renderShop() {
     const buttonLabel = state.isMaxed ? 'Máximo' : `${state.cost} ${currencyIcon}`;
 
     row.innerHTML = `
-      <span class="text-xl leading-none shrink-0">${def.icon}</span>
+      <span class="relative inline-block shrink-0">
+        <span class="text-xl leading-none">${def.icon}</span>
+        ${canAfford ? '<span class="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-red-500 ring-2 ring-gray-900"></span>' : ''}
+      </span>
       <div class="min-w-0 flex-1">
         <p class="truncate text-xs font-bold">${def.label}</p>
         <p class="truncate text-[10px] text-gray-400">${statusLine}</p>
@@ -765,7 +799,10 @@ function renderEquipmentAbilities() {
       equipped ? 'border-emerald-400 bg-emerald-500/10' : 'border-white/10',
     ].join(' ');
     row.innerHTML = `
-      <span class="text-xl leading-none shrink-0">${state.def.icon}</span>
+      <span class="relative inline-block shrink-0">
+        <span class="text-xl leading-none">${state.def.icon}</span>
+        ${canAfford ? '<span class="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-red-500 ring-2 ring-gray-900"></span>' : ''}
+      </span>
       <div class="min-w-0 flex-1">
         <p class="truncate text-xs font-bold">${state.def.label}</p>
         <p class="truncate text-[10px] text-gray-400">${statusLine}</p>
@@ -826,7 +863,10 @@ function renderEquipmentAccessories() {
       equipped ? 'border-emerald-400 bg-emerald-500/10' : 'border-white/10',
     ].join(' ');
     row.innerHTML = `
-      <span class="text-xl leading-none shrink-0">${state.def.icon}</span>
+      <span class="relative inline-block shrink-0">
+        <span class="text-xl leading-none">${state.def.icon}</span>
+        ${canAfford ? '<span class="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-red-500 ring-2 ring-gray-900"></span>' : ''}
+      </span>
       <div class="min-w-0 flex-1">
         <p class="truncate text-xs font-bold">${state.def.label}</p>
         <p class="truncate text-[10px] text-gray-400">${statusLine}${state.def.description ? ` · ${state.def.description}` : ''}</p>
@@ -1121,7 +1161,14 @@ function handleBuyTicketWithDiamant() {
   spawnTicketsRain();
 }
 
-function handleWatchAdForTicket() {
+async function handleWatchAdForTicket() {
+  // Fora da CrazyGames (SDK ausente), requestRewardedAd() resolve `true` na
+  // hora — mesmo comportamento de sempre conceder de graça (ver
+  // CrazyGamesService.js). Só bloqueia a ficha se o player realmente estiver
+  // na plataforma e fechar/pular o anúncio antes do fim.
+  const watched = await requestRewardedAd();
+  if (!watched) return;
+
   grantTicketFromAd();
   renderPlayerInfo();
   renderTicketsEmptyModal();
@@ -1213,34 +1260,6 @@ function handleFullscreenToggle() {
   toggleFullscreen();
 }
 
-// Destrutivo e sem undo — por isso o confirm nativo antes de mexer em
-// qualquer coisa (StorageService.clearAll() + reset do gameState em
-// memória, ver GameManager.resetProgress()).
-function handleResetStorage() {
-  const confirmed = window.confirm(
-    'Isso vai apagar moedas, diamantes, fases liberadas e configurações salvas. Essa ação não pode ser desfeita. Continuar?'
-  );
-  if (!confirmed) return;
-
-  resetProgress();
-  selectedMapKey = DEFAULT_MAP_KEY;
-  hasCenteredStageGrid = false;
-  knownUnlockedMapKeys = null;
-  stageZoom = getDefaultStageZoom();
-  runnerMoving = false;
-  ({ row: runnerRow, col: runnerCol } = findMapGridPosition(DEFAULT_MAP_KEY));
-  startRunnerFrames(PLAYER_IDLE_SPRITE);
-  renderPlayerInfo();
-  renderSettings();
-  renderStages();
-  renderShop();
-  renderEquipmentAbilities();
-  renderEquipmentAccessories();
-  applyStageZoom();
-  closeSettings();
-  showMapPreview(selectedMapKey, elements.stagePreviewViewport);
-}
-
 // Loja/Coleção ainda não têm tela própria (ver IMPLEMENTATION_PLAN.md) —
 // por enquanto só trocam qual <section> fica visível dentro do shell da
 // Welcome (header e tabbar continuam fixos, só o miolo do <main> muda). O
@@ -1249,6 +1268,7 @@ function handleResetStorage() {
 // das outras (ver welcomeScreen.html).
 function switchView(view) {
   if (!elements) return;
+  currentWelcomeView = view;
   elements.views.forEach((section) => {
     section.classList.toggle('hidden', section.dataset.view !== view);
   });
@@ -1268,6 +1288,9 @@ function switchView(view) {
   } else {
     stopCollectionCardAnimations();
   }
+  // A aba clicada não deve mais mostrar a própria bolinha (ver
+  // updateTabAffordBadges) — os itens ali dentro já sinalizam individualmente.
+  updateTabAffordBadges();
 }
 
 export function ShowWelcomeScreen({ onPlay } = {}) {
@@ -1303,12 +1326,13 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     playBtn: screenRoot.querySelector('.play-btn'),
     settingsModal: modalRoot,
     closeBtn: modalRoot.querySelector('.settings-close-btn'),
-    resetStorageBtn: modalRoot.querySelector('.reset-storage-btn'),
     settingToggles: [...modalRoot.querySelectorAll('.setting-toggle')],
     fullscreenRow: modalRoot.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: modalRoot.querySelector('.fullscreen-toggle'),
     views: [...screenRoot.querySelectorAll('.welcome-view')],
     tabButtons: [...screenRoot.querySelectorAll('.tab-btn')],
+    shopTabBadge: screenRoot.querySelector('[data-afford-badge="shop"]'),
+    equipmentTabBadge: screenRoot.querySelector('[data-afford-badge="equipment"]'),
     shopList: screenRoot.querySelector('.shop-list'),
     abilityList: screenRoot.querySelector('.equipment-ability-list'),
     accessoryList: screenRoot.querySelector('.equipment-accessory-list'),
@@ -1352,7 +1376,6 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   // O player pode sair do fullscreen sem usar o toggle (Esc, gesto do
   // navegador) — resincroniza o checkbox nesses casos.
   onFullscreenChange(renderSettings);
-  elements.resetStorageBtn.addEventListener('click', handleResetStorage);
   elements.shopList.addEventListener('click', handleShopBuyClick);
   elements.abilityList.addEventListener('click', handleAbilityListClick);
   elements.accessoryList.addEventListener('click', handleAccessoryListClick);
