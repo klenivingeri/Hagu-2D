@@ -1,6 +1,6 @@
 import { resizeCollider } from "../systems/create/common.js";
 import { createEnemyStatus } from "../config/status.js";
-import { getEntityAnimationKey, getMobConfig } from "../config/entities.js";
+import { getEntityAnimationKey, getMobConfig, isSpriteSheetAnimation } from "../config/entities.js";
 import { getTiledProperty } from "../commons/tiledUtils.js";
 import { MAP_DEPTHS } from "../../constants.js";
 import { showFloatingDamage } from "../commons/floatingTextPool.js";
@@ -89,7 +89,13 @@ export function spawnEnemyBase(scene, x, y, { key, path = '', type, properties }
   const config = getMobConfig(type, path || key);
   const overrides = resolveEnemyOverrides(properties, config);
 
-  const enemy = scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
+  // "run" pode vir de spritesheet única (textura "key" + frame 0) ou do
+  // sistema antigo de uma imagem por frame (textura "key_0") — ver
+  // isSpriteSheetAnimation em game/config/entities.js.
+  const runAnimation = config.animations.find((animation) => animation.key === 'run') || {};
+  const enemy = isSpriteSheetAnimation(runAnimation)
+    ? scene.physics.add.sprite(x, y, getEntityAnimationKey(key, 'run'), 0)
+    : scene.physics.add.sprite(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
   enemy.setDepth(MAP_DEPTHS.PLAYER);
   // Posição crua vinda do Object Layer do Tiled — nunca deve ser
   // sobrescrita depois. behaviors que precisam "voltar pra origem" (ex:
@@ -298,6 +304,7 @@ function killEnemy(enemy) {
       key: enemy.entityKey,
       path: enemy.entityPath,
       behavior: enemy.entityConfig?.behavior,
+      config: enemy.entityConfig,
     });
   }
   if (Math.random() * 100 < GOLD_BAG_DROP_CHANCE_PERCENT) {

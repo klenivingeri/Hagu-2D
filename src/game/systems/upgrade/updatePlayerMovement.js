@@ -268,10 +268,10 @@ export const updatePlayerMovement = (scene) => {
         // vy=0 considerada "ápice", pra não piscar hop_0/hop_2 num único frame.
         const velocityY = player.body.velocity.y;
         const hopFrame = velocityY < -JUMP_APEX_THRESHOLD ? 0 : velocityY > JUMP_APEX_THRESHOLD ? 2 : 1;
-        const jumpTextureKey = `${getEntityAnimationKey(player.entityKey, 'jump')}_${hopFrame}`;
+        const jumpTextureKey = getEntityAnimationKey(player.entityKey, 'jump');
         if (player.anims.isPlaying) player.anims.stop();
-        if (player.texture.key !== jumpTextureKey) {
-          player.setTexture(jumpTextureKey);
+        if (player.texture.key !== jumpTextureKey || player.frame.name !== hopFrame) {
+          player.setTexture(jumpTextureKey, hopFrame);
         }
       } else if (left || right) {
         if (wasGrounded) {

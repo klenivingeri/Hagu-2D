@@ -739,60 +739,6 @@
                 }, 
                 {
                  "height":0,
-                 "id":33,
-                 "name":"Mob_1",
-                 "opacity":1,
-                 "point":true,
-                 "properties":[
-                        {
-                         "name":"bidirectional",
-                         "type":"bool",
-                         "value":true
-                        }, 
-                        {
-                         "name":"direction",
-                         "type":"string",
-                         "value":"right"
-                        }, 
-                        {
-                         "name":"key",
-                         "type":"string",
-                         "value":"dino"
-                        }, 
-                        {
-                         "name":"path",
-                         "type":"string",
-                         "value":"mob_1"
-                        }, 
-                        {
-                         "name":"patrol",
-                         "type":"bool",
-                         "value":true
-                        }, 
-                        {
-                         "name":"type",
-                         "type":"string",
-                         "value":"patrol"
-                        }, 
-                        {
-                         "name":"visionRangeTilesHeight",
-                         "type":"int",
-                         "value":0
-                        }, 
-                        {
-                         "name":"visionRangeTilesWidth",
-                         "type":"int",
-                         "value":2
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":168.5,
-                 "y":383.5
-                }, 
-                {
-                 "height":0,
                  "id":34,
                  "name":"Bat Fly",
                  "opacity":1,
@@ -1168,6 +1114,60 @@
                  "width":0,
                  "x":259.333333333333,
                  "y":404
+                }, 
+                {
+                 "height":0,
+                 "id":49,
+                 "name":"Mob_1",
+                 "opacity":1,
+                 "point":true,
+                 "properties":[
+                        {
+                         "name":"bidirectional",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"direction",
+                         "type":"string",
+                         "value":"right"
+                        }, 
+                        {
+                         "name":"key",
+                         "type":"string",
+                         "value":"dino"
+                        }, 
+                        {
+                         "name":"path",
+                         "type":"string",
+                         "value":"mob_1"
+                        }, 
+                        {
+                         "name":"patrol",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"type",
+                         "type":"string",
+                         "value":"patrol"
+                        }, 
+                        {
+                         "name":"visionRangeTilesHeight",
+                         "type":"int",
+                         "value":0
+                        }, 
+                        {
+                         "name":"visionRangeTilesWidth",
+                         "type":"int",
+                         "value":2
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":172.806782055811,
+                 "y":377.263157894737
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -1357,7 +1357,7 @@
          "y":0
         }],
  "nextlayerid":27,
- "nextobjectid":49,
+ "nextobjectid":50,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",

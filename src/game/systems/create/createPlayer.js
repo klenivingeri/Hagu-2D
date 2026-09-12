@@ -1,7 +1,7 @@
 import { resizeCollider } from "./common";
-import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
+import { preloadSpriteSheetAnimations, createSpriteSheetAnimations } from "../../commons/animationUtils.js";
 import { createPlayerStatus } from "../../config/status.js";
-import { PLAYERS_CONFIG, getEntityAnimationKey } from "../../config/entities.js";
+import { PLAYERS_CONFIG, getEntityAnimationKey, getPlayerAnimationAssets } from "../../config/entities.js";
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
 import { MAP_DEPTHS, HUD_EVENTS, GAME_OVER_EVENTS, MAX_RUN_ATTEMPTS } from "../../../constants.js";
@@ -25,7 +25,8 @@ export function createPlayer(scene) {
   const player = scene.physics.add.sprite(
       objectData.x,
       objectData.y - 10,
-      `${getEntityAnimationKey(key, 'run')}_0`
+      getEntityAnimationKey(key, 'run'),
+      0
     );
   player.setDepth(MAP_DEPTHS.PLAYER);
   player.entityKey = key;
@@ -131,7 +132,7 @@ function playSpawnAnimation(scene, player) {
   player.once(`animationcomplete-${spawnAnimation}`, () => {
     player.isSpawning = false;
     player.invulnerable = false;
-    player.setTexture(`${getEntityAnimationKey(player.entityKey, 'run')}_0`);
+    player.setTexture(getEntityAnimationKey(player.entityKey, 'run'), 0);
   });
 }
 
@@ -381,15 +382,13 @@ function showDeathText(scene, player) {
 }
 
 export function preloadPlayerAssets(scene) {
-  Object.entries(PLAYERS_CONFIG).forEach(([key, config]) => {
-    preloadAnimations(scene, config.animations.map((animation) => ({
-      ...animation, url: `${config.path}${animation.url}`,
-    })), key);
+  Object.keys(PLAYERS_CONFIG).forEach((key) => {
+    preloadSpriteSheetAnimations(scene, getPlayerAnimationAssets(key), key);
   });
 }
 
 export function createPlayerAnimations(scene) {
-  Object.entries(PLAYERS_CONFIG).forEach(([key, config]) => {
-    createAnimations(scene, config.animations, key);
+  Object.keys(PLAYERS_CONFIG).forEach((key) => {
+    createSpriteSheetAnimations(scene, getPlayerAnimationAssets(key), key);
   });
 }

@@ -1,29 +1,96 @@
+// Tamanho fixo de cada frame dentro da spritesheet do player (16x24) — todas
+// as pastas de assets/player/ hoje são uma ÚNICA imagem com os frames lado a
+// lado nesse grid (ver PLAYER_SKINS abaixo), diferente dos mobs (ainda uma
+// imagem por frame, ver MOB_SPRITE_SETS/preloadAnimations).
+export const PLAYER_FRAME_WIDTH = 16;
+export const PLAYER_FRAME_HEIGHT = 24;
+
+// frameRate/repeat de cada animação do player — são timings de gameplay, não
+// mudam por skin (todo skin tem os mesmos 12 estados, só troca o desenho).
+const PLAYER_ANIMATION_SETTINGS = {
+  idle: { frameRate: 4, repeat: 0 },
+  jump: { frameRate: 10, repeat: 0 },
+  spawn: { frameRate: 10, repeat: 0 },
+  run: { frameRate: 10, repeat: -1 },
+  bow: { frameRate: 20, repeat: 0 },
+  // Animação do acessório "Arco" (ver ACCESSORY_UPGRADE_IDS em
+  // game/config/upgrades.js) — já é uma chave separada da "bow" acima (usada
+  // pela arma padrão) pra poder trocar só o asset depois sem mexer no resto
+  // do sistema de tiro (ver createBulletSystem.js).
+  arrow: { frameRate: 20, repeat: 0 },
+  // Pose usada enquanto o player está encostado lateralmente em uma parede.
+  stick: { frameRate: 1, repeat: -1 },
+  dead: { frameRate: 10, repeat: 0 },
+  dead_jump: { frameRate: 10, repeat: 0 },
+  // Antes "jump_down": pose de queda livre (sem paraquedas/jetpack).
+  free_fall: { frameRate: 10, repeat: -1 },
+  attack: { frameRate: 20, repeat: 0 },
+  parachute: { frameRate: 20, repeat: 0 },
+};
+
+// Cada skin descreve, por animação, o nome do arquivo (pasta assets/player/
+// <animação>/<url>.png) e o ÚLTIMO índice de frame da spritesheet (o
+// primeiro frame sempre começa em 0 — ex: "frame: 3" = 4 frames, 0..3).
+// Pra criar uma skin nova: cadastre as mesmas 12 chaves aqui com os assets
+// dela e aponte PLAYERS_CONFIG.<key>.skin pro nome escolhido.
+export const PLAYER_SKINS = {
+  default: {
+    arrow: { url: 'sprite_weapon_bow_tall_fire_fast', frame: 6 },
+    attack: { url: 'sprite_weapon_sword_atk_melee', frame: 5 },
+    bow: { url: 'sprite_weapon_bow_short_fire_slow', frame: 5 },
+    dead: { url: 'sprite_z_die_skull', frame: 5 },
+    dead_jump: { url: 'sprite_z_die_one', frame: 10 },
+    free_fall: { url: 'sprite_knock_down_one', frame: 3 },
+    idle: { url: 'sprite_base_idle', frame: 3 },
+    jump: { url: 'sprite_jump_hop', frame: 7 },
+    parachute: { url: 'sprite_parachute', frame: 5 },
+    run: { url: 'sprite_run_two', frame: 5 },
+    spawn: { url: 'sprite_re_warp', frame: 10 },
+    stick: { url: 'sprite_stick_two', frame: 0 },
+  },
+};
+
 export const PLAYERS_CONFIG = {
   player: {
     path: 'assets/player/',
-    animations: [
-      { key: 'idle', url: 'idle/sprite_base_idle_', frames: 3, frameRate: 4, repeat: 0 },
-      { key: 'jump', url: 'jump/sprite_jump_hop_', frames: 2, frameRate: 10, repeat: 0 },
-      { key: 'spawn', url: 'spawn/sprite_re_warp_', frames: 5, frameRate: 10, repeat: 0 },
-      { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
-      { key: 'bow', url: 'bow/sprite_weapon_bow_short_fire_slow_', frames: 5, frameRate: 20, repeat: 0 },
-      // Animação do acessório "Arco" (ver ACCESSORY_UPGRADE_IDS em
-      // game/config/upgrades.js) — reaproveita os frames de bow/ como
-      // placeholder até existir arte própria; já é uma chave separada da
-      // "bow" acima (usada pela arma padrão) pra poder trocar só o asset
-      // depois sem mexer no resto do sistema de tiro (ver createBulletSystem.js).
-      { key: 'arrow', url: 'arrow/sprite_weapon_bow_tall_fire_fast_', frames: 4, frameRate: 20, repeat: 0 },
-      // Pose usada enquanto o player está encostado lateralmente em uma parede.
-      { key: 'stick', url: 'stick/sprite_stick_two_', frames: 0, frameRate: 1, repeat: -1 },
-      { key: 'dead', url: 'dead/sprite_z_die_skull_', frames: 7, frameRate: 10, repeat: 0 },
-      { key: 'dead_jump', url: 'dead_jump/sprite_z_die_one_', frames: 10, frameRate: 10, repeat: 0 },
-      { key: 'jump_down', url: 'jump_down/sprite_knock_down_one_', frames: 3, frameRate: 10, repeat: -1 },
-      { key: 'attack', url: 'attack/sprite_weapon_sword_atk_melee_', frames: 5, frameRate: 20, repeat: 0 },
-      { key: 'parachute', url: 'parachute/sprite_parachute_', frames: 5, frameRate: 20, repeat: 0 }
-    ],
+    skin: 'default',
     stats: {},
   },
 };
+
+// Resolve os dados de UMA animação do player (skin + timing) num formato
+// pronto pro Phaser (preloadSpriteSheetAnimations/createSpriteSheetAnimations
+// em animationUtils.js) ou pra qualquer tela HTML que precise da mesma arte
+// fora do Phaser (ver PLAYER_IDLE_SPRITE/PLAYER_RUN_SPRITE em
+// screens/WelcomeScreen.js).
+export function getPlayerAnimationAsset(entityKey, animationKey) {
+  const config = PLAYERS_CONFIG[entityKey];
+  if (!config) return null;
+
+  const skin = PLAYER_SKINS[config.skin] || PLAYER_SKINS.default;
+  const animation = skin[animationKey];
+  if (!animation) return null;
+
+  const { frameRate, repeat } = PLAYER_ANIMATION_SETTINGS[animationKey] || {};
+  return {
+    key: animationKey,
+    url: `${config.path}${animationKey}/${animation.url}.png`,
+    lastFrame: animation.frame,
+    totalFrames: animation.frame + 1,
+    frameRate,
+    repeat,
+  };
+}
+
+// Todas as animações da skin de um player (ver preloadPlayerAssets/
+// createPlayerAnimations em systems/create/createPlayer.js).
+export function getPlayerAnimationAssets(entityKey) {
+  const config = PLAYERS_CONFIG[entityKey];
+  if (!config) return [];
+
+  const skin = PLAYER_SKINS[config.skin] || PLAYER_SKINS.default;
+  return Object.keys(skin).map((animationKey) => getPlayerAnimationAsset(entityKey, animationKey));
+}
 
 // ==========================================
 // SPRITES DOS MOBS (uma entrada por PASTA de assets/mobs/)
@@ -52,15 +119,34 @@ export const PLAYERS_CONFIG = {
 //   3. No Tiled, use essa pasta em "path" (ou "key") e escolha QUALQUER
 //      "type" de MOBS_CONFIG (patrol/patrol_and_shoot/patrol_fly) — nada
 //      mais precisa mudar.
+//
+// Duas convenções de animação coexistem aqui (ver isSpriteSheetAnimation em
+// systems/create/createEnemy.js, que decide qual usar por entrada):
+//   - "frame" (singular): NOVA, uma única spritesheet por animação, grid
+//     PLAYER_FRAME_WIDTH/HEIGHT por padrão ou frameWidth/frameHeight do
+//     próprio mob (ver bat abaixo) — igual ao player, ver PLAYER_SKINS.
+//   - "frames" (plural): sistema ANTIGO, uma imagem por frame (ainda usado
+//     só por shadow/tank, que não foram convertidos).
+// Dois jeitos de uma animação ("frame") reaproveitar uma textura já
+// carregada em vez de baixar o arquivo de novo:
+//   - "asset": reaproveita a textura de OUTRA key do MESMO mob (só entre
+//     entradas "frame" desta mesma entrada de MOB_SPRITE_SETS).
+//   - "shared": reaproveita um asset de assets/commons/ (fora da pasta do
+//     mob) — carregado UMA VEZ só, não importa quantos mobs referenciem
+//     (ver "spark" abaixo: mob_1/dino/bat morrem todos com o mesmo efeito).
+//     Sempre no grid padrão PLAYER_FRAME_WIDTH/HEIGHT, mesmo que o mob em
+//     si use outro grid (ver bat, 16x16).
 export const MOB_SPRITE_SETS = {
   mob_1: {
+    frameWidth: PLAYER_FRAME_WIDTH,
+    frameHeight: PLAYER_FRAME_HEIGHT,
     animations: [
-      { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
-      { key: 'idle', url: 'idle/sprite_base_idle_', frames: 3, frameRate: 4, repeat: -1 },
-      { key: 'stomp', url: 'stomp/sprite_re_land_squash_', frames: 4, frameRate: 10, repeat: 0 },
-      { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 7, frameRate: 20, repeat: 0 },
-      { key: 'attack', url: 'attack/sprite_weapon_sword_atk_melee_', frames: 5, frameRate: 20, repeat: 0 },
-      { key: 'bow', url: 'bow/sprite_weapon_bow_short_fire_fast_', frames: 4, frameRate: 20, repeat: 0 },
+      { key: 'run', url: 'run/sprite_run_two', frame: 3, frameRate: 10, repeat: -1 },
+      { key: 'idle', url: 'idle/sprite_base_idle', frame: 3, frameRate: 4, repeat: -1 },
+      { key: 'stomp', url: 'stomp/sprite_re_land_squash', frame: 4, frameRate: 10, repeat: 0 },
+      { key: 'spark', shared: true, url: 'commons/spark/sprite_z_die_spark', frame: 5, frameRate: 20, repeat: 0 },
+      { key: 'attack', url: 'attack/sprite_weapon_sword_atk_melee', frame: 5, frameRate: 20, repeat: 0 },
+      { key: 'bow', url: 'bow/sprite_weapon_bow_short_fire_fast', frame: 4, frameRate: 20, repeat: 0 },
     ],
   },
   // "run" usa a pasta run_bow/ (o dino corre já com o arco em punho) — é o
@@ -68,18 +154,25 @@ export const MOB_SPRITE_SETS = {
   // mapas do Tiled); run/ (sem arco) existe na pasta mas ainda não tem
   // nenhum mob cadastrado que precise dela.
   dino: {
+    frameWidth: PLAYER_FRAME_WIDTH,
+    frameHeight: PLAYER_FRAME_HEIGHT,
     animations: [
-      { key: 'run', url: 'run_bow/sprite_run_two_', frames: 3, frameRate: 10, repeat: -1 },
-      { key: 'idle', url: 'idle/sprite_base_idle_', frames: 3, frameRate: 4, repeat: -1 },
-      { key: 'stomp', url: 'stomp/sprite_re_land_squash_', frames: 4, frameRate: 10, repeat: 0 },
-      { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 7, frameRate: 20, repeat: 0 },
-      { key: 'bow', url: 'bow/sprite_weapon_bow_short_fire_fast_bag_', frames: 4, frameRate: 20, repeat: 0 },
+      { key: 'run', url: 'run_bow/sprite_run_two', frame: 3, frameRate: 10, repeat: -1 },
+      { key: 'idle', url: 'idle/sprite_base_idle', frame: 3, frameRate: 4, repeat: -1 },
+      { key: 'stomp', url: 'stomp/sprite_re_land_squash', frame: 4, frameRate: 10, repeat: 0 },
+      { key: 'spark', shared: true, url: 'commons/spark/sprite_z_die_spark', frame: 5, frameRate: 20, repeat: 0 },
+      { key: 'bow', url: 'bow/sprite_weapon_bow_short_fire_fast_bag', frame: 4, frameRate: 20, repeat: 0 },
     ],
   },
   bat: {
+    // Único mob com frame nativo 16x16 (sem "pernas" abaixo da linha do
+    // corpo como os demais, que são 16x24) — por isso sobrescreve o
+    // default aqui em vez de herdar PLAYER_FRAME_HEIGHT.
+    frameWidth: 16,
+    frameHeight: 16,
     animations: [
-      { key: 'run', url: 'run/sprite_run_two_', frames: 3, frameRate: 5, repeat: -1 },
-      { key: 'spark', url: 'spark/sprite_z_die_spark_', frames: 5, frameRate: 20, repeat: 0 },
+      { key: 'run', url: 'run/sprite_run_two', frame: 3, frameRate: 5, repeat: -1 },
+      { key: 'spark', shared: true, url: 'commons/spark/sprite_z_die_spark', frame: 5, frameRate: 20, repeat: 0 },
     ],
   },
   shadow: {
@@ -189,9 +282,23 @@ function mergeMobConfig(base, overrides) {
 function withMeleeRangedFallback(animations) {
   const attack = animations.find((animation) => animation.key === 'attack');
   const bow = animations.find((animation) => animation.key === 'bow');
-  if (bow && !attack) return [...animations, { ...bow, key: 'attack' }];
-  if (attack && !bow) return [...animations, { ...attack, key: 'bow' }];
+  if (bow && !attack) return [...animations, cloneAsFallback(bow, 'attack')];
+  if (attack && !bow) return [...animations, cloneAsFallback(attack, 'bow')];
   return animations;
+}
+
+// Clona uma animação pra "emprestar" a arte dela pra outra key (ver
+// withMeleeRangedFallback acima). Se a original já é uma spritesheet
+// própria (tem "frame"), a cópia reaproveita a MESMA textura via `asset`
+// em vez de carregar o arquivo de novo (ex: dino ganha "attack" sem baixar
+// bow/sprite_weapon_bow_short_fire_fast_bag.png outra vez); no sistema
+// antigo ("frames", ainda usado por tank) segue duplicando a url como
+// sempre — não tem `asset`/dedup por lá.
+function cloneAsFallback(source, key) {
+  if (!Object.prototype.hasOwnProperty.call(source, 'frame')) {
+    return { ...source, key };
+  }
+  return { key, asset: source.asset || source.key, frame: source.frame, frameRate: source.frameRate, repeat: source.repeat };
 }
 
 // Junta a IA/stats do "type" (MOBS_CONFIG) com as animações REAIS da pasta
@@ -206,15 +313,66 @@ export function getMobConfig(type = DEFAULT_MOB_TYPE, mobFolder = DEFAULT_MOB_KE
   }
   const behaviorConfig = mergeMobConfig(MOBS_CONFIG.default_mob, typeConfig || {});
 
-  const spriteSet = MOB_SPRITE_SETS[mobFolder];
-  if (!spriteSet) {
+  const resolvedSpriteSet = MOB_SPRITE_SETS[mobFolder] || MOB_SPRITE_SETS[DEFAULT_MOB_KEY];
+  if (!MOB_SPRITE_SETS[mobFolder]) {
     console.warn(`Pasta de sprite "${mobFolder}" não existe em MOB_SPRITE_SETS. Usando "${DEFAULT_MOB_KEY}".`);
   }
-  const animations = withMeleeRangedFallback((spriteSet || MOB_SPRITE_SETS[DEFAULT_MOB_KEY]).animations);
+  const animations = withMeleeRangedFallback(resolvedSpriteSet.animations);
+  // Grid das animações "frame" (spritesheet) deste mob — default 16x24
+  // (igual ao player), sobrescrito por mob quando necessário (ver bat,
+  // 16x16, em MOB_SPRITE_SETS). Irrelevante pras animações "frames"
+  // (sistema antigo, shadow/tank) e pras "shared" (sempre 16x24, ver
+  // preloadSpriteSheetAnimations em animationUtils.js).
+  const frameWidth = resolvedSpriteSet.frameWidth || PLAYER_FRAME_WIDTH;
+  const frameHeight = resolvedSpriteSet.frameHeight || PLAYER_FRAME_HEIGHT;
 
-  return { ...behaviorConfig, animations };
+  return { ...behaviorConfig, animations, frameWidth, frameHeight };
 }
 
 export function getEntityAnimationKey(entityKey, animationKey) {
   return `${entityKey}_${animationKey}`;
+}
+
+// Discrimina as duas convenções de animação de MOB_SPRITE_SETS (ver
+// comentário lá em cima): "frame" (singular) é a NOVA spritesheet única,
+// "frames" (plural) é o sistema ANTIGO de uma imagem por frame (ainda usado
+// por shadow/tank). Usado tanto no preload/create (ver createEnemy.js)
+// quanto na hora de escolher a textura inicial do sprite (ver
+// spawnEnemyBase em entities/EnemyBase.js) — os dois sistemas nomeiam a
+// textura de forma diferente (`key_0` vs `key` + frame 0).
+export function isSpriteSheetAnimation(animation) {
+  return Object.prototype.hasOwnProperty.call(animation, 'frame');
+}
+
+// Resolve o asset de UMA animação de mob pra uso FORA do Phaser (telas HTML
+// puras — Coleção/Resumo da Run, ver screens/spriteSheetDom.js): não usa
+// scene.load nem scene.anims, só lê a própria config, igual
+// getPlayerAnimationAsset faz pro player. Retorna null se o mob não tiver
+// essa animação (ex: nem todo mob tem "bow").
+export function resolveMobFrameAsset(behavior, folder, animationKey) {
+  const config = getMobConfig(behavior, folder);
+  const animation = config.animations?.find((item) => item.key === animationKey);
+  if (!animation) return null;
+
+  if (!isSpriteSheetAnimation(animation)) {
+    return {
+      sheet: false,
+      frames: Array.from(
+        { length: animation.frames + 1 },
+        (_, i) => `/assets/mobs/${folder}/${animation.url}${i}.png`
+      ),
+      frameRate: animation.frameRate,
+    };
+  }
+
+  // "shared" mora fora da pasta do mob (assets/commons/) e sempre no grid
+  // padrão — mesma regra de preloadSpriteSheetAnimations em animationUtils.js.
+  return {
+    sheet: true,
+    url: animation.shared ? `/assets/${animation.url}.png` : `/assets/mobs/${folder}/${animation.url}.png`,
+    totalFrames: animation.frame + 1,
+    frameRate: animation.frameRate,
+    frameWidth: animation.shared ? PLAYER_FRAME_WIDTH : config.frameWidth,
+    frameHeight: animation.shared ? PLAYER_FRAME_HEIGHT : config.frameHeight,
+  };
 }

@@ -1,5 +1,5 @@
-import { preloadAnimations, createAnimations } from "../../commons/animationUtils.js";
-import { DEFAULT_MOB_TYPE, getMobConfig } from "../../config/entities.js";
+import { preloadAnimations, createAnimations, preloadSpriteSheetAnimations, createSpriteSheetAnimations } from "../../commons/animationUtils.js";
+import { DEFAULT_MOB_TYPE, getMobConfig, isSpriteSheetAnimation } from "../../config/entities.js";
 import { EnemyFactory } from "../../entities/EnemyFactory.js";
 import { damageEnemy, stompDamageEnemy, applyBurn } from "../../entities/EnemyBase.js";
 
@@ -104,9 +104,27 @@ export function preloadEnemyAssets(scene, assetKeys = []) {
     const id = `${key}:${path}`;
     if (loaded.has(id)) return;
     loaded.add(id);
-    preloadAnimations(scene, config.animations.map((animation) => ({
+
+    const legacyAnimations = config.animations.filter((animation) => !isSpriteSheetAnimation(animation));
+    const spriteSheetAnimations = config.animations.filter(isSpriteSheetAnimation);
+
+    preloadAnimations(scene, legacyAnimations.map((animation) => ({
       ...animation, url: `${config.path}${path || key}/${animation.url}`,
     })), key);
+
+    preloadSpriteSheetAnimations(scene, spriteSheetAnimations.map((animation) => ({
+      key: animation.key,
+      sourceKey: animation.asset,
+      shared: animation.shared,
+      // "shared" mora fora da pasta do mob (assets/commons/), o resto
+      // segue a convenção normal assets/mobs/<mobFolder>/<subpasta>/<arquivo>.
+      url: animation.shared
+        ? `assets/${animation.url}.png`
+        : `${config.path}${path || key}/${animation.url}.png`,
+      lastFrame: animation.frame,
+      frameRate: animation.frameRate,
+      repeat: animation.repeat,
+    })), key, config.frameWidth, config.frameHeight);
   });
 }
 
@@ -122,6 +140,18 @@ export function createEnemyAnimations(scene) {
     const id = `${key}:${path}`;
     if (created.has(id)) return;
     created.add(id);
-    createAnimations(scene, config.animations, key);
+
+    const legacyAnimations = config.animations.filter((animation) => !isSpriteSheetAnimation(animation));
+    const spriteSheetAnimations = config.animations.filter(isSpriteSheetAnimation);
+
+    createAnimations(scene, legacyAnimations, key);
+    createSpriteSheetAnimations(scene, spriteSheetAnimations.map((animation) => ({
+      key: animation.key,
+      sourceKey: animation.asset,
+      shared: animation.shared,
+      lastFrame: animation.frame,
+      frameRate: animation.frameRate,
+      repeat: animation.repeat,
+    })), key);
   });
 }

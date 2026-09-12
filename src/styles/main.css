@@ -1121,13 +1121,37 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
    parado no `left:0` padrão (canto da tela) em vez de já começar na
    posição do 0% do keyframe (fora da tela). */
 .loading-actor--player {
+  /* assets/player/run/ hoje é UMA spritesheet 16x24 x6 frames (ver
+     PLAYER_SKINS.default.run em game/config/entities.js), não mais um
+     arquivo por frame — por isso aqui é background-position (steps()) em vez
+     de trocar background-image a cada %, como .loading-actor--enemy ainda
+     faz (mobs continuam um arquivo por frame). Box é 40x60 = frame nativo
+     16x24 * 2.5, então a folha inteira (6 frames) mede 240x60. */
+  background-image: url('/assets/player/run/sprite_run_two.png');
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 240px 60px;
   animation:
-    boot-player-frames 0.4s steps(1) infinite,
+    boot-player-frames 0.6s steps(6) infinite,
     boot-player-path 9s ease-in-out 0.6s infinite backwards;
 }
 
 .loading-actor--enemy {
-  animation: boot-enemy-path 9s ease-in-out 0.6s infinite backwards;
+  /* mob_1/run/ hoje é UMA spritesheet 16x24 x4 frames (ver
+     MOB_SPRITE_SETS.mob_1.run em game/config/entities.js). Box 40x60 =
+     frame nativo 16x24 * 2.5 → folha de 4 frames mede 160x60.
+     background-position/-size/-image são propriedades INTERPOLÁVEIS — sob
+     um timing ease-in-out elas "derretem" de um frame pro outro em vez de
+     trocar seco (diferente de background-image sozinho trocando por %,
+     que não interpola). Por isso ficam numa animation SEPARADA
+     (boot-enemy-sprite, steps(1) = troca instantânea) da que mexe em
+     transform/opacity (boot-enemy-path, essa sim suave) — as duas
+     rodando juntas, mesma duração/delay, sem nenhuma tocar a propriedade
+     da outra. */
+  background-repeat: no-repeat;
+  animation:
+    boot-enemy-sprite 9s steps(1) 0.6s infinite backwards,
+    boot-enemy-path 9s ease-in-out 0.6s infinite backwards;
 }
 
 .loading-bullet {
@@ -1144,13 +1168,10 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
 .loading-bullet--3 { animation: boot-bullet-3-path 9s linear 0.6s infinite backwards; }
 
 /* Pernas do player "correndo" — cicla independente do path pra não precisar
-   repetir os 4 frames em cada trecho da timeline de posição. */
+   repetir os 6 frames em cada trecho da timeline de posição. */
 @keyframes boot-player-frames {
-  0%   { background-image: url('/assets/player/run/sprite_run_two_0.png'); }
-  25%  { background-image: url('/assets/player/run/sprite_run_two_1.png'); }
-  50%  { background-image: url('/assets/player/run/sprite_run_two_2.png'); }
-  75%  { background-image: url('/assets/player/run/sprite_run_two_3.png'); }
-  100% { background-image: url('/assets/player/run/sprite_run_two_0.png'); }
+  from { background-position-x: 0; }
+  to   { background-position-x: -240px; }
 }
 
 /* Entra correndo (0-15%), segura posição enquanto o inimigo chega e leva os
@@ -1170,28 +1191,45 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
    impacto do 3º tiro (~43%). transform só é redeclarado quando muda
    (0%→15% de entrada, 42% segurando o mesmo x) — nos % só de troca de
    perna o navegador mantém o valor interpolado entre essas âncoras. */
+/* Troca instantânea (steps(1)) de frame/imagem — pernas do run (0-42%) e
+   depois os frames do "spark" da morte (43-45%, ver `shared` em
+   MOB_SPRITE_SETS.mob_1.spark), cada imagem já na largura/grid corretos
+   (160px = folha de 4 frames do run, 240px = folha de 6 frames do spark,
+   ambas a 40px por frame). Nunca toca transform/opacity — isso é só do
+   boot-enemy-path, que roda em paralelo (ver .loading-actor--enemy). */
+@keyframes boot-enemy-sprite {
+  0%   { background-image: url('/assets/mobs/mob_1/run/sprite_run_two.png'); background-size: 160px 60px; background-position-x: 0; }
+  3%   { background-position-x: -40px; }
+  6%   { background-position-x: -80px; }
+  9%   { background-position-x: -120px; }
+  12%  { background-position-x: 0; }
+  15%  { background-position-x: -40px; }
+  18%  { background-position-x: -80px; }
+  21%  { background-position-x: -120px; }
+  24%  { background-position-x: 0; }
+  27%  { background-position-x: -40px; }
+  30%  { background-position-x: -80px; }
+  33%  { background-position-x: -120px; }
+  36%  { background-position-x: 0; }
+  39%  { background-position-x: -40px; }
+  42%  { background-position-x: -80px; }
+  43%  { background-image: url('/assets/commons/spark/sprite_z_die_spark.png'); background-size: 240px 60px; background-position-x: 0; }
+  44%  { background-position-x: -80px; }
+  45%  { background-position-x: -200px; }
+  100% { background-image: url('/assets/mobs/mob_1/run/sprite_run_two.png'); background-size: 160px 60px; background-position-x: 0; }
+}
+
+/* Entra correndo (0-15%), segura posição enquanto o inimigo chega e leva os
+   3 tiros (15-46%), volta correndo e sai de cena (75-85%) até o loop
+   reiniciar. */
 @keyframes boot-enemy-path {
-  0%   { transform: translate(380px, 0); opacity: 1; background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
-  3%   { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_1.png'); }
-  6%   { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_2.png'); }
-  9%   { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_3.png'); }
-  12%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
-  15%  { transform: translate(250px, 0); background-image: url('/assets/mobs/mob_1/run/sprite_run_two_1.png'); }
-  18%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_2.png'); }
-  21%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_3.png'); }
-  24%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
-  27%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_1.png'); }
-  30%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_2.png'); }
-  33%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_3.png'); }
-  36%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
-  39%  { background-image: url('/assets/mobs/mob_1/run/sprite_run_two_1.png'); }
-  42%  { transform: translate(250px, 0); background-image: url('/assets/mobs/mob_1/run/sprite_run_two_2.png'); }
-  43%  { background-image: url('/assets/mobs/mob_1/spark/sprite_z_die_spark_0.png'); }
-  44%  { background-image: url('/assets/mobs/mob_1/spark/sprite_z_die_spark_3.png'); }
-  45%  { background-image: url('/assets/mobs/mob_1/spark/sprite_z_die_spark_6.png'); opacity: 1; }
+  0%   { transform: translate(380px, 0); opacity: 1; }
+  15%  { transform: translate(250px, 0); }
+  42%  { transform: translate(250px, 0); }
+  45%  { opacity: 1; }
   46%  { transform: translate(250px, 0); opacity: 0; }
   99%  { transform: translate(380px, 0); opacity: 0; }
-  100% { transform: translate(380px, 0); opacity: 1; background-image: url('/assets/mobs/mob_1/run/sprite_run_two_0.png'); }
+  100% { transform: translate(380px, 0); opacity: 1; }
 }
 
 /* 3 tiros do player (parado em x=90) até o inimigo (parado em x=250), um

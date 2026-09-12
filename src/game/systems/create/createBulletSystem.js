@@ -274,7 +274,6 @@ export function createBulletSystem(scene) {
   // (spawnSwordWave) pra não duplicar a fiação de eventos do Phaser.
   const playWeaponAnimation = (player, animationKey, onTriggerFrame) => {
     const fullAnimationKey = getEntityAnimationKey(player.entityKey, animationKey);
-    const triggerTexture = `${fullAnimationKey}_${SWORD_TRIGGER_FRAME}`;
 
     // Garante que não fiquem múltiplos listeners acumulados de disparos
     // anteriores (guardamos a referência no próprio player pois a função é
@@ -287,8 +286,12 @@ export function createBulletSystem(scene) {
     // OBS: o Phaser não tem um evento "animationupdate-<key>" por chave (só
     // o "animationcomplete-<key>" tem essa variante); por isso escutamos o
     // evento genérico "animationupdate" e filtramos pela animação atual.
+    // Cada animação hoje é UMA spritesheet só (ver PLAYER_SKINS em
+    // game/config/entities.js), então todo frame compartilha o mesmo
+    // frame.textureKey — o frame real é frame.textureFrame (índice dentro
+    // da spritesheet).
     player._onWeaponFrame = (anim, frame) => {
-      if (anim.key === fullAnimationKey && frame.textureKey === triggerTexture) {
+      if (anim.key === fullAnimationKey && frame.textureFrame === SWORD_TRIGGER_FRAME) {
         onTriggerFrame();
         player.off('animationupdate', player._onWeaponFrame); // um disparo por animação
       }

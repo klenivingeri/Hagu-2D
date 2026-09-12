@@ -6,7 +6,8 @@
 import runSummaryTemplate from './runSummaryScreen.html?raw';
 import { getStageLabel } from './mapLabels.js';
 import { getBestiaryEntry } from '../game/config/bestiary.js';
-import { getMobConfig } from '../game/config/entities.js';
+import { resolveMobFrameAsset } from '../game/config/entities.js';
+import { buildSpriteIconElement } from './spriteSheetDom.js';
 
 let elements = null;
 
@@ -23,19 +24,16 @@ function formatTime(ms = 0) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-// Sprite de "run" (frame 0) de cada mob já é um PNG estático em
-// /public/assets/mobs/ (ver preloadEnemyAssets em createEnemy.js — mesma
-// convenção de pasta: config.path + (path || key)). O nome do arquivo e a
-// contagem de frames variam por mob (ver MOB_SPRITE_SETS em
-// game/config/entities.js), por isso passa por getMobConfig em vez de um
-// caminho fixo. Reaproveitar o mesmo arquivo aqui evita duplicar asset só
-// pra esta tela, e getMobConfig é config pura (sem Phaser) — não fere
-// CLAUDE.md regra 1 (esta tela só lê um arquivo estático, nunca uma
-// textura do Phaser).
-function getMonsterIconSrc({ key, path, behavior }) {
+// Ícone estático (frame 0 do "run" REAL daquela pasta — cada mob tem seu
+// próprio arquivo/grid, ver MOB_SPRITE_SETS em game/config/entities.js).
+// resolveMobFrameAsset é config pura (sem Phaser) — não fere CLAUDE.md
+// regra 1 (esta tela só lê um arquivo estático, nunca uma textura do
+// Phaser); buildSpriteIconElement decide <img> ou <div> conforme o mob já
+// foi convertido pra spritesheet única ou ainda usa uma imagem por frame.
+function buildMonsterIcon({ key, path, behavior }, className) {
   const folder = path || key;
-  const run = getMobConfig(behavior, folder).animations?.find((animation) => animation.key === 'run');
-  return `/assets/mobs/${folder}/${run.url}0.png`;
+  const asset = resolveMobFrameAsset(behavior, folder, 'run');
+  return buildSpriteIconElement(asset, 32, className).element;
 }
 
 function renderStars(container, stars = 0) {
@@ -60,19 +58,14 @@ function renderMonsterKills(wrap, listEl, monsterKills = []) {
     const item = document.createElement('div');
     item.className = 'flex flex-col items-center gap-1';
 
-    const img = document.createElement('img');
-    img.src = getMonsterIconSrc({ key, path, behavior });
-    img.alt = key;
-    img.className = 'h-8 w-8 object-contain [image-rendering:pixelated]';
-    // Sprite de mob genérico ("commun") sem run/sprite_run_two_0.png não
-    // deve deixar o ícone quebrado visível — some com ele.
-    img.onerror = () => { img.style.visibility = 'hidden'; };
+    const icon = buildMonsterIcon({ key, path, behavior }, 'h-8 w-8 object-contain [image-rendering:pixelated]');
+    icon.alt = key;
 
     const countLabel = document.createElement('span');
     countLabel.className = 'text-xs font-bold text-white';
     countLabel.textContent = `x${count}`;
 
-    item.append(img, countLabel);
+    item.append(icon, countLabel);
     listEl.append(item);
   });
 }
@@ -93,17 +86,14 @@ function renderCollectedSprites(wrap, listEl, collectedSprites = []) {
     const item = document.createElement('div');
     item.className = 'flex flex-col items-center gap-1';
 
-    const img = document.createElement('img');
-    img.src = getMonsterIconSrc({ key, path, behavior });
-    img.alt = key;
-    img.className = 'h-8 w-8 object-contain [image-rendering:pixelated]';
-    img.onerror = () => { img.style.visibility = 'hidden'; };
+    const icon = buildMonsterIcon({ key, path, behavior }, 'h-8 w-8 object-contain [image-rendering:pixelated]');
+    icon.alt = key;
 
     const nameLabel = document.createElement('span');
     nameLabel.className = 'max-w-[4rem] truncate text-[10px] font-bold text-amber-300';
     nameLabel.textContent = getBestiaryEntry(key).name;
 
-    item.append(img, nameLabel);
+    item.append(icon, nameLabel);
     listEl.append(item);
   });
 }

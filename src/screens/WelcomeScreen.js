@@ -32,9 +32,10 @@ import {
 } from '../services/FullscreenService.js';
 import { BESTIARY, getBestiaryEntry, getBehaviorTraitLabel } from '../game/config/bestiary.js';
 import { getCollectionEntries } from '../managers/GameManager.js';
-// Só a CONFIG de mobs (dados puros, sem Phaser) — nunca o Phaser em si,
-// que fica proibido aqui (CLAUDE.md regra 1: WelcomeScreen é tela HTML).
-import { getMobConfig } from '../game/config/entities.js';
+// Só a CONFIG de mobs/player (dados puros, sem Phaser) — nunca o Phaser em
+// si, que fica proibido aqui (CLAUDE.md regra 1: WelcomeScreen é tela HTML).
+import { getPlayerAnimationAsset, resolveMobFrameAsset } from '../game/config/entities.js';
+import { applySpriteSheet, setSpriteSheetFrame, buildSpriteIconElement } from './spriteSheetDom.js';
 
 let elements = null;
 let idleAnimationTimer = null;
@@ -104,21 +105,28 @@ function getStageCells() {
   return cells;
 }
 
-// Mesmos frames/frameRate do idle do player dentro do Phaser (ver
-// PLAYERS_CONFIG.animations em /src/game/config/entities.js), só que
-// tocados como <img> comum já que aqui fora não tem nenhuma cena do Phaser.
-const IDLE_SPRITE_FRAMES = [0, 1, 2, 3].map(
-  (frame) => `/assets/player/idle/sprite_base_idle_${frame}.png`
-);
-const IDLE_SPRITE_FRAME_RATE = 4;
+// Mesma arte/skin do player dentro do Phaser (ver PLAYER_SKINS em
+// /src/game/config/entities.js) — cada animação é UMA spritesheet 16x24, só
+// que aqui fora não tem nenhuma cena do Phaser pra ler/tocar essa
+// spritesheet, então tocamos "na mão" via background-position de um <div>
+// (ver applySpriteSheet/setSpriteSheetFrame em spriteSheetDom.js).
+function toDomSpriteAsset(asset) {
+  return { url: `/${asset.url}`, totalFrames: asset.totalFrames, frameRate: asset.frameRate };
+}
+
+const PLAYER_IDLE_SPRITE = toDomSpriteAsset(getPlayerAnimationAsset('player', 'idle'));
+const PLAYER_RUN_SPRITE = toDomSpriteAsset(getPlayerAnimationAsset('player', 'run'));
+
+const PLAYER_TOPBAR_SPRITE_HEIGHT_PX = 24; // bate com a classe h-6 do ícone da topbar
 
 function startIdleAnimation() {
   if (!elements) return;
+  applySpriteSheet(elements.playerSprite, PLAYER_IDLE_SPRITE, PLAYER_TOPBAR_SPRITE_HEIGHT_PX);
   let frameIndex = 0;
   idleAnimationTimer = window.setInterval(() => {
-    frameIndex = (frameIndex + 1) % IDLE_SPRITE_FRAMES.length;
-    elements.playerSprite.src = IDLE_SPRITE_FRAMES[frameIndex];
-  }, 1000 / IDLE_SPRITE_FRAME_RATE);
+    frameIndex = (frameIndex + 1) % PLAYER_IDLE_SPRITE.totalFrames;
+    setSpriteSheetFrame(elements.playerSprite, frameIndex);
+  }, 1000 / PLAYER_IDLE_SPRITE.frameRate);
 }
 
 function stopIdleAnimation() {
@@ -126,13 +134,7 @@ function stopIdleAnimation() {
   idleAnimationTimer = null;
 }
 
-// Mesmos frames/frameRate do run do player dentro do Phaser (ver
-// PLAYERS_CONFIG.animations em /src/game/config/entities.js) — tocado como
-// <img> comum enquanto o "boneco" do grid corre de uma fase pra outra.
-const RUN_SPRITE_FRAMES = [0, 1, 2, 3].map(
-  (frame) => `/assets/player/run/sprite_run_two_${frame}.png`
-);
-const RUN_SPRITE_FRAME_RATE = 10;
+const RUNNER_SPRITE_HEIGHT_PX = 40; // bate com a classe h-10 do boneco do grid
 const RUNNER_MOVE_MS = 500; // precisa bater com a duration da transition no CSS
 
 let runnerEl = null;
@@ -160,24 +162,24 @@ function findMapGridPosition(mapKey) {
 }
 
 function createRunnerElement() {
-  const img = document.createElement('img');
-  img.className = 'stage-runner-sprite pointer-events-none absolute z-20 h-10 w-auto [image-rendering:pixelated]';
-  img.style.transitionProperty = 'left, top';
-  img.style.transitionDuration = `${RUNNER_MOVE_MS}ms`;
-  img.style.transitionTimingFunction = 'linear';
-  img.src = IDLE_SPRITE_FRAMES[0];
-  return img;
+  const el = document.createElement('div');
+  el.className = 'stage-runner-sprite pointer-events-none absolute z-20 h-10 shrink-0 [image-rendering:pixelated]';
+  el.style.transitionProperty = 'left, top';
+  el.style.transitionDuration = `${RUNNER_MOVE_MS}ms`;
+  el.style.transitionTimingFunction = 'linear';
+  applySpriteSheet(el, PLAYER_IDLE_SPRITE, RUNNER_SPRITE_HEIGHT_PX);
+  return el;
 }
 
-function startRunnerFrames(frames, frameRate) {
+function startRunnerFrames(spriteAsset) {
   if (!runnerEl) return;
   window.clearInterval(runnerFrameTimer);
+  applySpriteSheet(runnerEl, spriteAsset, RUNNER_SPRITE_HEIGHT_PX);
   let frameIndex = 0;
-  runnerEl.src = frames[0];
   runnerFrameTimer = window.setInterval(() => {
-    frameIndex = (frameIndex + 1) % frames.length;
-    runnerEl.src = frames[frameIndex];
-  }, 1000 / frameRate);
+    frameIndex = (frameIndex + 1) % spriteAsset.totalFrames;
+    setSpriteSheetFrame(runnerEl, frameIndex);
+  }, 1000 / spriteAsset.frameRate);
 }
 
 // Posiciona o runner no centro da célula (row, col), passando por cima do
@@ -283,7 +285,7 @@ function moveRunnerAlongPath(path, onArrive) {
 
   runnerMoving = true;
   hidePlayButton();
-  startRunnerFrames(RUN_SPRITE_FRAMES, RUN_SPRITE_FRAME_RATE);
+  startRunnerFrames(PLAYER_RUN_SPRITE);
 
   let stepIndex = 1;
   const runStep = () => {
@@ -300,7 +302,7 @@ function moveRunnerAlongPath(path, onArrive) {
         return;
       }
       runnerMoving = false;
-      startRunnerFrames(IDLE_SPRITE_FRAMES, IDLE_SPRITE_FRAME_RATE);
+      startRunnerFrames(PLAYER_IDLE_SPRITE);
       onArrive();
     };
     runnerEl.addEventListener('transitionend', handleStepArrive, { once: true });
@@ -783,33 +785,6 @@ function handleAccessoryListClick(event) {
   }
 }
 
-// Ícone estático (frame 0 do "run" REAL daquela pasta — cada mob tem seu
-// próprio arquivo/contagem de frames, ver MOB_SPRITE_SETS em
-// game/config/entities.js) — mesma convenção usada em
-// RunSummaryScreen.getMonsterIconSrc (config.path || key + entry.behavior).
-function getCollectionIconSrc({ key, path, behavior }) {
-  const folder = path || key;
-  const run = getMobConfig(behavior, folder).animations?.find((animation) => animation.key === 'run');
-  return `/assets/mobs/${folder}/${run.url}0.png`;
-}
-
-// Todos os frames do "run" da espécie (mesma animação que ela usa correndo
-// em campo), pra tocar como <img> comum no card da Coleção — mesma técnica
-// de trocar src via setInterval do startRunnerFrames, já que aqui fora não
-// tem cena do Phaser rodando uma anims.create() de verdade. Sem 'run'
-// configurado (mob novo/incompleto), cai pro frame estático de sempre.
-function getCollectionRunFrames(entry) {
-  const folder = entry.path || entry.key;
-  const run = getMobConfig(entry.behavior, folder).animations?.find((animation) => animation.key === 'run');
-  if (!run) return { frames: [getCollectionIconSrc(entry)], frameRate: 1 };
-
-  const frames = Array.from(
-    { length: run.frames + 1 },
-    (_, i) => `/assets/mobs/${folder}/${run.url}${i}.png`
-  );
-  return { frames, frameRate: run.frameRate };
-}
-
 // Poses "de identidade" do mob (o que ele parece fora de combate/reação) —
 // deixa fora 'stomp'/'spark', que são feedback de dano/morte, não um jeito
 // de mostrar o bicho na galeria. Ordem fixa pra galeria não pular de posição
@@ -819,44 +794,40 @@ const GALLERY_POSE_LABELS = { idle: 'Parado', run: 'Run', bow: 'Arco', attack: '
 
 // entry.behavior é a mesma key usada em MOBS_CONFIG (ver
 // EnemyBase.killEnemy -> recordEnemyDefeat, que grava enemy.entityConfig.behavior
-// vindo de getMobConfig(type, mobFolder)) — dá pra buscar de volta a lista de
-// animations REAIS daquela pasta (entry.path || entry.key) a partir só do
-// que já está salvo na Coleção (sem precisar de nenhuma cena do Phaser ativa).
+// vindo de getMobConfig(type, mobFolder)) — dá pra buscar de volta os assets
+// REAIS daquela pasta (entry.path || entry.key) a partir só do que já está
+// salvo na Coleção (sem precisar de nenhuma cena do Phaser ativa) via
+// resolveMobFrameAsset, que já sabe se aquela animação é uma spritesheet
+// única ou o sistema antigo de uma imagem por frame.
 function getGalleryPoses(entry) {
   if (!entry) return [];
   const folder = entry.path || entry.key;
-  const config = getMobConfig(entry.behavior, folder);
 
   return GALLERY_POSE_ORDER
-    .map((poseKey) => config.animations?.find((animation) => animation.key === poseKey))
-    .filter(Boolean)
-    .map((animation) => ({
-      key: animation.key,
-      label: GALLERY_POSE_LABELS[animation.key] || animation.key,
-      src: `/assets/mobs/${folder}/${animation.url}0.png`,
-    }));
+    .map((poseKey) => ({ key: poseKey, asset: resolveMobFrameAsset(entry.behavior, folder, poseKey) }))
+    .filter(({ asset }) => asset);
 }
 
-function buildGallerySpriteSlot({ label, src }, spriteUnlocked) {
+function buildGallerySpriteSlot({ key, asset }, spriteUnlocked) {
   const wrapper = document.createElement('div');
   wrapper.className = 'flex flex-col items-center gap-1';
 
   const frame = document.createElement('div');
   frame.className = 'flex h-14 w-14 items-center justify-center rounded-lg border border-white/10 bg-gray-900/80';
 
-  const img = document.createElement('img');
-  img.src = src;
-  img.alt = `Sprite de ${label}`;
-  img.className = `h-10 w-10 object-contain [image-rendering:pixelated] ${getSpriteFilterClass(spriteUnlocked)}`;
-  // Nem todo mob tem asset pra toda pose (ex: nem todo type usa 'bow') —
-  // some o slot em vez de mostrar o ícone quebrado do navegador.
-  img.onerror = () => { wrapper.remove(); };
+  const label = GALLERY_POSE_LABELS[key] || key;
+  const { element } = buildSpriteIconElement(
+    asset,
+    40,
+    `h-10 w-10 object-contain [image-rendering:pixelated] ${getSpriteFilterClass(spriteUnlocked)}`
+  );
+  element.alt = `Sprite de ${label}`;
 
   const caption = document.createElement('span');
   caption.className = 'text-[9px] font-semibold text-gray-400';
   caption.textContent = label;
 
-  frame.append(img);
+  frame.append(element);
   wrapper.append(frame, caption);
   return wrapper;
 }
@@ -902,18 +873,18 @@ function buildCollectionCard(speciesKey, entry) {
   // openCollectionModal), na galeria de sprites, até o item colecionável ser
   // pego em campo NUMA RUN CONCLUÍDA (ver GameManager.unlockEnemySprite).
   const bestiaryEntry = getBestiaryEntry(speciesKey);
-  const { frames, frameRate } = getCollectionRunFrames(entry);
-  const img = document.createElement('img');
-  img.src = frames[0];
-  img.alt = bestiaryEntry.name;
-  img.className = 'h-10 w-10 object-contain [image-rendering:pixelated]';
-  img.onerror = () => { img.style.visibility = 'hidden'; };
+  const folder = entry.path || entry.key;
+  const asset = resolveMobFrameAsset(entry.behavior, folder, 'run');
+  const { element, totalFrames, frameRate, setFrame } = buildSpriteIconElement(
+    asset, 40, 'h-10 w-10 object-contain [image-rendering:pixelated]'
+  );
+  element.alt = bestiaryEntry.name;
 
-  if (frames.length > 1) {
+  if (totalFrames > 1) {
     let frameIndex = 0;
     const timerId = window.setInterval(() => {
-      frameIndex = (frameIndex + 1) % frames.length;
-      img.src = frames[frameIndex];
+      frameIndex = (frameIndex + 1) % totalFrames;
+      setFrame(frameIndex);
     }, 1000 / frameRate);
     collectionCardTimers.push(timerId);
   }
@@ -922,7 +893,7 @@ function buildCollectionCard(speciesKey, entry) {
   label.className = 'truncate text-[9px] font-bold text-white';
   label.textContent = bestiaryEntry.name;
 
-  card.append(img, label);
+  card.append(element, label);
   card.addEventListener('click', () => openCollectionModal(speciesKey, entry));
   return card;
 }
@@ -1048,7 +1019,7 @@ function handleResetStorage() {
   stageZoom = getDefaultStageZoom();
   runnerMoving = false;
   ({ row: runnerRow, col: runnerCol } = findMapGridPosition(DEFAULT_MAP_KEY));
-  startRunnerFrames(IDLE_SPRITE_FRAMES, IDLE_SPRITE_FRAME_RATE);
+  startRunnerFrames(PLAYER_IDLE_SPRITE);
   renderPlayerInfo();
   renderSettings();
   renderStages();
@@ -1187,7 +1158,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   renderShop();
   applyStageZoom();
   startIdleAnimation();
-  startRunnerFrames(IDLE_SPRITE_FRAMES, IDLE_SPRITE_FRAME_RATE);
+  startRunnerFrames(PLAYER_IDLE_SPRITE);
   showMapPreview(selectedMapKey, elements.stagePreviewViewport);
 }
 

@@ -1,5 +1,5 @@
 import { MAP_DEPTHS } from '../../../constants.js';
-import { getEntityAnimationKey } from '../../config/entities.js';
+import { getEntityAnimationKey, isSpriteSheetAnimation } from '../../config/entities.js';
 
 // Item colecionável que um inimigo pode soltar ao morrer (ver
 // EnemyBase.killEnemy()/SPRITE_DROP_CHANCE_PERCENT em GameManager.js) — o
@@ -57,11 +57,16 @@ export function createSpriteDropGroup(scene) {
   return drops;
 }
 
-export function spawnSpriteDrop(scene, x, y, { key, path = '', behavior } = {}) {
+export function spawnSpriteDrop(scene, x, y, { key, path = '', behavior, config } = {}) {
   if (!scene.spriteDrops) return;
 
-  const textureKey = `${getEntityAnimationKey(key, 'run')}_0`;
-  const drop = scene.spriteDrops.create(x, y, textureKey);
+  // "run" pode vir de spritesheet única (textura "key" + frame 0) ou do
+  // sistema antigo de uma imagem por frame (textura "key_0") — mesma
+  // distinção de spawnEnemyBase em entities/EnemyBase.js.
+  const runAnimation = config?.animations.find((animation) => animation.key === 'run') || {};
+  const drop = isSpriteSheetAnimation(runAnimation)
+    ? scene.spriteDrops.create(x, y, getEntityAnimationKey(key, 'run'), 0)
+    : scene.spriteDrops.create(x, y, `${getEntityAnimationKey(key, 'run')}_0`);
   drop.setDepth(MAP_DEPTHS.SPRITE_DROP);
   drop.body.setAllowGravity(false);
 
