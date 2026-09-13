@@ -13,6 +13,7 @@ import { BindGameOverEvents, HideGameOverScreen } from './screens/GameOverScreen
 import { loadPersistedState, gameState } from './managers/GameManager.js';
 import { RegisterServiceWorker } from './services/registerServiceWorker.js';
 import { startViewportSync } from './services/ViewportService.js';
+import { initStatusBar } from './services/StatusBarService.js';
 import {
   initCrazyGamesSdk,
   notifyLoadingStart,
@@ -26,6 +27,7 @@ import { initAdMob } from './services/AdMobService.js';
 // --app-vh (ver ViewportService.js) substituem vw/dvh no CSS pra evitar o
 // gap ao girar a tela (ver main.css).
 startViewportSync();
+initStatusBar();
 
 // O Phaser só é instanciado quando a partida realmente começa (CLAUDE.md
 // regra 4), então o canvas e os controles ficam escondidos (via CSS, já no

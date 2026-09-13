@@ -30,11 +30,13 @@ const DEFAULT_SETTINGS = {
   // Quantas fatias (NxN) a fase é dividida pra câmera da Run seguir o
   // player (ver GameScene.js) — 1 = mapa inteiro visível, sem zoom nem
   // follow, é o comportamento original.
-  cameraZoom: 1,
+  // Precisa bater com PLATFORM_DEFAULT_ZOOM[platformMode] abaixo — GameScene
+  // (ver create()) só lê cameraZoom, nunca platformMode diretamente.
+  cameraZoom: 3,
   // 'gameboy' = jogador escolhe manualmente entre zoom 1x/2x (ver
   // camera-zoom-btn em SettingsScreen.js). 'mobile' = zoom fixo em 3x
   // (RESIZE, tela cheia real) — ver setPlatformMode() abaixo.
-  platformMode: 'gameboy',
+  platformMode: 'mobile',
   // Skin visual do D-pad/botões de ação/SELECT-START (aba "Botões" em
   // Configurações, ver SettingsScreen.js). Puramente estético — aplicado
   // via atributo data-controls-theme em #app (ver main.css), nunca muda
