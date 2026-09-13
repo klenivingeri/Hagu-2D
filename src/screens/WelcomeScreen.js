@@ -25,7 +25,7 @@ import {
   TICKET_COST_COINS,
   TICKET_COST_DIAMANT,
 } from '../managers/GameManager.js';
-import { requestRewardedAd } from '../services/CrazyGamesService.js';
+import { requestRewardedAd } from '../services/AdsService.js';
 import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '../game/config/upgrades.js';
 import { MAPS, MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
 import { getStageLabel, getStageNumber } from './mapLabels.js';
@@ -728,10 +728,7 @@ function renderShop() {
     const buttonLabel = state.isMaxed ? 'Máximo' : `${state.cost} ${currencyIcon}`;
 
     row.innerHTML = `
-      <span class="relative inline-block shrink-0">
-        <span class="text-xl leading-none">${def.icon}</span>
-        ${canAfford ? '<span class="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-red-500 ring-2 ring-gray-900"></span>' : ''}
-      </span>
+      <span class="text-xl leading-none shrink-0">${def.icon}</span>
       <div class="min-w-0 flex-1">
         <p class="truncate text-xs font-bold">${def.label}</p>
         <p class="truncate text-[10px] text-gray-400">${statusLine}</p>
@@ -1162,10 +1159,11 @@ function handleBuyTicketWithDiamant() {
 }
 
 async function handleWatchAdForTicket() {
-  // Fora da CrazyGames (SDK ausente), requestRewardedAd() resolve `true` na
-  // hora — mesmo comportamento de sempre conceder de graça (ver
-  // CrazyGamesService.js). Só bloqueia a ficha se o player realmente estiver
-  // na plataforma e fechar/pular o anúncio antes do fim.
+  // AdsService.requestRewardedAd() escolhe sozinho o backend certo (AdMob
+  // no app nativo, CrazyGames no navegador) — ver AdsService.js. Fora dos
+  // dois (dev local sem SDK nenhum) cai no fallback de sempre conceder de
+  // graça. Só bloqueia a ficha se o player realmente assistir um anúncio de
+  // verdade e fechar/pular antes do fim.
   const watched = await requestRewardedAd();
   if (!watched) return;
 

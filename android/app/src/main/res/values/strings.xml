@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HAGU</string>
+    <string name="title_activity_main">HAGU</string>
+    <string name="package_name">com.ekpgames.hagu</string>
+    <string name="custom_url_scheme">com.ekpgames.hagu</string>
+</resources>

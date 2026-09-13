@@ -1,0 +1,8 @@
+{
+  "appId": "com.ekpgames.hagu",
+  "appName": "HAGU",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}

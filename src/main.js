@@ -20,6 +20,7 @@ import {
   notifyGameplayStart,
   BindCrazyGamesEvents,
 } from './services/CrazyGamesService.js';
+import { initAdMob } from './services/AdMobService.js';
 
 // Precisa rodar antes de qualquer tela ser mostrada: as unidades --app-vw/
 // --app-vh (ver ViewportService.js) substituem vw/dvh no CSS pra evitar o
@@ -171,7 +172,7 @@ RegisterServiceWorker();
 // da CrazyGames), só depois a Welcome.
 notifyLoadingStart();
 ShowLoadingScreen('Carregando jogo...', 'player');
-Promise.all([initCrazyGamesSdk(), loadPersistedState()]).finally(() => {
+Promise.all([initCrazyGamesSdk(), initAdMob(), loadPersistedState()]).finally(() => {
   applyControlsTheme(gameState.settings.controlsTheme);
   HideLoadingScreen();
   notifyLoadingStop();
