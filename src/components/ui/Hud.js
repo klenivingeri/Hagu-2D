@@ -46,8 +46,7 @@ function CreateHud({
   hud = {
     lifePanel,
     healthFill: lifePanel.querySelector('.health-fill'),
-    energyBar: lifePanel.querySelector('.energy-bar'),
-    energyFill: lifePanel.querySelector('.energy-fill'),
+    energyBlocks: lifePanel.querySelector('.energy-blocks'),
     attempts,
     attemptsCurrent: attempts.querySelector('.attempts-current'),
     attemptsMax: attempts.querySelector('.attempts-max'),
@@ -72,20 +71,36 @@ function updateHudHealth(life, maxLife = 1) {
   hud.healthFill.style.width = `${percentage}%`;
 }
 
+// Aljava em blocos: um bloquinho por bala de energia (maxEnergy), preenchido
+// da esquerda pra direita conforme currentEnergy. Reconstrói os blocos só
+// quando a quantidade muda (upgrade de energia/troca de fase) — caso comum
+// (só gastar/recarregar) apenas alterna a classe 'filled'.
 function updateHudEnergy(currentEnergy, maxEnergy = 1) {
-  if (!hud?.energyFill) return;
-  const percentage = Math.max(0, Math.min(100, (currentEnergy / (maxEnergy || 1)) * 100));
-  hud.energyFill.style.width = `${percentage}%`;
+  if (!hud?.energyBlocks) return;
+
+  if (hud.energyBlocks.childElementCount !== maxEnergy) {
+    hud.energyBlocks.innerHTML = '';
+    for (let i = 0; i < maxEnergy; i += 1) {
+      const block = document.createElement('span');
+      block.className = 'energy-block';
+      hud.energyBlocks.append(block);
+    }
+  }
+
+  const blocks = hud.energyBlocks.children;
+  for (let i = 0; i < blocks.length; i += 1) {
+    blocks[i].classList.toggle('filled', i < currentEnergy);
+  }
 }
 
 function shakeHudEnergy() {
-  if (!hud?.energyBar) return;
+  if (!hud?.energyBlocks) return;
   // Reinicia a animação mesmo em ataques "a seco" consecutivos: sem tirar
   // a classe e forçar reflow, o CSS ignora reaplicar a mesma classe já
-  // ativa e a barra não treme de novo.
-  hud.energyBar.classList.remove('energy-bar--shake');
-  void hud.energyBar.offsetWidth;
-  hud.energyBar.classList.add('energy-bar--shake');
+  // ativa e os blocos não tremem de novo.
+  hud.energyBlocks.classList.remove('energy-blocks--shake');
+  void hud.energyBlocks.offsetWidth;
+  hud.energyBlocks.classList.add('energy-blocks--shake');
 }
 
 function updateHudCoins(totalCoins) {

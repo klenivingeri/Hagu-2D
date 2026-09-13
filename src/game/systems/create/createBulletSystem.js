@@ -23,9 +23,12 @@ const SWORD_WAVE_OFFSET_Y = 2;
 
 // Custo de energia de qualquer ataque (arma/arco/espada/cajado — ver
 // ACCESSORY_UPGRADE_IDS em game/config/upgrades.js). Todas as armas gastam
-// do mesmo pool (player.status.currentEnergy), que recarrega sozinho com o
-// tempo na velocidade do upgrade 'reloadSpeed' — sem energia suficiente, o
-// ataque "falha a seco" igual à aljava vazia de antes.
+// do mesmo pool (player.status.currentEnergy), exibido no HUD como blocos
+// (a "aljava" — ver Hud.js). Sistema de carregador: cada ataque gasta um
+// bloco; só quando ela esvazia (currentEnergy chega a 0) é que dispara a
+// recarga, que enche TODOS os blocos de uma vez após
+// player.status.energyRegenMs (upgrade 'reloadSpeed') — sem energia
+// suficiente, o ataque "falha a seco" (ver dryFire).
 const ENERGY_COST_PER_ATTACK = 1;
 
 // Bola de fogo do Cajado (WEAPONS_CONFIG.staff, spawnType 'fireball'): quica
@@ -523,18 +526,6 @@ export function createBulletSystem(scene) {
     update() {
       const player = scene.player;
       if (player) {
-        if (player.status.currentEnergy < player.status.maxEnergy
-          && scene.time.now >= (player._nextEnergyRegenAt || Infinity)) {
-          player.status.currentEnergy += 1;
-          player._nextEnergyRegenAt = player.status.currentEnergy < player.status.maxEnergy
-            ? scene.time.now + player.status.energyRegenMs
-            : 0;
-        }
-        // A cada frame reemite a energia somando a fração já carregada da
-        // próxima unidade, pra barra encher continuamente em vez de saltar
-        // só quando a unidade inteira termina de carregar.
-        emitEnergyHud(scene, player);
-
         if (player._bombCharging) {
           // Morreu/saiu de cena segurando a bomba: cancela em vez de deixar
           // o sprite/timer vazando por cima do respawn (scene.restart()
@@ -612,24 +603,25 @@ export function createBulletSystem(scene) {
   };
 }
 
-// Progresso (0..1) já carregado da unidade de energia que está recarregando agora.
-function energyRegenProgressOf(player, scene) {
-  const isRegenerating = player.status.currentEnergy < player.status.maxEnergy && player._nextEnergyRegenAt;
-  if (!isRegenerating) return 0;
-  return 1 - Math.min(1, Math.max(0, (player._nextEnergyRegenAt - scene.time.now) / player.status.energyRegenMs));
-}
-
 function hasEnoughEnergy(player) {
   return player.status.currentEnergy >= ENERGY_COST_PER_ATTACK;
 }
 
-// Desconta ENERGY_COST_PER_ATTACK do player, preservando o progresso de
-// recarga já acumulado (ver energyRegenProgressOf) em vez de descartá-lo —
-// senão o ataque parece "gastar 2 unidades" na barra.
+// Desconta ENERGY_COST_PER_ATTACK do player. Quando a aljava esvazia
+// (currentEnergy chega a 0), agenda a recarga completa — todos os blocos
+// voltam de uma vez só, depois de player.status.energyRegenMs (upgrade
+// 'reloadSpeed') — em vez do antigo esquema de encher 1 unidade por vez.
+// player._reloadTimer evita agendar mais de uma recarga em paralelo (ex:
+// bomba + arco gastando a última unidade em sequência rápida).
 function spendEnergy(player, scene) {
-  const carriedProgress = energyRegenProgressOf(player, scene);
-  player.status.currentEnergy -= ENERGY_COST_PER_ATTACK;
-  player._nextEnergyRegenAt = scene.time.now + player.status.energyRegenMs * (1 - carriedProgress);
+  player.status.currentEnergy = Math.max(0, player.status.currentEnergy - ENERGY_COST_PER_ATTACK);
+  if (player.status.currentEnergy > 0 || player._reloadTimer) return;
+
+  player._reloadTimer = scene.time.delayedCall(player.status.energyRegenMs, () => {
+    player._reloadTimer = null;
+    player.status.currentEnergy = player.status.maxEnergy;
+    emitEnergyHud(scene, player);
+  });
 }
 
 // Reação de "ataque falhou" (sem energia suficiente) — mesmo efeito visual e
@@ -641,17 +633,15 @@ function dryFire(scene, player) {
   scene.game.events.emit(HUD_EVENTS.ENERGY_EMPTY);
 }
 
-// Energia exibida no HUD como fração contínua: unidades inteiras + progresso
-// (0..1) da próxima unidade recarregando, pra barra encher aos poucos em vez
-// de pular só quando uma unidade inteira termina de recarregar.
+// Energia exibida no HUD como blocos inteiros (a "aljava" — ver Hud.js):
+// currentEnergy blocos preenchidos de um total de maxEnergy.
 function emitEnergyHud(scene, player) {
-  const maxEnergy = player.status.maxEnergy;
-  const displayEnergy = player.status.currentEnergy + energyRegenProgressOf(player, scene);
+  const { currentEnergy, maxEnergy } = player.status;
 
-  // Evita reemitir (e reescrever o DOM) quando o valor não mudou de forma perceptível.
-  if (player._lastHudEnergy !== undefined && Math.abs(player._lastHudEnergy - displayEnergy) < 0.001) return;
-  player._lastHudEnergy = displayEnergy;
-  scene.game.events.emit(HUD_EVENTS.ENERGY_CHANGED, displayEnergy, maxEnergy);
+  // Evita reemitir (e reescrever o DOM) quando o valor não mudou.
+  if (player._lastHudEnergy === currentEnergy) return;
+  player._lastHudEnergy = currentEnergy;
+  scene.game.events.emit(HUD_EVENTS.ENERGY_CHANGED, currentEnergy, maxEnergy);
 }
 
 // Mesma checagem de alcance/borda vale pra bullet (arco/arma) e sword wave

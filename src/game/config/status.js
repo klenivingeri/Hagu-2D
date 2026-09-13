@@ -63,10 +63,12 @@ export function createPlayerStatus(overrides = {}) {
     burnTicks: upgradeValue('burnTicks'),
     // Energia: todas as armas (ver ACCESSORY_UPGRADE_IDS em
     // game/config/upgrades.js) gastam energia pra atacar — não é mais só
-    // munição do arco/arma (ver createBulletSystem.js). Recarrega sozinha
-    // com o tempo, na velocidade do upgrade 'reloadSpeed'.
+    // munição do arco/arma (ver createBulletSystem.js). Exibida como blocos
+    // no HUD (a "aljava"); sistema de carregador — só recarrega (todos os
+    // blocos de uma vez) depois de esvaziar, na velocidade do upgrade
+    // 'reloadSpeed'.
     maxEnergy: gameState.maxEnergy,
-    energyRegenMs: upgradeValue('reloadSpeed'), // ms pra recarregar 1 unidade de energia
+    energyRegenMs: upgradeValue('reloadSpeed'), // ms pra recarregar a aljava inteira depois de esvaziar
     currentEnergy: gameState.maxEnergy,
     dropDiamant: gameState.dropDiamant,
     coinValue: upgradeValue('coinValue'),       // moedas globais ganhas por coleta (ver createCoins)
