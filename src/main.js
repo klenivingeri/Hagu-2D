@@ -7,7 +7,6 @@ import { BindHudEvents } from './components/ui/Hud.js';
 import { ShowLoadingScreen, HideLoadingScreen, BindLoadingEvents } from './screens/LoadingScreen.js';
 import { ShowWelcomeScreen, HideWelcomeScreen } from './screens/WelcomeScreen.js';
 import { ShowRunSummaryScreen, HideRunSummaryScreen } from './screens/RunSummaryScreen.js';
-import { BindPauseEvents, HidePauseScreen } from './screens/PauseScreen.js';
 import { BindSettingsEvents, HideSettingsScreen } from './screens/SettingsScreen.js';
 import { BindGameOverEvents, HideGameOverScreen } from './screens/GameOverScreen.js';
 import { loadPersistedState, gameState } from './managers/GameManager.js';
@@ -69,22 +68,15 @@ function startMatch(mapKey) {
   BindHudEvents(game);
   BindLoadingEvents(game);
   BindCrazyGamesEvents(game);
-  BindPauseEvents(game, {
-    onResume: () => {
-      HidePauseScreen();
-      game.scene.resume('GameScene');
-      notifyGameplayStart();
-    },
-    onBackToMap: () => {
-      HidePauseScreen();
-      backToWelcome();
-    },
-  });
   BindSettingsEvents(game, {
     onClose: () => {
       HideSettingsScreen();
       game.scene.resume('GameScene');
       notifyGameplayStart();
+    },
+    onBackToMap: () => {
+      HideSettingsScreen();
+      backToWelcome();
     },
     onCameraZoomChange: (zoom) => {
       // Precisa trocar o layout ANTES de mexer na câmera/scale mode do

@@ -237,6 +237,22 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
   color: #7dd3fc;
 }
 
+/* Ícone de engrenagem que abre o modal de Configurações (ver Hud.js/
+   createControls.js) — precisa de pointer-events próprio porque .hud-bar/
+   .hud-resources são decorativos (pointer-events: none) por padrão. */
+.hud-settings-btn {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
 /* Contador de tentativas ("3/3") — fica entre o painel de vida (esquerda) e
    os recursos (direita); ver GameScene.attemptsLeft/MAX_RUN_ATTEMPTS. */
 .hud-attempts {
@@ -977,8 +993,8 @@ background: linear-gradient(0deg, #16a34a 70%, #4ade80 30%);
 }
 
 /* Controles flutuantes: sem a faixa opaca do controls-panel padrão, cada
-   grupo (D-pad, ações, SELECT/START) vira uma "ilha" translúcida ancorada
-   nos cantos inferiores, deixando o resto do canvas livre de visão. */
+   grupo (D-pad, ações) vira uma "ilha" translúcida ancorada nos cantos
+   inferiores, deixando o resto do canvas livre de visão. */
 .game-layout.zoom-3x .controls-panel {
   position: fixed;
   inset: auto 0 0 0;

@@ -208,7 +208,7 @@ describe('configurações', () => {
     expect(gameState.settings.cameraZoom).toBe(3);
 
     setPlatformMode('gameboy');
-    expect(gameState.settings.cameraZoom).toBe(1);
+    expect(gameState.settings.cameraZoom).toBe(2);
   });
 });
 

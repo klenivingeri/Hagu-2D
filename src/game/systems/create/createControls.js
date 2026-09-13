@@ -43,7 +43,7 @@ export function createControls(scene) {
   bindDomControlsOnce();
 }
 
-// Os botões de HTML (#btnStart, #dpadPad, #actionPad...) vivem em
+// Os botões de HTML (#dpadPad, #actionPad...) vivem em
 // index.html e nunca são destruídos entre respawns (scene.restart()) nem
 // entre partidas (novo Phaser.Game a cada "Jogar" — ver main.js). createControls()
 // rodava a cada create(), então cada respawn empilhava mais um
@@ -64,11 +64,16 @@ function bindDomControlsOnce() {
   const btnB = document.querySelector('#btnB');
   const actionPad = document.querySelector('#actionPad');
 
-  const btnStart = document.querySelector('#btnStart');
-  const btnSelect = document.querySelector('#btnSelect');
-
-  btnStart.addEventListener('click', () => activeScene?.openPauseMenu());
-  btnSelect.addEventListener('click', () => activeScene?.openSettingsMenu());
+  // O botão de engrenagem vive dentro do HUD (ver hud.html/Hud.js), que é
+  // recriado a cada partida/troca de mapa (CreateHud() via HUD_EVENTS.RESET)
+  // — delega no #hud-bar (persistente, definido em index.html) em vez de
+  // buscar o botão direto, senão o clique nunca funcionaria na primeira
+  // partida (createControls roda antes do primeiro CreateHud) nem depois de
+  // qualquer recriação do HUD.
+  const hudBar = document.querySelector('#hud-bar');
+  hudBar?.addEventListener('click', (e) => {
+    if (e.target.closest('.hud-settings-btn')) activeScene?.openSettingsMenu();
+  });
 
   // --- Sistema de Joystick Deslizável para o D-Pad (< | >) ---
   const updateDpadFromTouch = (clientX, clientY) => {

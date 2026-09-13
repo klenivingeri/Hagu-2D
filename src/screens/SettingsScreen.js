@@ -1,11 +1,13 @@
 // Modal de configurações em HTML/Tailwind, mostrado durante a Run quando o
-// player aperta SELECT (ver GameScene.openSettingsMenu() / SETTINGS_EVENTS
-// em constants.js). Concentra as preferências ligadas ao gameplay (modo
-// Game Boy/Mobile, filtro de tela, skin dos botões) — a Welcome (ver
-// WelcomeScreen.js) só tem o básico de dispositivo (som, vibração, tela
-// cheia, resetar dados), porque essas aqui só fazem sentido vendo o jogo
-// rodando. UI fora do Phaser vive aqui (CLAUDE.md regra 1) — o Phaser só
-// emite o evento, esta tela só escuta (ligada em main.js/BindSettingsEvents).
+// player toca o ícone de engrenagem no HUD (ver Hud.js / createControls.js
+// / GameScene.openSettingsMenu() / SETTINGS_EVENTS em constants.js).
+// Concentra as preferências ligadas ao gameplay (filtro de tela, skin dos
+// botões, layout Mobile/Game Boy) e, na parte inferior, os botões de pausa
+// (Continuar/Voltar pro mapa) — a Welcome (ver WelcomeScreen.js) só tem o
+// básico de dispositivo (som, vibração, tela cheia, resetar dados), porque
+// essas aqui só fazem sentido vendo o jogo rodando. UI fora do Phaser vive
+// aqui (CLAUDE.md regra 1) — o Phaser só emite o evento, esta tela só escuta
+// (ligada em main.js/BindSettingsEvents).
 import settingsTemplate from './settingsScreen.html?raw';
 import { gameState, updateSetting, setPlatformMode, setVisualFilter } from '../managers/GameManager.js';
 import { SETTINGS_EVENTS } from '../constants.js';
@@ -58,23 +60,6 @@ function renderSettings() {
   elements.settingToggles.forEach((toggle) => {
     toggle.checked = Boolean(gameState.settings[toggle.dataset.setting]);
   });
-  elements.platformModeButtons.forEach((button) => {
-    const isActive = button.dataset.platform === gameState.settings.platformMode;
-    button.classList.toggle('bg-emerald-500', isActive);
-    button.classList.toggle('text-gray-950', isActive);
-    button.classList.toggle('text-gray-300', !isActive);
-  });
-  // No modo Mobile o zoom é sempre 3x/fullscreen automático (ver
-  // setPlatformMode em GameManager.js) — a escolha manual 1x/2x só faz
-  // sentido no Game Boy.
-  elements.cameraZoomRow?.classList.toggle('hidden', gameState.settings.platformMode === 'mobile');
-  elements.cameraZoomButtons.forEach((button) => {
-    const isActive = Number(button.dataset.zoom) === gameState.settings.cameraZoom;
-    button.classList.toggle('bg-emerald-500', isActive);
-    button.classList.toggle('text-gray-950', isActive);
-    button.classList.toggle('text-gray-300', !isActive);
-  });
-
   elements.controlsThemeButtons.forEach((button) => {
     const isActive = button.dataset.theme === gameState.settings.controlsTheme;
     button.classList.toggle('border-emerald-400', isActive);
@@ -86,6 +71,13 @@ function renderSettings() {
 
   elements.visualFilterButtons.forEach((button) => {
     const isActive = button.dataset.filter === gameState.settings.visualFilter;
+    button.classList.toggle('bg-emerald-500', isActive);
+    button.classList.toggle('text-gray-950', isActive);
+    button.classList.toggle('text-gray-300', !isActive);
+  });
+
+  elements.platformModeButtons.forEach((button) => {
+    const isActive = button.dataset.platform === gameState.settings.platformMode;
     button.classList.toggle('bg-emerald-500', isActive);
     button.classList.toggle('text-gray-950', isActive);
     button.classList.toggle('text-gray-300', !isActive);
@@ -106,9 +98,12 @@ function handleFullscreenToggle() {
 }
 
 // `onClose` decide o que fazer com a Run pausada (ver main.js): retomar a
-// GameScene. `onCameraZoomChange` deixa a câmera da fase em andamento
-// refletir o zoom escolhido na hora, sem esperar a próxima partida.
-export function ShowSettingsScreen({ onClose, onCameraZoomChange, onVisualFilterChange } = {}) {
+// GameScene (usado tanto pelo × quanto pelo botão "Continuar", que é só um
+// atalho pro mesmo fechamento). `onBackToMap` destrói a partida e volta pra
+// Welcome (equivalente ao antigo modal de pausa). `onCameraZoomChange` deixa
+// a câmera da fase em andamento refletir o zoom escolhido na hora, sem
+// esperar a próxima partida.
+export function ShowSettingsScreen({ onClose, onBackToMap, onCameraZoomChange, onVisualFilterChange } = {}) {
   const app = document.getElementById('app');
   if (!app) {
     console.warn('[SettingsScreen] #app não encontrado no DOM — modal de configurações não será exibido.');
@@ -126,18 +121,20 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange, onVisualFilter
     settingsTabButtons: [...root.querySelectorAll('.settings-tab-btn')],
     settingsTabPanels: [...root.querySelectorAll('.settings-tab-panel')],
     settingToggles: [...root.querySelectorAll('.setting-toggle')],
-    platformModeButtons: [...root.querySelectorAll('.platform-mode-btn')],
-    cameraZoomRow: root.querySelector('.camera-zoom-row'),
-    cameraZoomButtons: [...root.querySelectorAll('.camera-zoom-btn')],
     controlsThemeButtons: [...root.querySelectorAll('.controls-theme-btn')],
     visualFilterButtons: [...root.querySelectorAll('.visual-filter-btn')],
+    platformModeButtons: [...root.querySelectorAll('.platform-mode-btn')],
     fullscreenRow: root.querySelector('.fullscreen-setting-row'),
     fullscreenToggle: root.querySelector('.fullscreen-toggle'),
+    backBtn: root.querySelector('.settings-back-btn'),
+    resumeBtn: root.querySelector('.settings-resume-btn'),
   };
 
   elements.closeBtn.addEventListener('click', () => onClose?.());
+  elements.resumeBtn.addEventListener('click', () => onClose?.());
+  elements.backBtn.addEventListener('click', () => onBackToMap?.());
   elements.root.addEventListener('click', (event) => {
-    if (event.target === elements.root) onClose?.();
+    if (elements && event.target === elements.root) onClose?.();
   });
   elements.settingsTabButtons.forEach((button) => {
     button.addEventListener('click', (event) => {
@@ -147,21 +144,6 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange, onVisualFilter
   elements.settingToggles.forEach((toggle) => {
     toggle.addEventListener('change', (event) => {
       updateSetting(event.target.dataset.setting, event.target.checked);
-    });
-  });
-  elements.platformModeButtons.forEach((button) => {
-    button.addEventListener('click', (event) => {
-      setPlatformMode(event.currentTarget.dataset.platform);
-      renderSettings();
-      onCameraZoomChange?.(gameState.settings.cameraZoom);
-    });
-  });
-  elements.cameraZoomButtons.forEach((button) => {
-    button.addEventListener('click', (event) => {
-      const zoom = Number(event.currentTarget.dataset.zoom);
-      updateSetting('cameraZoom', zoom);
-      renderSettings();
-      onCameraZoomChange?.(zoom);
     });
   });
   elements.controlsThemeButtons.forEach((button) => {
@@ -175,6 +157,13 @@ export function ShowSettingsScreen({ onClose, onCameraZoomChange, onVisualFilter
       setVisualFilter(event.currentTarget.dataset.filter);
       renderSettings();
       onVisualFilterChange?.();
+    });
+  });
+  elements.platformModeButtons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      setPlatformMode(event.currentTarget.dataset.platform);
+      renderSettings();
+      onCameraZoomChange?.(gameState.settings.cameraZoom);
     });
   });
   elements.fullscreenToggle?.addEventListener('change', handleFullscreenToggle);
@@ -196,11 +185,11 @@ export function HideSettingsScreen() {
 // vez por Phaser.Game (main.js chama a cada startMatch, um Game novo por
 // partida). Idempotente: chamar de novo com o mesmo `game` não duplica
 // listeners.
-export function BindSettingsEvents(game, { onClose, onCameraZoomChange, onVisualFilterChange } = {}) {
+export function BindSettingsEvents(game, { onClose, onBackToMap, onCameraZoomChange, onVisualFilterChange } = {}) {
   if (boundGames.has(game)) return;
   boundGames.add(game);
 
   game.events.on(SETTINGS_EVENTS.OPEN, () => {
-    ShowSettingsScreen({ onClose, onCameraZoomChange, onVisualFilterChange });
+    ShowSettingsScreen({ onClose, onBackToMap, onCameraZoomChange, onVisualFilterChange });
   });
 }

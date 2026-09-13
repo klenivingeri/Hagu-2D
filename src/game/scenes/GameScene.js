@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MAPS, DEFAULT_MAP_KEY, DEFAULT_STAR_TIME_LIMIT_MS } from '../config/maps.js';
-import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS, PAUSE_EVENTS, SETTINGS_EVENTS, MAX_RUN_ATTEMPTS } from '../../constants.js';
+import { HUD_EVENTS, LOADING_EVENTS, RUN_EVENTS, SETTINGS_EVENTS, MAX_RUN_ATTEMPTS } from '../../constants.js';
 import { gameState, unlockMap, recordMapStars, recordEnemyDefeat, unlockEnemySprite, addGlobalCoins, addGlobalDiamant } from '../../managers/GameManager.js';
 import { createPlayer, preloadPlayerAssets, createPlayerAnimations, setupPlayerDamage, damagePlayer } from '../systems/create/createPlayer.js';
 import { createEnemys, preloadEnemyAssets, createEnemyAnimations } from '../systems/create/createEnemy.js';
@@ -372,20 +372,11 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  // Chamado pelos botões START/SELECT (ver createControls.js). Pausa a
-  // "Run" e delega a exibição do modal de pausa pra tela de HTML (ver
-  // PauseScreen.js) — o Phaser só emite o evento, nunca mexe em DOM
-  // (CLAUDE.md regra 1).
-  openPauseMenu() {
-    if (this.scene.isPaused()) return;
-
-    this.scene.pause();
-    this.game.events.emit(PAUSE_EVENTS.OPEN, { mapKey: this.mapKey });
-  }
-
-  // Chamado pelo botão SELECT (ver createControls.js). Pausa a "Run" e
-  // delega a exibição do modal de configurações (som/vibração/daltonismo/
-  // câmera) pra tela de HTML (ver SettingsScreen.js).
+  // Chamado pelo ícone de engrenagem no HUD (ver createControls.js). Pausa
+  // a "Run" e delega a exibição do modal de configurações (som/vibração/
+  // daltonismo/câmera, e os botões de pausa na parte inferior) pra tela de
+  // HTML (ver SettingsScreen.js) — o Phaser só emite o evento, nunca mexe em
+  // DOM (CLAUDE.md regra 1).
   openSettingsMenu() {
     if (this.scene.isPaused()) return;
 

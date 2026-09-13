@@ -81,16 +81,11 @@ export const RUN_EVENTS = {
     COMPLETE: 'run:complete',
 };
 
-// Contrato de eventos entre o Phaser e o modal de pausa em HTML (ver
-// /src/screens/PauseScreen.js). Disparado quando o player aperta START ou
-// SELECT (ver game/systems/create/createControls.js) durante a run.
-export const PAUSE_EVENTS = {
-    OPEN: 'pause:open',
-};
-
 // Contrato de eventos entre o Phaser e o modal de configurações em HTML (ver
-// /src/screens/SettingsScreen.js). Disparado quando o player aperta SELECT
-// (ver game/systems/create/createControls.js) durante a run.
+// /src/screens/SettingsScreen.js). Disparado quando o player toca o ícone de
+// engrenagem no HUD (ver components/ui/Hud.js e
+// game/systems/create/createControls.js) durante a run. O próprio modal traz,
+// na parte inferior, os botões de pausa (Continuar/Voltar pro mapa).
 export const SETTINGS_EVENTS = {
     OPEN: 'settings:open',
 };

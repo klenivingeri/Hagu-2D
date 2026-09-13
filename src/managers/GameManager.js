@@ -33,9 +33,9 @@ const DEFAULT_SETTINGS = {
   // Precisa bater com PLATFORM_DEFAULT_ZOOM[platformMode] abaixo — GameScene
   // (ver create()) só lê cameraZoom, nunca platformMode diretamente.
   cameraZoom: 3,
-  // 'gameboy' = jogador escolhe manualmente entre zoom 1x/2x (ver
-  // camera-zoom-btn em SettingsScreen.js). 'mobile' = zoom fixo em 3x
-  // (RESIZE, tela cheia real) — ver setPlatformMode() abaixo.
+  // 'gameboy' = zoom fixo em 2x (aba "Layout" em SettingsScreen.js).
+  // 'mobile' = zoom fixo em 3x (RESIZE, tela cheia real) — ver
+  // setPlatformMode() abaixo.
   platformMode: 'mobile',
   // Skin visual do D-pad/botões de ação/SELECT-START (aba "Botões" em
   // Configurações, ver SettingsScreen.js). Puramente estético — aplicado
@@ -59,8 +59,9 @@ const DEFAULT_SETTINGS = {
 
 // Zoom aplicado automaticamente ao trocar de plataforma — 'mobile' sempre
 // força 3x (fullscreen real, ver GameScene.applyScaleModeForZoom), 'gameboy'
-// nunca deve ficar preso no 3x escolhido por um platformMode anterior.
-const PLATFORM_DEFAULT_ZOOM = { gameboy: 1, mobile: 3 };
+// é sempre 2x (não há mais escolha manual de zoom, ver aba "Layout" em
+// SettingsScreen.js) — nenhum dos dois deve ficar preso no valor do outro.
+const PLATFORM_DEFAULT_ZOOM = { gameboy: 2, mobile: 3 };
 
 // O mapa inicial já nasce liberado; todo o resto do grid (ver
 // game/config/maps.js) precisa ser desbloqueado passando pela "gate"

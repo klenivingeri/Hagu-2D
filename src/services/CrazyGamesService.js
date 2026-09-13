@@ -4,7 +4,7 @@
 // (dev local, build hospedado em outro lugar) o script do SDK nem chega a
 // carregar (ver <script> em index.html), então toda função aqui precisa
 // tolerar window.CrazyGames ausente sem quebrar o jogo.
-import { LOADING_EVENTS, RUN_EVENTS, PAUSE_EVENTS, SETTINGS_EVENTS, GAME_OVER_EVENTS } from '../constants.js';
+import { LOADING_EVENTS, RUN_EVENTS, SETTINGS_EVENTS, GAME_OVER_EVENTS } from '../constants.js';
 
 let ready = false;
 
@@ -125,9 +125,9 @@ export function BindCrazyGamesEvents(game) {
     notifyGameplayStart();
   });
 
-  // Qualquer modal em HTML que pausa a run (pausa manual, configurações,
-  // resumo da fase, game over) conta como interrupção pro SDK.
-  game.events.on(PAUSE_EVENTS.OPEN, notifyGameplayStop);
+  // Qualquer modal em HTML que pausa a run (configurações — que também
+  // concentra a pausa manual — resumo da fase, game over) conta como
+  // interrupção pro SDK.
   game.events.on(SETTINGS_EVENTS.OPEN, notifyGameplayStop);
   game.events.on(RUN_EVENTS.COMPLETE, notifyGameplayStop);
   game.events.on(GAME_OVER_EVENTS.OPEN, notifyGameplayStop);
