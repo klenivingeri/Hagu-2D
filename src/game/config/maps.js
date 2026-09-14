@@ -46,22 +46,24 @@ export const MAPS = {
     tilemapUrl: 'assets/tiledmap/map_0.tmj',
     ...TILESET_DEFAULTS,
   },
-  map_forest_1: {
-    key: 'map_forest_1',
-    fase: 0,
+  phase_forest_0: {
+    key: 'phase_forest_0',
+    name: 'Floresta 1',
     world: {
       id: 0,
       name: 'forest',
     },
+    fase: 0,
     tile: {
       column: 0,
       row: 0
     },
-    tilemapUrl: 'assets/tiledmap/map_forest_1.tmj',
+    tilemapUrl: 'assets/tiledmap/phase_forest_0.tmj',
     ...TILESET_DEFAULTS,
   },
-  map_forest_2: {
-    key: 'map_forest_2',
+  map_forest_1: {
+    key: 'map_forest_1',
+    name: 'Floresta 2',
     world: {
       id: 0,
       name: 'forest',
@@ -71,11 +73,12 @@ export const MAPS = {
       column: 0,
       row: 0
     },
-    tilemapUrl: 'assets/tiledmap/map_forest_2.tmj',
+    tilemapUrl: 'assets/tiledmap/map_forest_1.tmj',
     ...TILESET_DEFAULTS,
   },
-  map_forest_3: {
-    key: 'map_forest_3',
+  map_forest_2: {
+    key: 'map_forest_2',
+    name: 'Floresta 2',
     world: {
       id: 0,
       name: 'forest',
@@ -85,11 +88,27 @@ export const MAPS = {
       column: 0,
       row: 0
     },
+    tilemapUrl: 'assets/tiledmap/map_forest_2.tmj',
+    ...TILESET_DEFAULTS,
+  },
+  map_forest_3: {
+    key: 'map_forest_3',
+    name: 'Floresta 4',
+    world: {
+      id: 0,
+      name: 'forest',
+    },
+    fase: 3,
+    tile: {
+      column: 0,
+      row: 0
+    },
     tilemapUrl: 'assets/tiledmap/map_forest_3.tmj',
     ...TILESET_DEFAULTS,
   },
   map_desert_1: {
     key: 'map_desert_1',
+    name: 'Deserto 1',
     world: {
       id: 1,
       name: 'desert',
@@ -104,6 +123,7 @@ export const MAPS = {
   },
   map_ice_1: {
     key: 'map_ice_1',
+    name: 'Gelo 1',
     world: {
       id: 2,
       name: 'ice',
@@ -117,6 +137,7 @@ export const MAPS = {
     ...TILESET_DEFAULTS,
   },
   map_fire_1: {
+    name: 'Fogo 1',
     key: 'map_fire_1',
     world: {
       id: 3,

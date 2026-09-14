@@ -449,8 +449,22 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: 50%;
+  /* Gap vertical: NÃO dá pra usar margin-top/bottom aqui — a altura real
+     do .game-button (pai) é o DOBRO da altura visível do container
+     (top:-100%; bottom:0, ver comentário acima), então height:50% já
+     preenche exatamente 100% da área visível. Margin vertical soma em
+     cima dessa conta e o botão vaza pra fora do container. Em vez disso,
+     sobe o "bottom" e desconta o dobro (2x4px) do "height" via calc(),
+     resultando na área visível (100% real) menos 4px em cima e embaixo. */
+  bottom: 4px;
+  height: calc(50% - 8px);
+  /* Margem lateral pra abrir um gap entre os dois botões de cada par
+     (◀▶ / A B) — sem ela os dois .game-button-visual (cada um ocupando
+     50% do .dpad-container/.action-container) se tocam direto, sem
+     revelar o fundo do container (colorido por tema, ver TEMAS DE
+     BOTÕES abaixo) entre eles. Só no eixo horizontal, que não tem o
+     problema da altura dobrada. */
+  margin: 0 4px;
   border: 1px solid rgb(255 255 255 / .15);
   border-radius: .75rem;
   background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%);

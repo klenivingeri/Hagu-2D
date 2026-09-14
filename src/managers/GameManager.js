@@ -77,11 +77,10 @@ const DEFAULT_DROP_DIAMANT = getUpgradeValue(findUpgradeDef('dropChance'), 0);
 // bater com o nível 0 do catálogo pra loja e gameState iniciarem iguais.
 const DEFAULT_MAX_ENERGY = getUpgradeValue(findUpgradeDef('maxEnergy'), 0);
 // Diamante inicial do player, usado tanto no gameState quanto no reset (ver
-// resetProgress()). Zerado pra produção — o player começa sem nada e
-// progride jogando/assistindo anúncio (ver grantTicketFromAd).
-const DEFAULT_DIAMANT = 0;
+// resetProgress()).
+const DEFAULT_DIAMANT = 100;
 // Moedas (🪙, "ouro") iniciais do player, mesmo esquema do diamante acima.
-const DEFAULT_COINS = 0;
+const DEFAULT_COINS = 1000;
 
 // Fichas (ver welcomeScreen.html play-btn) consumidas ao iniciar uma fase.
 // Começa com 3 e volta pra 3 todo dia (ver resetDailyTicketsIfNeeded), mas só
