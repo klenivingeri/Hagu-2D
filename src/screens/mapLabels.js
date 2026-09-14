@@ -14,10 +14,3 @@ export function getStageLabel(mapKey) {
   const [, biome, stage] = mapKey?.match(/^map_([a-z]+)_(\d+)$/) || [];
   return biome ? `${BIOME_LABELS[biome] || biome} ${stage}` : mapKey;
 }
-
-// Número exibido dentro do quadrado da fase (ver renderStages em
-// WelcomeScreen.js) — o próprio sufixo numérico da mapKey.
-export function getStageNumber(mapKey) {
-  const match = mapKey?.match(/(\d+)$/);
-  return match ? match[1] : '1';
-}

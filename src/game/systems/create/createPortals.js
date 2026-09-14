@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MAP_DEPTHS } from '../../../constants.js';
-import { getTiledProperty } from '../../commons/tiledUtils.js';
+import { getNextMapKey } from '../../config/maps.js';
 
 const PORTAL_FRAME_COUNT = 6;
 const PORTAL_FRAME_SIZE = 32;
@@ -28,6 +28,12 @@ export function createPortalAnimations(scene) {
 export function createPortals(scene, portalLayer) {
   const portals = [];
   if (!portalLayer?.objects) return portals;
+
+  // A próxima fase é sempre a próxima da sequência (world.id, fase) — ver
+  // getNextMapKey() em game/config/maps.js. Sem propriedade "key" nenhuma no
+  // Tiled: se não houver próxima fase (última da galeria), o portal fica
+  // decorativo (não encerra a run).
+  const nextMapKey = getNextMapKey(scene.mapKey);
 
   portalLayer.objects.forEach((objectData) => {
     const width = objectData.width || PORTAL_FRAME_SIZE;
@@ -60,11 +66,9 @@ export function createPortals(scene, portalLayer) {
     // deixava esses Graphics órfãos acumulando na memória.
     portal.once(Phaser.GameObjects.Events.DESTROY, () => maskArea.destroy());
 
-    // "key" (propriedade customizada do objeto no Tiled) é a map key que
-    // esse portal libera na Welcome ao terminar a run — ver
-    // GameScene.completeRun() e GameManager.unlockMap(). Sem "key" o portal
-    // só é decorativo (não encerra a run).
-    portal.unlockMapKey = getTiledProperty(objectData.properties, 'key') || null;
+    // Mapa que esse portal libera na Welcome ao terminar a run — ver
+    // GameScene.completeRun() e GameManager.unlockMap().
+    portal.unlockMapKey = nextMapKey;
     if (portal.unlockMapKey) {
       scene.physics.add.existing(portal, true);
       portal.body.setSize(width, height);

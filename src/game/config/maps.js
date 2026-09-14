@@ -4,10 +4,13 @@
 // Para adicionar um novo mapa:
 //   1. Exporte o .tmj (Tiled JSON) e o tileset (.png) para public/assets/tiledmap/
 //   2. Cadastre uma nova entrada em MAPS, com uma "key" única
-//   3. Posicione essa "key" em MAP_GRID (cada célula é um mapa; null = célula
-//      vazia). A posição na matriz define sozinha quem é vizinho de quem
-//      (acima/abaixo/esquerda/direita) — não precisa mais declarar "nextMap"
-//      manualmente.
+//   3. Se for uma fase jogável (aparece na galeria da Welcome), declare
+//      "world: { id, name }" e "fase" (número, 0-based). "world.id" agrupa as
+//      fases na mesma galeria horizontal; "fase" é a ordem dentro dela. A
+//      progressão é sempre sequencial por (world.id, fase) — sem "key" nem
+//      grid espacial nenhum, ver getWorldsList()/getNextMapKey() abaixo.
+//      map_0 (tutorial) fica de fora disso: não tem world/fase, e é sempre o
+//      mapa liberado por padrão junto com a primeira fase da galeria.
 //   4. No mapa (Tiled), crie uma camada de objetos chamada "objects" com objetos
 //      do tipo (campo "Class"/"Type" no Tiled):
 //        - "player" (point)      -> ponto de nascimento do player
@@ -16,10 +19,9 @@
 //        - "jump"   (rectangle)  -> quando o inimigo encosta, ele pula
 //        - "dead-zone" (rectangle) -> quando o player/inimigo cai nela, ele "morre"
 //          (volta pro ponto de nascimento)
-//        - "gate" (rectangle), numa camada de objetos chamada "gate" -> porta que
-//          libera o próximo mapa quando o player passa por ela. A propriedade
-//          customizada "key" do objeto deve conter a "key" do mapa vizinho que
-//          essa porta libera (ex: "map_ice_1"). Ver GameManager.unlockMap().
+//        - "gate" (rectangle), numa camada de objetos chamada "gate" -> ao
+//          encostar, libera de imediato a PRÓXIMA fase da sequência (ver
+//          getNextMapKey()). Não precisa de nenhuma propriedade customizada.
 //   5. Nada mais precisa mudar no código: GameScene, createWorld, createPlayer,
 //      createEnemy, createGates e createZones leem tudo dinamicamente a partir
 //      daqui.
@@ -37,86 +39,150 @@ const TILESET_DEFAULTS = {
 export const MAPS = {
   map_0: {
     key: 'map_0',
+    tile: {
+      column: 1,
+      row: 1
+    },
     tilemapUrl: 'assets/tiledmap/map_0.tmj',
     ...TILESET_DEFAULTS,
   },
   map_forest_1: {
     key: 'map_forest_1',
+    fase: 0,
+    world: {
+      id: 0,
+      name: 'forest',
+    },
+    tile: {
+      column: 0,
+      row: 0
+    },
     tilemapUrl: 'assets/tiledmap/map_forest_1.tmj',
     ...TILESET_DEFAULTS,
   },
   map_forest_2: {
     key: 'map_forest_2',
+    world: {
+      id: 0,
+      name: 'forest',
+    },
+    fase: 1,
+    tile: {
+      column: 0,
+      row: 0
+    },
     tilemapUrl: 'assets/tiledmap/map_forest_2.tmj',
     ...TILESET_DEFAULTS,
   },
   map_forest_3: {
     key: 'map_forest_3',
+    world: {
+      id: 0,
+      name: 'forest',
+    },
+    fase: 2,
+    tile: {
+      column: 0,
+      row: 0
+    },
     tilemapUrl: 'assets/tiledmap/map_forest_3.tmj',
     ...TILESET_DEFAULTS,
   },
   map_desert_1: {
     key: 'map_desert_1',
+    world: {
+      id: 1,
+      name: 'desert',
+    },
+    fase: 0,
+    tile: {
+      column: 5,
+      row: 1
+    },
     tilemapUrl: 'assets/tiledmap/map_desert_1.tmj',
     ...TILESET_DEFAULTS,
   },
   map_ice_1: {
     key: 'map_ice_1',
+    world: {
+      id: 2,
+      name: 'ice',
+    },
+    fase: 0,
+    tile: {
+      column: 8,
+      row: 1
+    },
     tilemapUrl: 'assets/tiledmap/map_ice_1.tmj',
     ...TILESET_DEFAULTS,
   },
   map_fire_1: {
     key: 'map_fire_1',
+    world: {
+      id: 3,
+      name: 'fire',
+    },
+    fase: 0,
     tilemapUrl: 'assets/tiledmap/map_fire_1.tmj',
+    tile: {
+      column: 3,
+      row: 1
+    },
     ...TILESET_DEFAULTS,
   },
 };
 
-// ==========================================
-// GRID DO MUNDO
-// ==========================================
-// Cada célula é uma "key" de MAPS (ou null pra célula vazia). A posição na
-// matriz é que determina os vizinhos: subir uma linha = "up", descer uma
-// linha = "down", andar uma coluna = "left"/"right". map_0 é o hub central;
-// gelo/fogo esticam pra cima/baixo, floresta/deserto esticam pros lados.
-export const MAP_GRID = [
-  [null,           null,           null,           'map_ice_2',    null,            'map_forest_4', null],
-  [null,           null,           null,           'map_ice_1',    null,            'map_forest_3', null],
-  [null,           'map_desert_2', 'map_desert_1', 'map_0',        'map_forest_1',  'map_forest_2', null],
-  [null,           null,           null,           'map_fire_1',   null,            null,           null],
-  [null,           null,           null,           'map_fire_2',   null,            null,           null],
-];
-
 export const DEFAULT_MAP_KEY = 'map_0';
 
-function findMapPosition(mapKey) {
-  for (let row = 0; row < MAP_GRID.length; row += 1) {
-    const col = MAP_GRID[row].indexOf(mapKey);
-    if (col !== -1) return { row, col };
-  }
-  return null;
+// ==========================================
+// GALERIA DE FASES (Welcome)
+// ==========================================
+// Só entram aqui os mapas com "world"/"fase" (map_0, o tutorial, fica de
+// fora). A ordem de progressão é sempre (world.id, fase) — nada de grid
+// espacial nem de propriedade "key" no Tiled.
+function getStageEntries() {
+  return Object.entries(MAPS)
+    .filter(([, config]) => config.world && Number.isInteger(config.fase))
+    .map(([mapKey, config]) => ({ mapKey, world: config.world, fase: config.fase }));
 }
 
-// Retorna { up, down, left, right }, cada um com a "key" do mapa vizinho
-// (ou null se não houver mapa naquela direção). "up"/"down" seguem o sentido
-// visual: "up" é a linha de cima (fica acima do mapa atual).
-export function getMapNeighbors(mapKey) {
-  const position = findMapPosition(mapKey);
-  const neighbors = { up: null, down: null, left: null, right: null };
-  if (!position) return neighbors;
+// [{ id, name, maps: [mapKey, ...] }, ...], ordenado por world.id, com
+// "maps" ordenado por "fase" — é a estrutura que a Welcome desenha: uma
+// galeria vertical de worlds, cada world com uma galeria horizontal de fases
+// (ver WelcomeScreen.js).
+export function getWorldsList() {
+  const worldsById = new Map();
+  getStageEntries().forEach(({ mapKey, world, fase }) => {
+    if (!worldsById.has(world.id)) {
+      worldsById.set(world.id, { id: world.id, name: world.name, maps: [] });
+    }
+    worldsById.get(world.id).maps.push({ mapKey, fase });
+  });
 
-  const { row, col } = position;
-  neighbors.up = MAP_GRID[row - 1]?.[col] || null;
-  neighbors.down = MAP_GRID[row + 1]?.[col] || null;
-  neighbors.left = MAP_GRID[row]?.[col - 1] || null;
-  neighbors.right = MAP_GRID[row]?.[col + 1] || null;
-  return neighbors;
+  return Array.from(worldsById.values())
+    .sort((a, b) => a.id - b.id)
+    .map((world) => ({
+      ...world,
+      maps: world.maps.sort((a, b) => a.fase - b.fase).map((entry) => entry.mapKey),
+    }));
 }
 
-// A "key" que a porta (camada de objetos "gate") precisa ter no Tiled pra
-// liberar o mapa vizinho é a própria key do mapa vizinho — não existe
-// indireção nenhuma: quem quiser liberar "map_ice_1" cria, no mapa atual,
-// uma porta com a propriedade key = "map_ice_1".
-export function getGateKeyToUnlock(neighborMapKey) {
-  return neighborMapKey;
+function getFlattenedStageKeys() {
+  return getWorldsList().flatMap((world) => world.maps);
+}
+
+// Primeira fase de todas (world.id 0, fase 0) — o que o tutorial (map_0)
+// libera ao ser concluído, e a seleção inicial da galeria na Welcome.
+export const FIRST_STAGE_MAP_KEY = getFlattenedStageKeys()[0] || DEFAULT_MAP_KEY;
+
+// Mapa que a run ATUAL libera ao terminar (ver GameScene.completeRun(),
+// createPortals.js e createGates.js): o tutorial sempre libera a primeira
+// fase da galeria; qualquer fase libera a próxima da sequência (world.id,
+// fase); a última fase de todas não libera mais nada (retorna null).
+export function getNextMapKey(mapKey) {
+  if (mapKey === DEFAULT_MAP_KEY) return FIRST_STAGE_MAP_KEY;
+  const flatKeys = getFlattenedStageKeys();
+  const index = flatKeys.indexOf(mapKey);
+  if (index === -1) return null;
+  return flatKeys[index + 1] || null;
 }

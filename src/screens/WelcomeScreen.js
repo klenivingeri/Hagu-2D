@@ -27,9 +27,8 @@ import {
 } from '../managers/GameManager.js';
 import { requestRewardedAd } from '../services/AdsService.js';
 import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '../game/config/upgrades.js';
-import { MAPS, MAP_GRID, DEFAULT_MAP_KEY } from '../game/config/maps.js';
-import { getStageLabel, getStageNumber } from './mapLabels.js';
-import { showMapPreview, updateMapPreview, destroyMapPreview } from './mapPreview.js';
+import { MAPS, FIRST_STAGE_MAP_KEY, getWorldsList } from '../game/config/maps.js';
+import { getStageLabel } from './mapLabels.js';
 import {
   isFullscreenSupported,
   isFullscreenActive,
@@ -46,74 +45,45 @@ import { applySpriteSheet, setSpriteSheetFrame, buildSpriteIconElement } from '.
 
 let elements = null;
 let idleAnimationTimer = null;
-let selectedMapKey = DEFAULT_MAP_KEY;
-let hasCenteredStageGrid = false;
-let stageZoom = 1;
+// Callback repassado pra ShowWelcomeScreen({ onPlay }) — ver handlePlayClick.
+let onPlayCallback = null;
 // Aba atualmente visível (ver switchView) — usado por updateTabAffordBadges()
 // pra nunca mostrar a bolinha vermelha na aba em que o player já está: ela só
 // faz sentido como aviso pra abrir uma aba que ele ainda não olhou.
 let currentWelcomeView = 'home';
 // Baseline pra detectar fases que acabaram de ser desbloqueadas (ver
-// renderStages). Começa null: a primeira renderização da sessão só define a
-// baseline, nunca anima — só a partir da segunda é que uma key nova nesse
-// conjunto significa "acabou de desbloquear" (voltou da Run que liberou
-// uma gate/portal).
+// refreshStageGallery). Começa null: a primeira renderização da sessão só
+// define a baseline, nunca anima/navega — só a partir da segunda é que uma
+// key nova nesse conjunto significa "acabou de desbloquear" (voltou da Run
+// que liberou uma gate/portal).
 let knownUnlockedMapKeys = null;
 
-const STAGE_ZOOM_MIN = 0.5;
-const STAGE_ZOOM_MAX = 1.8;
-const STAGE_ZOOM_DEFAULT = 1;
-// Em paisagem a viewport fica bem mais baixa — com o zoom padrão o grid
-// inteiro não cabe na tela sem rolar, por isso o default nasce na metade.
-const STAGE_ZOOM_DEFAULT_LANDSCAPE = STAGE_ZOOM_DEFAULT * 0.5;
+// Galeria da Welcome (ver getWorldsList em game/config/maps.js): uma galeria
+// VERTICAL de worlds e, DENTRO DE CADA SLOT dela, uma galeria HORIZONTAL de
+// fases — "galeria de galeria" (ver renderWorldTrack/buildFaseGallery mais
+// abaixo). Cada world guarda a própria fase selecionada em `world.faseIndex`
+// (não um índice global), porque agora TODOS os worlds existem ao mesmo
+// tempo no DOM (não é reconstruído a cada troca) e cada um lembra onde o
+// player parou nele.
+const WORLDS = getWorldsList();
+WORLDS.forEach((world) => { world.faseIndex = 0; });
+let selectedWorldIndex = 0;
 
-const landscapeMediaQuery = typeof window !== 'undefined'
-  ? window.matchMedia('(orientation: landscape)')
-  : null;
-
-function isLandscapeOrientation() {
-  return Boolean(landscapeMediaQuery?.matches);
+function getSelectedWorld() {
+  return WORLDS[selectedWorldIndex] || null;
 }
 
-function getDefaultStageZoom() {
-  return isLandscapeOrientation() ? STAGE_ZOOM_DEFAULT_LANDSCAPE : STAGE_ZOOM_DEFAULT;
+function getSelectedMapKey() {
+  const world = getSelectedWorld();
+  return world?.maps[world.faseIndex] || FIRST_STAGE_MAP_KEY;
 }
 
-function clampZoom(zoom) {
-  return Math.min(STAGE_ZOOM_MAX, Math.max(STAGE_ZOOM_MIN, zoom));
-}
-
-// Ao girar a tela: recalcula o zoom padrão pro novo formato de viewport e
-// força o preview do mapa a reler clientWidth/clientHeight (mapPreview.js
-// escala pela largura ou altura dependendo da orientação).
-function handleOrientationChange() {
-  if (!elements) return;
-  stageZoom = getDefaultStageZoom();
-  applyStageZoom();
-  showMapPreview(selectedMapKey, elements.stagePreviewViewport);
-}
-
-// Zoom é só um transform visual (não muda o tamanho de layout do grid) — o
-// scroll continua funcionando porque o navegador considera a caixa
-// transformada pra calcular a área rolável do container com overflow.
-function applyStageZoom() {
-  if (!elements) return;
-  elements.stageGrid.style.transform = `scale(${stageZoom})`;
-  elements.zoomLevel.textContent = `${Math.round(stageZoom * 100)}%`;
-}
-
-// Achata MAP_GRID (ver game/config/maps.js) em [{ mapKey, row, col }], só com
-// as células preenchidas — a posição row/col é o que faz a UI desenhar a
-// mesma "cruz" (hub no centro, ramos de gelo/fogo/floresta/deserto) que o
-// grid de verdade usado pelo GameScene pra decidir vizinhos.
-function getStageCells() {
-  const cells = [];
-  MAP_GRID.forEach((rowMaps, row) => {
-    rowMaps.forEach((mapKey, col) => {
-      if (mapKey) cells.push({ mapKey, row, col });
-    });
-  });
-  return cells;
+function findWorldFasePosition(mapKey) {
+  for (let worldIndex = 0; worldIndex < WORLDS.length; worldIndex += 1) {
+    const faseIndex = WORLDS[worldIndex].maps.indexOf(mapKey);
+    if (faseIndex !== -1) return { worldIndex, faseIndex };
+  }
+  return null;
 }
 
 // Mesma arte/skin do player dentro do Phaser (ver PLAYER_SKINS em
@@ -145,16 +115,6 @@ function stopIdleAnimation() {
   idleAnimationTimer = null;
 }
 
-const RUNNER_SPRITE_HEIGHT_PX = 40; // bate com a classe h-10 do boneco do grid
-const RUNNER_MOVE_MS = 500; // precisa bater com a duration da transition no CSS
-
-let runnerEl = null;
-let runnerFrameTimer = null;
-let runnerRow = 0;
-let runnerCol = 0;
-let runnerMoving = false;
-let runnerMoveToken = 0;
-
 // Timers dos ícones animados do grid da Coleção (ver buildCollectionCard) —
 // precisam ser limpos manualmente porque trocam img.src via setInterval,
 // não uma anims.create() do Phaser que morre sozinha com a cena.
@@ -165,179 +125,19 @@ function stopCollectionCardAnimations() {
   collectionCardTimers = [];
 }
 
-function findMapGridPosition(mapKey) {
-  for (let row = 0; row < MAP_GRID.length; row += 1) {
-    const col = MAP_GRID[row].indexOf(mapKey);
-    if (col !== -1) return { row, col };
-  }
-  return { row: 0, col: 0 };
-}
-
-function createRunnerElement() {
-  const el = document.createElement('div');
-  el.className = 'stage-runner-sprite pointer-events-none absolute z-20 h-10 shrink-0 [image-rendering:pixelated]';
-  el.style.transitionProperty = 'left, top';
-  el.style.transitionDuration = `${RUNNER_MOVE_MS}ms`;
-  el.style.transitionTimingFunction = 'linear';
-  applySpriteSheet(el, PLAYER_IDLE_SPRITE, RUNNER_SPRITE_HEIGHT_PX);
-  return el;
-}
-
-function startRunnerFrames(spriteAsset) {
-  if (!runnerEl) return;
-  window.clearInterval(runnerFrameTimer);
-  applySpriteSheet(runnerEl, spriteAsset, RUNNER_SPRITE_HEIGHT_PX);
-  let frameIndex = 0;
-  runnerFrameTimer = window.setInterval(() => {
-    frameIndex = (frameIndex + 1) % spriteAsset.totalFrames;
-    setSpriteSheetFrame(runnerEl, frameIndex);
-  }, 1000 / spriteAsset.frameRate);
-}
-
-// Posiciona o runner no centro da célula (row, col), passando por cima do
-// número/estrelas — é o mesmo ponto usado pelas trilhas de conexão (ver
-// getStageCellCenter), então o boneco corre exatamente em cima da trilha.
-// `animate = false` corta a transition pra teleportar sem correr (mount
-// inicial e reset de storage).
-function setRunnerCell(row, col, animate) {
-  if (!runnerEl) return;
-  const { x, y } = getStageCellCenter(row, col);
-  const facingLeft = col < runnerCol;
-  const facingRight = col > runnerCol;
-  if (facingLeft) runnerEl.dataset.facing = 'left';
-  else if (facingRight) runnerEl.dataset.facing = 'right';
-  const flip = runnerEl.dataset.facing === 'left' ? -1 : 1;
-
-  if (!animate) runnerEl.style.transitionDuration = '0ms';
-  runnerEl.style.left = `${x}px`;
-  runnerEl.style.top = `${y-14}px`;
-  runnerEl.style.transform = `translate(-50%, -50%) scaleX(${flip})`;
-  if (!animate) {
-    void runnerEl.offsetWidth; // força reflow antes de religar a transition
-    runnerEl.style.transitionDuration = `${RUNNER_MOVE_MS}ms`;
-  }
-}
-
-// Mapa "row,col" -> mapKey só das fases desbloqueadas — o mesmo conjunto de
-// nós que renderStageConnections usa pra desenhar as trilhas tracejadas, e é
-// por essas trilhas que o boneco deve correr (nunca cortando célula bloqueada
-// ou "no vazio" fora do grid).
-function buildStageGraph(cells) {
-  const grid = new Map();
-  cells.forEach(({ mapKey, row, col }) => grid.set(`${row},${col}`, mapKey));
-  return grid;
-}
-
-const STAGE_PATH_DELTAS = [
-  [0, 1],
-  [0, -1],
-  [1, 0],
-  [-1, 0],
-];
-
-// BFS sobre o grafo de fases desbloqueadas — acha o caminho mais curto de
-// `from` até `to` andando só por células vizinhas (ortogonais) que existem
-// no grid. Sem caminho conectado (não deveria acontecer, já que o grid é
-// sempre uma cruz contínua), cai pra um "salto" direto.
-function findStagePath(grid, from, to) {
-  const key = ({ row, col }) => `${row},${col}`;
-  const startKey = key(from);
-  const targetKey = key(to);
-  if (startKey === targetKey) return [from];
-  if (!grid.has(startKey) || !grid.has(targetKey)) return [from, to];
-
-  const visited = new Set([startKey]);
-  const queue = [[from]];
-  while (queue.length) {
-    const path = queue.shift();
-    const current = path[path.length - 1];
-    if (key(current) === targetKey) return path;
-
-    for (const [dRow, dCol] of STAGE_PATH_DELTAS) {
-      const next = { row: current.row + dRow, col: current.col + dCol };
-      const nextKey = key(next);
-      if (visited.has(nextKey) || !grid.has(nextKey)) continue;
-      visited.add(nextKey);
-      queue.push([...path, next]);
-    }
-  }
-  return [from, to];
-}
-
 // Botão "Jogar" fica sempre visível — só dá um "yoyo" (pop + oscilação de
 // escala, igual efeito yoyo:true de uma tween do Phaser) como feedback de
 // que a fase selecionada mudou. Reinicia a classe pra permitir tocar de novo
 // em seleções seguidas (animationend remove sozinha, como em stage-cell-unlock).
+// Cada world tem o SEU PRÓPRIO botão "Jogar" (ver buildFaseGallery) — só o do
+// world atual importa aqui.
 function pulsePlayButton() {
-  const btn = elements.playBtn;
+  const btn = getSelectedWorld()?.playBtnEl;
   if (!btn) return;
   btn.classList.remove('play-btn-yoyo');
   void btn.offsetWidth; // força reflow pra poder re-adicionar a classe já removida
   btn.classList.add('play-btn-yoyo');
   btn.addEventListener('animationend', () => btn.classList.remove('play-btn-yoyo'), { once: true });
-}
-
-// Faz o boneco "correr" (troca de sprite + desliza) por cada célula do
-// `path` (ver findStagePath), uma de cada vez, e só chama onArrive depois
-// que a última corrida termina — simula o deslocamento pelas trilhas do
-// grid até a fase escolhida, em vez de pular direto pra ela.
-function moveRunnerAlongPath(path, onArrive) {
-  if (!runnerEl || path.length <= 1) {
-    onArrive();
-    return;
-  }
-
-  // Token pra invalidar uma corrida anterior ainda em andamento: a seleção
-  // agora é imediata (não espera o boneco chegar), então um segundo clique
-  // durante o trajeto precisa cancelar os passos pendentes da corrida
-  // antiga em vez de deixá-los continuar em paralelo com a nova.
-  runnerMoveToken += 1;
-  const token = runnerMoveToken;
-
-  runnerMoving = true;
-  startRunnerFrames(PLAYER_RUN_SPRITE);
-
-  let stepIndex = 1;
-  const runStep = () => {
-    const { row, col } = path[stepIndex];
-    setRunnerCell(row, col, true);
-
-    const handleStepArrive = () => {
-      runnerEl.removeEventListener('transitionend', handleStepArrive);
-      if (token !== runnerMoveToken) return;
-      runnerRow = row;
-      runnerCol = col;
-      stepIndex += 1;
-      if (stepIndex < path.length) {
-        runStep();
-        return;
-      }
-      runnerMoving = false;
-      startRunnerFrames(PLAYER_IDLE_SPRITE);
-      onArrive();
-    };
-    runnerEl.addEventListener('transitionend', handleStepArrive, { once: true });
-  };
-  runStep();
-}
-
-// Corre o boneco até a fase recém-desbloqueada (chamado só depois que a
-// animação de pop/brilho da célula termina — ver isNewlyUnlocked em
-// renderStages) e a seleciona ao chegar, como se o player tivesse clicado
-// nela. runnerMoving evita disparo duplo se mais de uma fase desbloquear
-// junto (não deveria acontecer no fluxo normal, mas é barato de checar).
-function moveRunnerToStage(mapKey, cells) {
-  if (!runnerEl || runnerMoving) return;
-  const target = cells.find((cell) => cell.mapKey === mapKey);
-  if (!target) return;
-
-  selectedMapKey = mapKey;
-  renderStages();
-  updateMapPreview(mapKey, elements.stagePreviewViewport);
-  pulsePlayButton();
-
-  const path = findStagePath(buildStageGraph(cells), { row: runnerRow, col: runnerCol }, { row: target.row, col: target.col });
-  moveRunnerAlongPath(path, () => {});
 }
 
 function parseTemplate(html) {
@@ -417,67 +217,6 @@ function renderTicketsDisplay() {
   }
 }
 
-const STAGE_CELL_PX = 76; // tamanho de cada célula do grid, em px (ver grid-template no renderStages)
-// Espaçamento generoso entre células (era só 8px de gap-2) pra dar a sensação
-// de "trilha" entre fases distantes, com espaço pra linha de conexão.
-const STAGE_GAP_PX = 40;
-// Precisa bater com o padding real do container (classe "p-8" no
-// welcomeScreen.html) — usado pra alinhar as linhas de conexão em cima das
-// células de verdade.
-const STAGE_GRID_PADDING_PX = 32;
-
-function getStageCellCenter(row, col) {
-  const step = STAGE_CELL_PX + STAGE_GAP_PX;
-  return {
-    x: STAGE_GRID_PADDING_PX + col * step + STAGE_CELL_PX / 2,
-    y: STAGE_GRID_PADDING_PX + row * step + STAGE_CELL_PX / 2,
-  };
-}
-
-// Desenha uma linha entre cada par de células ADJACENTES no MAP_GRID que
-// estejam as duas desbloqueadas (fases ainda bloqueadas não aparecem, então
-// não fica trilha "no vazio" apontando pra célula que nem existe na tela).
-function renderStageConnections(cells) {
-  const unlockedKeys = new Set(cells.map((cell) => cell.mapKey));
-  const rows = MAP_GRID.length;
-  const cols = Math.max(...MAP_GRID.map((row) => row.length));
-  const step = STAGE_CELL_PX + STAGE_GAP_PX;
-  const width = STAGE_GRID_PADDING_PX * 2 + cols * STAGE_CELL_PX + (cols - 1) * STAGE_GAP_PX;
-  const height = STAGE_GRID_PADDING_PX * 2 + rows * STAGE_CELL_PX + (rows - 1) * STAGE_GAP_PX;
-
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('class', 'stage-connections pointer-events-none absolute left-0 top-0');
-  svg.setAttribute('width', String(width));
-  svg.setAttribute('height', String(height));
-
-  cells.forEach(({ mapKey, row, col }) => {
-    const rightKey = MAP_GRID[row]?.[col + 1];
-    const downKey = MAP_GRID[row + 1]?.[col];
-    const from = getStageCellCenter(row, col);
-
-    if (rightKey && unlockedKeys.has(rightKey)) {
-      drawStageConnectionLine(svg, from, getStageCellCenter(row, col + 1));
-    }
-    if (downKey && unlockedKeys.has(downKey)) {
-      drawStageConnectionLine(svg, from, getStageCellCenter(row + 1, col));
-    }
-  });
-
-  return svg;
-}
-
-function drawStageConnectionLine(svg, from, to) {
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const line = document.createElementNS(svgNS, 'line');
-  line.setAttribute('class', 'stage-connection-line');
-  line.setAttribute('x1', String(from.x));
-  line.setAttribute('y1', String(from.y));
-  line.setAttribute('x2', String(to.x));
-  line.setAttribute('y2', String(to.y));
-  svg.append(line);
-}
-
 // Reaproveita a mesma escala 1-3 de GameScene.completeRun()/GameManager.
 // getMapStars() — ⭐ preenchida pra cada estrela já conquistada, ☆ vazia pro
 // resto, igual ao critério usado em RunSummaryScreen.js.
@@ -485,182 +224,489 @@ function renderStageStars(stars) {
   return Array.from({ length: 3 }, (_, index) => (index < stars ? '⭐' : '☆')).join('');
 }
 
-function renderStages() {
-  if (!elements) return;
-  // Só mostra mapas já desbloqueados (ver GameManager.isMapUnlocked): o
-  // grid nasce só com o map_0 e vai ganhando célula conforme o player passa
-  // pelas gates dentro do jogo (createGates.js).
-  const cells = getStageCells().filter((cell) => isMapUnlocked(cell.mapKey));
-  const stageKeys = cells.map((cell) => cell.mapKey);
-  if (!stageKeys.includes(selectedMapKey)) {
-    selectedMapKey = stageKeys[0] || DEFAULT_MAP_KEY;
+// ==========================================
+// Galeria de fases — a "imagem" que fica dentro de cada slot da galeria de
+// worlds (ver mais abaixo): um <div> com scroll HORIZONTAL nativo (ver
+// .fase-gallery/.fase-track em main.css, scroll-snap-type: x mandatory) — a
+// rolagem em si já É a animação de passagem. Cada slot tem o mesmo tamanho/
+// pitch fixo (FASE_SLOT_PITCH_PX), então dá pra calcular tudo (posição de
+// scroll de cada índice, distância até o centro) só com aritmética, sem
+// medir o DOM.
+// ==========================================
+// Responsivo: a galeria precisa ocupar toda a largura/altura disponível (não
+// um tamanho fixo em px), então esses 4 viram `let` e são recalculados em
+// measureGalleryMetrics() — chamada no mount e de novo a cada resize/giro de
+// tela (ver handleGalleryResize) — a partir do tamanho REAL da viewport.
+let FASE_SLOT_PX = 96;
+let FASE_SLOT_GAP_PX = 20;
+let FASE_SLOT_PITCH_PX = FASE_SLOT_PX + FASE_SLOT_GAP_PX;
+let FASE_VIEWPORT_PX = FASE_SLOT_PX * 3 + FASE_SLOT_GAP_PX * 2; // até 3 slots visíveis por vez
+// (FASE_VIEWPORT_PX - FASE_SLOT_PX) / 2 dá exatamente FASE_SLOT_PITCH_PX —
+// por isso dá pra centralizar o índice N só com scrollLeft = N * PITCH (ver
+// faseScrollLeftForIndex), sem nenhuma conta a mais.
+// Responsivos também (ver measureGalleryMetrics) — em paisagem/telas largas
+// a galeria expande de verdade (reflete a largura real da tela/div, sem
+// travar num teto pequeno), e o bloco de chão + boneco crescem junto com o
+// slot, na mesma proporção original (40/96 e 22/96), pra não sobrar um
+// monte de espaço vazio ao redor de uma arte pixelada minúscula.
+let FASE_TILE_PX = 40;
+const FASE_TILE_RATIO = 40 / 96;
+const GROUND_TILESET_COLS = 16; // world_tileset.png: 256px / 16px por tile
+let FASE_SPRITE_HEIGHT_PX = 22;
+const FASE_SPRITE_RATIO = 22 / 96;
+const FASE_SCROLL_END_DEBOUNCE_MS = 120;
+// Quanto o número/estrelas/label/cadeado "sobem" (translateY negativo) ao se
+// afastar do centro, até sumirem de vez (opacity 0) — ver applyFaseScrollVisuals.
+const FASE_OVERLAY_RISE_PX = 14;
+
+// Cada galeria de fases (uma por world — ver buildFaseGallery) toca até 2
+// animações do boneco em paralelo (a que tava "atual" voltando a idle + a
+// nova "atual" virando run). Os timers de TODOS os worlds ficam aqui pra
+// stopFaseCardAnimation limpar de uma vez (HideWelcomeScreen).
+let faseCardAnimationTimers = [];
+
+function stopFaseCardAnimation() {
+  faseCardAnimationTimers.forEach((timerId) => window.clearInterval(timerId));
+  faseCardAnimationTimers = [];
+}
+
+function buildGroundTileElement(tile, sizePx) {
+  const el = document.createElement('div');
+  el.className = 'pointer-events-none absolute inset-x-0 bottom-0 mx-auto [image-rendering:pixelated]';
+  el.style.width = `${sizePx}px`;
+  el.style.height = `${sizePx}px`;
+  el.style.backgroundImage = "url('assets/tiledmap/world_tileset.png')";
+  el.style.backgroundSize = `${GROUND_TILESET_COLS * sizePx}px ${GROUND_TILESET_COLS * sizePx}px`;
+  el.style.backgroundPosition = `-${(tile?.column || 0) * sizePx}px -${(tile?.row || 0) * sizePx}px`;
+  return el;
+}
+
+// Boneco por cima do bloco de chão, marcado com .fase-slot-sprite pra dar
+// pra trocar (idle <-> run, ver setFaseSlotRunning) sem precisar reconstruir
+// o slot inteiro — toca sozinho em loop enquanto existir (ver
+// stopFaseCardAnimation).
+function buildPlayerOnTileElement(asset, spriteHeightPx, groundTilePx) {
+  const el = document.createElement('div');
+  el.className = 'fase-slot-sprite pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 [image-rendering:pixelated]';
+  // Pés em cima da borda superior do bloco de chão (ver buildGroundTileElement),
+  // não "dentro" dele — o bloco é flush com o fundo do slot, então o boneco
+  // fica com bottom = altura do bloco.
+  el.style.bottom = `${groundTilePx}px`;
+  applySpriteSheet(el, asset, spriteHeightPx);
+  let frameIndex = 0;
+  const timerId = window.setInterval(() => {
+    frameIndex = (frameIndex + 1) % asset.totalFrames;
+    setSpriteSheetFrame(el, frameIndex);
+  }, 1000 / asset.frameRate);
+  faseCardAnimationTimers.push(timerId);
+  return el;
+}
+
+// Troca o boneco de um slot entre correndo (fase atual) e parado (peek) —
+// usado só na fase que está "travando"/"destravando" como atual, nunca
+// durante o scroll em si (ver syncFaseSelectionVisuals).
+function setFaseSlotRunning(slot, running) {
+  slot.querySelector('.fase-slot-sprite')?.remove();
+  slot.append(buildPlayerOnTileElement(running ? PLAYER_RUN_SPRITE : PLAYER_IDLE_SPRITE, FASE_SPRITE_HEIGHT_PX, FASE_TILE_PX));
+}
+
+// Um slot da galeria: bloco de chão + boneco parado (idle, vira run só
+// quando "trava" como atual — ver syncFaseSelectionVisuals) + número/
+// estrelas/label/cadeado, sempre presentes (pra CADA fase, não só a atual)
+// mas com opacity/posição controlados ao vivo pelo scroll (ver
+// applyFaseScrollVisuals): conforme a fase se aproxima do centro os dados
+// vão aparecendo, e conforme se afasta eles vão subindo e sumindo.
+function buildFaseSlot(mapKey, index) {
+  const slot = document.createElement('div');
+  slot.className = 'fase-slot relative flex-none';
+  slot.style.width = `${FASE_SLOT_PX}px`;
+  slot.style.height = `${FASE_SLOT_PX}px`;
+  slot.dataset.mapKey = mapKey;
+  slot.append(buildGroundTileElement(MAPS[mapKey]?.tile, FASE_TILE_PX));
+  slot.append(buildPlayerOnTileElement(PLAYER_IDLE_SPRITE, FASE_SPRITE_HEIGHT_PX, FASE_TILE_PX));
+
+  const number = document.createElement('span');
+  number.className = 'fase-slot-overlay pointer-events-none absolute left-2 top-2 text-lg font-black leading-none text-white';
+  number.textContent = String(index + 1);
+  slot.append(number);
+
+  const stars = document.createElement('span');
+  stars.className = 'fase-slot-overlay pointer-events-none absolute right-2 top-2 flex gap-0.5 text-xs leading-none text-gray-300';
+  stars.setAttribute('aria-hidden', 'true');
+  stars.textContent = renderStageStars(getMapStars(mapKey));
+  slot.append(stars);
+
+  // -translate-x-1/2 vira "data-center-x" (não classe Tailwind): o
+  // translateY ao vivo (ver applyFaseScrollVisuals) precisa escrever o
+  // transform inteiro no inline style, o que apagaria uma classe utilitária
+  // de transform se ela ficasse só no CSS.
+  const label = document.createElement('span');
+  label.className = 'fase-slot-overlay pointer-events-none absolute -bottom-6 left-1/2 whitespace-nowrap text-[10px] font-semibold leading-none text-gray-300';
+  label.dataset.centerX = 'true';
+  label.textContent = getStageLabel(mapKey);
+  slot.append(label);
+
+  if (!isMapUnlocked(mapKey)) {
+    const lock = document.createElement('span');
+    lock.className = 'fase-slot-overlay pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-gray-950/40 text-3xl drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]';
+    lock.textContent = '🔒';
+    slot.append(lock);
   }
 
-  // Compara com a última leva conhecida pra saber quais células acabaram de
-  // ser desbloqueadas (ver knownUnlockedMapKeys). null = primeira
-  // renderização da sessão: só define a baseline, sem animar nada.
-  const newlyUnlockedKeys = knownUnlockedMapKeys
-    ? stageKeys.filter((mapKey) => !knownUnlockedMapKeys.has(mapKey))
-    : [];
-  knownUnlockedMapKeys = new Set(stageKeys);
+  return slot;
+}
 
-  const rows = MAP_GRID.length;
-  const cols = Math.max(...MAP_GRID.map((row) => row.length));
-  elements.stageGrid.style.gridTemplateRows = `repeat(${rows}, ${STAGE_CELL_PX}px)`;
-  elements.stageGrid.style.gridTemplateColumns = `repeat(${cols}, ${STAGE_CELL_PX}px)`;
-  elements.stageGrid.style.gap = `${STAGE_GAP_PX}px`;
+function faseScrollLeftForIndex(index) {
+  return index * FASE_SLOT_PITCH_PX;
+}
 
-  elements.stageGrid.innerHTML = '';
-  elements.stageGrid.append(renderStageConnections(cells));
+function scrollFaseGalleryToIndex(world, index, smooth) {
+  world.galleryEl.scrollTo({ left: faseScrollLeftForIndex(index), behavior: smooth ? 'smooth' : 'auto' });
+}
 
-  let selectedCell = null;
-  cells.forEach(({ mapKey, row, col }) => {
-    const isSelected = mapKey === selectedMapKey;
-    const isNewlyUnlocked = newlyUnlockedKeys.includes(mapKey);
+// Efeito "coverflow" ao vivo: quanto mais perto do centro da viewport, maior/
+// mais opaco o slot fica E mais os dados dele (número/estrelas/label/
+// cadeado, ver .fase-slot-overlay) aparecem; quanto mais longe, mais eles
+// sobem (translateY) e somem — tudo puramente matemático a partir do
+// scrollLeft atual (sem medir DOM), então acompanha o dedo/mouse frame a
+// frame. Chamado a cada evento de 'scroll' E de novo ao "pousar" (ver
+// handleFaseGalleryScrollEnd), pra fixar os valores exatos do slot central.
+//
+// O botão "Jogar" (o DESTE world — ver world.playBtnEl/buildFaseGallery)
+// segue o mesmo espírito: soma a proximidade de cada slot DESBLOQUEADO (as
+// proximidades dos 2 slots relevantes sempre somam 1, já que a função é um
+// "tent" linear com base PITCH) — assim ele já vai sumindo ANTES do player
+// chegar numa fase bloqueada, em vez de sumir de repente só quando o scroll
+// "trava" nela (ver syncFaseSelectionVisuals, que só fixa o valor final exato).
+function applyFaseScrollVisuals(world) {
+  const scrollLeft = world.galleryEl.scrollLeft;
+  let playBtnWeight = 0;
 
-    const cell = document.createElement('button');
-    cell.type = 'button';
-    cell.dataset.mapKey = mapKey;
-    cell.style.gridRow = String(row + 1);
-    cell.style.gridColumn = String(col + 1);
-    cell.className = [
-      'stage-cell relative z-10 flex flex-col items-center justify-center gap-1 rounded-xl border-2 text-xs font-bold text-white transition-colors',
-      isSelected ? 'border-emerald-400 bg-emerald-500/10' : 'border-white/15 bg-gray-900/60',
-      isNewlyUnlocked ? 'stage-cell-unlock' : '',
-    ].join(' ');
-    cell.innerHTML = `
-      <span class="stage-cell-number text-lg font-black leading-none">${getStageNumber(mapKey)}</span>
-      <span class="stage-cell-stars flex gap-0.5 text-[10px] leading-none text-gray-400" aria-hidden="true">${renderStageStars(getMapStars(mapKey))}</span>
-      <span class="stage-cell-label absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold leading-none text-gray-300">${getStageLabel(mapKey)}</span>
-    `;
-    if (isNewlyUnlocked) {
-      cell.addEventListener('animationend', () => {
-        cell.classList.remove('stage-cell-unlock');
-        moveRunnerToStage(mapKey, cells);
-      }, { once: true });
-    }
-    cell.addEventListener('click', () => {
-      if (mapKey === selectedMapKey) return;
-      // Seleção é imediata — o boneco só corre pela trilha como feedback
-      // visual por trás, sem travar o jogador nem o botão "Jogar" (ver
-      // moveRunnerAlongPath, que cancela sozinho um trajeto anterior ainda
-      // em andamento se essa fase mudar de novo antes dele terminar).
-      const path = findStagePath(buildStageGraph(cells), { row: runnerRow, col: runnerCol }, { row, col });
-      selectedMapKey = mapKey;
-      renderStages();
-      updateMapPreview(mapKey, elements.stagePreviewViewport);
-      pulsePlayButton();
-      moveRunnerAlongPath(path, () => {});
+  [...world.trackEl.children].forEach((slot, index) => {
+    const distance = Math.abs(index * FASE_SLOT_PITCH_PX - scrollLeft);
+    const proximity = Math.max(0, 1 - distance / FASE_SLOT_PITCH_PX);
+    slot.style.transform = `scale(${(0.6 + proximity * 0.9).toFixed(3)})`;
+    slot.style.opacity = (0.5 + proximity * 0.5).toFixed(3);
+
+    const riseY = (-FASE_OVERLAY_RISE_PX * (1 - proximity)).toFixed(2);
+    slot.querySelectorAll('.fase-slot-overlay').forEach((overlay) => {
+      const centerX = overlay.dataset.centerX ? 'translateX(-50%) ' : '';
+      overlay.style.transform = `${centerX}translateY(${riseY}px)`;
+      overlay.style.opacity = proximity.toFixed(3);
     });
-    elements.stageGrid.append(cell);
-    if (isSelected) selectedCell = cell;
+
+    if (isMapUnlocked(slot.dataset.mapKey)) playBtnWeight += proximity;
   });
 
-  // innerHTML = '' acima já removeu o runner da árvore — reanexa e
-  // reposiciona sem transition (o teleporte só "corre" via moveRunnerAlongPath,
-  // disparado pelo clique, nunca por um re-render).
-  if (runnerEl) {
-    elements.stageGrid.append(runnerEl);
-    setRunnerCell(runnerRow, runnerCol, false);
+  world.playBtnEl.style.opacity = playBtnWeight.toFixed(3);
+  // Só clicável perto do fim do fade-in — antes disso ele ainda "pertence"
+  // mais à fase anterior/bloqueada do que à atual pra fins de clique.
+  world.playBtnEl.classList.toggle('pointer-events-none', playBtnWeight < 0.9);
+}
+
+// "Trava" o slot no índice `world.faseIndex` como a fase atual (deste
+// world): destrava o anterior (volta a idle) e bota o novo pra correr —
+// número/estrelas/label/cadeado não mudam aqui, eles já existem sempre (ver
+// buildFaseSlot) e só têm a opacidade/posição atualizada pelo scroll (ver
+// applyFaseScrollVisuals).
+function syncFaseSelectionVisuals(world) {
+  const mapKey = world.maps[world.faseIndex];
+  const slot = world.trackEl.children[world.faseIndex];
+  if (!slot) return;
+
+  // Opacidade/clicabilidade do botão "Jogar" já foram ajustadas ao vivo
+  // durante o scroll (ver applyFaseScrollVisuals, chamada logo antes desta
+  // função) — aqui só fixa o "disabled" de verdade pro estado final
+  // (teclado/leitor de tela).
+  const faseUnlocked = isMapUnlocked(mapKey);
+  world.playBtnEl.disabled = !faseUnlocked;
+
+  if (world.lockedFaseSlot === slot) return; // já travada, nada novo pra fazer
+
+  if (world.lockedFaseSlot) {
+    world.lockedFaseSlot.classList.remove('fase-slot-current', 'opacity-50', 'stage-cell-unlock');
+    setFaseSlotRunning(world.lockedFaseSlot, false);
   }
 
-  // Só centraliza no mapa selecionado na primeira renderização (troca de
-  // seleção depois disso não deve "puxar" o scroll debaixo do dedo do
-  // player).
-  if (!hasCenteredStageGrid) {
-    selectedCell?.scrollIntoView({ block: 'center', inline: 'center' });
-    hasCenteredStageGrid = true;
+  slot.classList.add('fase-slot-current');
+  slot.classList.toggle('opacity-50', !faseUnlocked);
+  setFaseSlotRunning(slot, true);
+  world.lockedFaseSlot = slot;
+}
+
+// Roda a cada 'scroll' — dá o feedback ao vivo (applyFaseScrollVisuals) e
+// agenda o "pouso" (debounce: só reage depois de ~120ms sem scroll nenhum,
+// ver FASE_SCROLL_END_DEBOUNCE_MS — o próprio scroll-snap do navegador já
+// garante que ele sempre pousa exatamente num múltiplo de PITCH).
+function handleFaseGalleryScroll(world) {
+  applyFaseScrollVisuals(world);
+  window.clearTimeout(world.faseScrollEndTimer);
+  world.faseScrollEndTimer = window.setTimeout(() => handleFaseGalleryScrollEnd(world), FASE_SCROLL_END_DEBOUNCE_MS);
+}
+
+function handleFaseGalleryScrollEnd(world) {
+  const rawIndex = Math.round(world.galleryEl.scrollLeft / FASE_SLOT_PITCH_PX);
+  const index = Math.max(0, Math.min(world.maps.length - 1, rawIndex));
+  const changed = index !== world.faseIndex;
+  world.faseIndex = index;
+  applyFaseScrollVisuals(world); // fixa os valores exatos (proximity 1) do slot que pousou no centro
+  syncFaseSelectionVisuals(world);
+  if (changed) pulsePlayButton();
+}
+
+// Constrói a galeria de fases INTEIRA de UM world — a .fase-gallery/
+// .fase-track de sempre, MAIS o próprio botão "Jogar" desse world (ver
+// pulsePlayButton: cada world tem o seu) — e guarda tudo direto no objeto do
+// world (galleryEl/trackEl/playBtnEl/faseIndex/lockedFaseSlot/
+// faseScrollEndTimer). É criada UMA VEZ só e persiste enquanto a Welcome
+// estiver aberta (nunca é reconstruída ao trocar de world) — é essa
+// persistência que faz cada world lembrar onde o player parou nele, e é o
+// que faz a galeria de fases ser, literalmente, só "uma imagem" dentro do
+// slot da galeria de worlds (ver buildWorldSlot).
+function buildFaseGallery(world) {
+  const gallery = document.createElement('div');
+  gallery.className = 'fase-gallery';
+  // Responsivo: largura calculada AGORA a partir do espaço real disponível
+  // (ver measureGalleryMetrics) — encolhe em retrato, expande de verdade em
+  // paisagem (reflete a largura real da tela/div, sem teto).
+  gallery.style.width = `${FASE_VIEWPORT_PX}px`;
+  // padding-top/bottom também respondem ao tamanho do slot (ver comentário
+  // em main.css sobre por que precisam existir: o slot atual escala 1.5x, e
+  // o label some por baixo se não sobrar espaço suficiente) — as mesmas
+  // proporções calculadas pro tamanho original (slot 96px -> top 24px,
+  // bottom 60px), só que agora acompanham FASE_SLOT_PX em vez de fixas.
+  gallery.style.paddingTop = `${Math.round(FASE_SLOT_PX * 0.25)}px`;
+  gallery.style.paddingBottom = `${Math.round(FASE_SLOT_PX * 0.625)}px`;
+
+  const track = document.createElement('div');
+  track.className = 'fase-track';
+  // Responsivo: gap/padding precisam bater com o que measureGalleryMetrics
+  // calculou AGORA — o gap é o que sobra da largura disponível depois da
+  // arte (fixa, ver FASE_SLOT_FIXED_PX), então é ele quem cresce em
+  // paisagem, nunca o tamanho da arte (ver pedido "só a distância").
+  track.style.gap = `${FASE_SLOT_GAP_PX}px`;
+  track.style.paddingInline = `${FASE_SLOT_PITCH_PX}px`;
+  gallery.append(track);
+
+  const playBtn = document.createElement('button');
+  playBtn.type = 'button';
+  playBtn.className = 'play-btn gap-2 shrink-0 flex items-center rounded-full bg-emerald-500 px-10 py-3 text-sm font-extrabold uppercase tracking-wide text-gray-950 shadow-lg transition-transform active:scale-95';
+  playBtn.textContent = 'Jogar';
+  playBtn.addEventListener('click', () => handlePlayClick(playBtn, onPlayCallback));
+
+  world.galleryEl = gallery;
+  world.trackEl = track;
+  world.playBtnEl = playBtn;
+  world.lockedFaseSlot = null;
+  world.faseScrollEndTimer = null;
+
+  world.maps.forEach((mapKey, index) => {
+    const slot = buildFaseSlot(mapKey, index);
+    slot.addEventListener('click', () => scrollFaseGalleryToIndex(world, index, true));
+    track.append(slot);
+  });
+
+  gallery.scrollLeft = faseScrollLeftForIndex(world.faseIndex);
+  gallery.addEventListener('scroll', () => handleFaseGalleryScroll(world), { passive: true });
+  applyFaseScrollVisuals(world);
+  syncFaseSelectionVisuals(world);
+
+  const card = document.createElement('div');
+  card.className = 'world-card flex w-full flex-col items-center gap-3';
+  card.append(gallery, playBtn);
+  return card;
+}
+
+// ==========================================
+// Galeria de worlds — MESMA mecânica de scroll nativo + scroll-snap da
+// galeria de fases acima, só no eixo vertical e "uma galeria dentro da
+// outra": cada slot dela não é um ícone, é a própria galeria de fases
+// daquele world inteira (ver buildFaseGallery). Mas aqui só UM slot por vez
+// ocupa a tela inteira (ver pedido: "vertical deve mostrar apenas 1, só o
+// mundo atual") — é um paginador de página cheia (como um feed vertical),
+// não um coverflow com prévia dos vizinhos: cada world é uma "página" do
+// tamanho exato da viewport, então scrollTop = índice * altura da viewport,
+// sem nenhum deslocamento a mais.
+// ==========================================
+const WORLD_SCROLL_END_DEBOUNCE_MS = 120;
+// Responsivo — ver measureGalleryMetrics(): a viewport (e cada slot) ocupam
+// 100% da altura disponível de verdade, medida em tempo de execução.
+let WORLD_VIEWPORT_PX = 400;
+
+let worldScrollEndTimer = null;
+let galleryResizeTimer = null;
+// ResizeObserver (não só 'window.resize'): o tamanho real da viewport pode
+// só ficar certo um instante DEPOIS do mount (ex.: --app-vh do
+// ViewportService.js ainda não tinha sido aplicado na hora do primeiro
+// measureGalleryMetrics — ver comentário no topo de main.css), e só um
+// resize de janela nunca dispararia essa correção. ResizeObserver dispara
+// sozinho toda vez que o tamanho observado muda de verdade, inclusive essa
+// primeira correção — sem isso a galeria de fases ficava com a largura do
+// "chute" inicial (não a tela toda) e os slots da galeria de worlds podiam
+// nascer com altura errada (um em cima do outro, sem separação nenhuma).
+let galleryResizeObserver = null;
+// Slot com a classe "world-slot-current" no momento — ver syncWorldSelectionVisuals.
+let lockedWorldSlot = null;
+
+function worldScrollTopForIndex(index) {
+  return index * WORLD_VIEWPORT_PX;
+}
+
+// Mede o espaço de verdade disponível (ver .world-viewport com width/height:
+// 100% em main.css) e recalcula os tamanhos de slot/pitch das duas galerias
+// a partir disso — chamado no mount e de novo a cada resize/giro de tela
+// (ver handleGalleryResize), pra galeria sempre preencher a tela toda,
+// responsivo de verdade, não um tamanho fixo em px.
+function measureGalleryMetrics() {
+  if (!elements) return;
+  const viewportWidth = elements.worldViewport.clientWidth || FASE_VIEWPORT_PX;
+  const viewportHeight = elements.worldViewport.clientHeight || WORLD_VIEWPORT_PX;
+
+  // Fase: a ARTE (bloco de chão + boneco) tem tamanho fixo (ver
+  // FASE_SLOT_FIXED_PX) — ela não cresce em paisagem/tela larga, pedido foi
+  // "não deve aumentar o tamanho na horizontal, só a distância". O que
+  // reflete a largura real da tela é o ESPAÇAMENTO entre os slots (ver
+  // FASE_SLOT_GAP_PX): sobrando largura, os slots só se afastam mais uns
+  // dos outros, sem crescer. Só encolhe (nunca cresce) quando a tela é
+  // estreita demais pra caber os 3 slots no tamanho fixo + o espaçamento
+  // mínimo (retrato apertado).
+  const FASE_SLOT_FIXED_PX = 96;
+  const FASE_SLOT_MIN_GAP_PX = 20;
+  const minTotalWidth = FASE_SLOT_FIXED_PX * 3 + FASE_SLOT_MIN_GAP_PX * 2;
+
+  if (viewportWidth < minTotalWidth) {
+    FASE_SLOT_PX = Math.max(48, Math.floor((viewportWidth - FASE_SLOT_MIN_GAP_PX * 2) / 3));
+    FASE_SLOT_GAP_PX = FASE_SLOT_MIN_GAP_PX;
+  } else {
+    FASE_SLOT_PX = FASE_SLOT_FIXED_PX;
+    // /3, não /2: a distância sobrando (viewport - as 3 artes) se divide em
+    // 3 partes iguais — 1 delas vira o espaço extra nas duas pontas (a
+    // metade de cada lado), as outras 2 viram os espaços entre os slots.
+    FASE_SLOT_GAP_PX = Math.floor((viewportWidth - FASE_SLOT_FIXED_PX * 3) / 3);
+  }
+  FASE_SLOT_PITCH_PX = FASE_SLOT_PX + FASE_SLOT_GAP_PX;
+  FASE_VIEWPORT_PX = FASE_SLOT_PX * 3 + FASE_SLOT_GAP_PX * 2;
+  FASE_TILE_PX = Math.round(FASE_SLOT_PX * FASE_TILE_RATIO);
+  FASE_SPRITE_HEIGHT_PX = Math.round(FASE_SLOT_PX * FASE_SPRITE_RATIO);
+
+  // World: 1 página = a altura inteira disponível (ver pedido "vertical
+  // deve mostrar apenas 1, só o mundo atual").
+  WORLD_VIEWPORT_PX = Math.max(viewportHeight, 1);
+}
+
+// Slot da galeria de worlds: ocupa a viewport INTEIRA (ver
+// measureGalleryMetrics) e contém a galeria de fases completa daquele world
+// (ver buildFaseGallery) — como só um slot fica visível por vez (scroll-snap
+// de página cheia), não precisa de scale/opacity de coverflow nem de
+// clicar num vizinho pra navegar (ele nem aparece); só rolar pra cima/baixo
+// (ver handleWorldGalleryScroll) já troca de world.
+function buildWorldSlot(world) {
+  const slot = document.createElement('div');
+  slot.className = 'world-slot relative flex-none';
+  slot.style.height = `${WORLD_VIEWPORT_PX}px`;
+  slot.append(buildFaseGallery(world));
+  return slot;
+}
+
+// "Trava" o índice como o world atual: liga o pointer-events só na galeria
+// de fases DESSE world (as outras ficam inertes — não tem sentido mexer
+// numa fase de um world que nem está na tela) e marca a classe visual (ver
+// .world-slot-current, útil pra achar o slot atual/pop de desbloqueio).
+function syncWorldSelectionVisuals(index) {
+  WORLDS.forEach((world, i) => {
+    world.galleryEl?.classList.toggle('pointer-events-none', i !== index);
+  });
+  const slot = elements.worldTrack.children[index];
+  if (!slot || lockedWorldSlot === slot) return;
+  lockedWorldSlot?.classList.remove('world-slot-current');
+  slot.classList.add('world-slot-current');
+  lockedWorldSlot = slot;
+}
+
+// Roda a cada 'scroll' — só precisa agendar o "pouso" (debounce: reage
+// depois de ~120ms sem scroll nenhum, ver WORLD_SCROLL_END_DEBOUNCE_MS — o
+// scroll-snap de página cheia do navegador já garante que sempre pousa
+// exatamente num world inteiro).
+function handleWorldGalleryScroll() {
+  if (!elements) return;
+  window.clearTimeout(worldScrollEndTimer);
+  worldScrollEndTimer = window.setTimeout(handleWorldGalleryScrollEnd, WORLD_SCROLL_END_DEBOUNCE_MS);
+}
+
+function handleWorldGalleryScrollEnd() {
+  if (!elements) return;
+  const rawIndex = Math.round(elements.worldViewport.scrollTop / WORLD_VIEWPORT_PX);
+  const index = Math.max(0, Math.min(WORLDS.length - 1, rawIndex));
+  syncWorldSelectionVisuals(index);
+  if (index === selectedWorldIndex) return;
+
+  selectedWorldIndex = index;
+  pulsePlayButton();
+}
+
+// Constrói a fileira de worlds — cada slot já nasce com a galeria de fases
+// completa dele (ver buildWorldSlot/buildFaseGallery) — e pula o scroll pro
+// `selectedWorldIndex` atual, sem animação. Chamado no mount/refresh da
+// galeria (ver refreshStageGallery) e de novo a cada resize (ver
+// handleGalleryResize), sempre depois de measureGalleryMetrics().
+function renderWorldTrack() {
+  stopFaseCardAnimation(); // limpa os timers de sprite das galerias antigas antes de descartá-las
+  const track = elements.worldTrack;
+  track.innerHTML = '';
+  lockedWorldSlot = null;
+  WORLDS.forEach((world) => {
+    track.append(buildWorldSlot(world));
+  });
+  elements.worldViewport.scrollTop = worldScrollTopForIndex(selectedWorldIndex);
+  syncWorldSelectionVisuals(selectedWorldIndex);
+}
+
+// Ponto de entrada da galeria: chamado no mount (ShowWelcomeScreen) e
+// sempre que o player pode ter voltado de uma Run com fase nova liberada.
+// Detecta o que mudou desde a última leva conhecida (ver
+// knownUnlockedMapKeys) e, se for o caso, pula a galeria até a fase recém-
+// liberada antes de desenhar (mesmo espírito do runner antigo).
+function refreshStageGallery() {
+  if (!elements || !WORLDS.length) return;
+
+  const allStageKeys = WORLDS.flatMap((world) => world.maps);
+  const unlockedStageKeys = allStageKeys.filter((mapKey) => isMapUnlocked(mapKey));
+  const newlyUnlockedKeys = knownUnlockedMapKeys
+    ? unlockedStageKeys.filter((mapKey) => !knownUnlockedMapKeys.has(mapKey))
+    : [];
+  knownUnlockedMapKeys = new Set(unlockedStageKeys);
+
+  if (newlyUnlockedKeys.length) {
+    const position = findWorldFasePosition(newlyUnlockedKeys[0]);
+    if (position) {
+      selectedWorldIndex = position.worldIndex;
+      WORLDS[position.worldIndex].faseIndex = position.faseIndex;
+    }
+  }
+
+  measureGalleryMetrics();
+  renderWorldTrack();
+
+  if (newlyUnlockedKeys.includes(getSelectedMapKey())) {
+    const slot = getSelectedWorld()?.lockedFaseSlot;
+    slot?.classList.add('stage-cell-unlock');
+    slot?.addEventListener('animationend', () => slot.classList.remove('stage-cell-unlock'), { once: true });
   }
 }
 
-function pointerDistance(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-// Arrastar com 1 ponteiro (mouse, trackpad ou dedo) pan-eia o grid inteiro
-// (vertical + horizontal, já que o grid é uma cruz: gelo/fogo ficam
-// acima/abaixo do hub, floresta/deserto aos lados). Com 2 dedos na tela vira
-// pinch-to-zoom. Desktop ganha zoom com ctrl+wheel (gesto de pinça de
-// trackpad chega como wheel com ctrlKey=true no Chrome/Firefox).
-function setupGridInteractions(viewport) {
-  const pointers = new Map();
-  let isDragging = false;
-  let startX = 0;
-  let startY = 0;
-  let startScrollLeft = 0;
-  let startScrollTop = 0;
-  let pinchStartDistance = 0;
-  let pinchStartZoom = 1;
-
-  function startDrag(point) {
-    isDragging = true;
-    startX = point.x;
-    startY = point.y;
-    startScrollLeft = viewport.scrollLeft;
-    startScrollTop = viewport.scrollTop;
-  }
-
-  viewport.addEventListener('pointerdown', (event) => {
-    // Sem isso, nenhum <button> dentro do viewport (célula do grid, botão
-    // de reset de zoom) dispararia "click": o pointerdown vazaria pro
-    // drag/pinch e capturaria o ponteiro antes do clique se completar —
-    // era por isso que trocar de fase selecionada no grid não tinha efeito
-    // nenhum (a seleção nunca mudava, então "Jogar" sempre reabria a fase
-    // antiga).
-    if (event.target.closest('button')) return;
-
-    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    viewport.setPointerCapture(event.pointerId);
-
-    if (pointers.size === 2) {
-      isDragging = false;
-      const [a, b] = pointers.values();
-      pinchStartDistance = pointerDistance(a, b);
-      pinchStartZoom = stageZoom;
-    } else if (pointers.size === 1) {
-      startDrag({ x: event.clientX, y: event.clientY });
-    }
-  });
-
-  viewport.addEventListener('pointermove', (event) => {
-    if (!pointers.has(event.pointerId)) return;
-    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-
-    if (pointers.size === 2) {
-      const [a, b] = pointers.values();
-      const distance = pointerDistance(a, b);
-      if (pinchStartDistance > 0) {
-        stageZoom = clampZoom(pinchStartZoom * (distance / pinchStartDistance));
-        applyStageZoom();
-      }
-      return;
-    }
-
-    if (isDragging) {
-      viewport.scrollLeft = startScrollLeft - (event.clientX - startX);
-      viewport.scrollTop = startScrollTop - (event.clientY - startY);
-    }
-  });
-
-  function releasePointer(event) {
-    pointers.delete(event.pointerId);
-    if (pointers.size === 1) {
-      const [remaining] = pointers.values();
-      startDrag(remaining);
-    } else {
-      isDragging = false;
-    }
-  }
-  viewport.addEventListener('pointerup', releasePointer);
-  viewport.addEventListener('pointercancel', releasePointer);
-  viewport.addEventListener('pointerleave', releasePointer);
-
-  viewport.addEventListener('wheel', (event) => {
-    if (!event.ctrlKey) return; // wheel normal continua fazendo scroll nativo
-    event.preventDefault();
-    stageZoom = clampZoom(stageZoom - event.deltaY * 0.003);
-    applyStageZoom();
-  }, { passive: false });
+// Reage ao ResizeObserver da viewport (ver galleryResizeObserver): remede e
+// reconstrói a galeria inteira do zero com os novos tamanhos — debounced pra
+// não reconstruir a cada pixel durante um resize contínuo (arrastar a borda
+// da janela, ou a correção de tamanho logo depois do mount).
+// selectedWorldIndex/world.faseIndex sobrevivem (são estado, não DOM), então
+// o player não perde o lugar onde estava.
+function handleGalleryResize() {
+  window.clearTimeout(galleryResizeTimer);
+  galleryResizeTimer = window.setTimeout(() => {
+    if (!elements) return;
+    measureGalleryMetrics();
+    renderWorldTrack();
+  }, 150);
 }
 
 // Barrinha de "pips" (um quadradinho por nível) usada nos upgrades da loja
@@ -1176,9 +1222,10 @@ async function handleWatchAdForTicket() {
 // Handler do botão "Jogar": só entrega o controle pra quem chamou
 // ShowWelcomeScreen (ver onPlay) depois de confirmar que o mapa selecionado
 // está disponível e que há ficha disponível (ver GameManager.consumeTicket)
-// — senão mostra o modal correspondente e mantém o player na Welcome.
-async function handlePlayClick(onPlay) {
-  const btn = elements?.playBtn;
+// — senão mostra o modal correspondente e mantém o player na Welcome. `btn` é
+// o botão do world atual que disparou o clique (ver buildFaseGallery — cada
+// world tem o seu próprio, só o do world atual fica clicável).
+async function handlePlayClick(btn, onPlay) {
   if (!btn || btn.disabled) return;
 
   if (gameState.tickets <= 0) {
@@ -1186,7 +1233,7 @@ async function handlePlayClick(onPlay) {
     return;
   }
 
-  const mapKey = selectedMapKey;
+  const mapKey = getSelectedMapKey();
   btn.disabled = true;
   const reachable = await isMapReachable(mapKey);
   btn.disabled = false;
@@ -1299,6 +1346,10 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   }
 
   HideWelcomeScreen();
+  // Guardado num módulo-level porque cada botão "Jogar" (um por world, ver
+  // buildFaseGallery) é criado bem depois deste ponto, dentro de
+  // refreshStageGallery() — precisa estar acessível na hora do clique.
+  onPlayCallback = onPlay;
 
   const [screenRoot, modalRoot, collectionModalRoot, ticketsEmptyModalRoot, mapUnavailableModalRoot] = parseTemplate(welcomeTemplate);
   app.append(screenRoot, modalRoot, collectionModalRoot, ticketsEmptyModalRoot, mapUnavailableModalRoot);
@@ -1316,12 +1367,8 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     ticketsCountdown: screenRoot.querySelector('.tickets-countdown'),
     ticketsIconCard: screenRoot.querySelector('.tickets-icon-card'),
     gearBtn: screenRoot.querySelector('.settings-gear-btn'),
-    stagePreviewViewport: screenRoot.querySelector('.stage-preview-viewport'),
-    stageGridViewport: screenRoot.querySelector('.stage-grid-viewport'),
-    stageGrid: screenRoot.querySelector('.stage-grid'),
-    zoomResetBtn: screenRoot.querySelector('.zoom-reset-btn'),
-    zoomLevel: screenRoot.querySelector('.zoom-level'),
-    playBtn: screenRoot.querySelector('.play-btn'),
+    worldViewport: screenRoot.querySelector('.world-viewport'),
+    worldTrack: screenRoot.querySelector('.world-track'),
     settingsModal: modalRoot,
     closeBtn: modalRoot.querySelector('.settings-close-btn'),
     settingToggles: [...modalRoot.querySelectorAll('.setting-toggle')],
@@ -1387,7 +1434,6 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   elements.collectionModal.addEventListener('click', (event) => {
     if (event.target === elements.collectionModal) closeCollectionModal();
   });
-  elements.playBtn.addEventListener('click', () => handlePlayClick(onPlay));
   elements.mapUnavailableClose.addEventListener('click', closeMapUnavailableModal);
   elements.mapUnavailableModal.addEventListener('click', (event) => {
     if (event.target === elements.mapUnavailableModal) closeMapUnavailableModal();
@@ -1400,17 +1446,21 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   elements.ticketsBuyDiamantBtn.addEventListener('click', handleBuyTicketWithDiamant);
   elements.ticketsWatchAdBtn.addEventListener('click', handleWatchAdForTicket);
   elements.ticketsIconCard.addEventListener('click', () => openTicketsEmptyModal());
-  elements.zoomResetBtn.addEventListener('click', () => {
-    stageZoom = getDefaultStageZoom();
-    applyStageZoom();
-  });
-  setupGridInteractions(elements.stageGridViewport);
-  landscapeMediaQuery?.addEventListener('change', handleOrientationChange);
-
-  // O boneco sempre "começa" no hub (fase 0) parado, idle — a corrida só
-  // acontece de novo se o player clicar numa fase.
-  ({ row: runnerRow, col: runnerCol } = findMapGridPosition(DEFAULT_MAP_KEY));
-  runnerEl = createRunnerElement();
+  // Galeria de worlds: scroll nativo real (ver .world-viewport em main.css)
+  // — o próprio navegador trata drag/touch/trackpad; só precisamos reagir ao
+  // 'scroll' pra travar o world que parou no centro (ver
+  // handleWorldGalleryScroll/handleWorldGalleryScrollEnd). Cada galeria de
+  // fases (uma por world) já liga o próprio listener de 'scroll' sozinha, ao
+  // ser construída (ver buildFaseGallery). { passive: true }: só leitura,
+  // nunca preventDefault, então o navegador não precisa esperar o listener
+  // rodar pra decidir se rola.
+  elements.worldViewport.addEventListener('scroll', handleWorldGalleryScroll, { passive: true });
+  // Responsivo: a galeria precisa preencher toda a largura/altura
+  // disponível de verdade — um ResizeObserver na viewport (não só
+  // 'window.resize') pega tanto resize/giro de tela quanto a correção do
+  // tamanho logo depois do mount (ver comentário em galleryResizeObserver).
+  galleryResizeObserver = new ResizeObserver(handleGalleryResize);
+  galleryResizeObserver.observe(elements.worldViewport);
 
   // Pega a virada do dia mesmo se a aba tiver ficado aberta (loadPersistedState
   // já chama isso uma vez no boot, mas a Welcome pode reaparecer horas depois).
@@ -1418,31 +1468,28 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
 
   renderPlayerInfo();
   renderSettings();
-  renderStages();
+  refreshStageGallery();
   renderShop();
-  applyStageZoom();
   startIdleAnimation();
-  startRunnerFrames(PLAYER_IDLE_SPRITE);
-  showMapPreview(selectedMapKey, elements.stagePreviewViewport);
 }
 
 export function HideWelcomeScreen() {
   if (!elements) return;
   stopIdleAnimation();
   stopTicketsCountdown();
-  window.clearInterval(runnerFrameTimer);
-  runnerFrameTimer = null;
-  runnerEl = null;
-  runnerMoving = false;
-  destroyMapPreview(elements.stagePreviewViewport);
+  stopFaseCardAnimation();
+  window.clearTimeout(worldScrollEndTimer);
+  worldScrollEndTimer = null;
+  window.clearTimeout(galleryResizeTimer);
+  galleryResizeTimer = null;
+  galleryResizeObserver?.disconnect();
+  galleryResizeObserver = null;
+  WORLDS.forEach((world) => window.clearTimeout(world.faseScrollEndTimer));
   offFullscreenChange(renderSettings);
-  landscapeMediaQuery?.removeEventListener('change', handleOrientationChange);
   elements.screenRoot.remove();
   elements.modalRoot.remove();
   elements.collectionModalRoot.remove();
   elements.ticketsEmptyModalRoot.remove();
   elements.mapUnavailableModalRoot.remove();
   elements = null;
-  hasCenteredStageGrid = false;
-  stageZoom = getDefaultStageZoom();
 }

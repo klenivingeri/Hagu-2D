@@ -736,27 +736,9 @@ button {
   transform: scale(1.7) translateY(-6px);
 }
 
-/* Trilha entre fases na tela de Welcome (ver renderStageConnections em
-   WelcomeScreen.js) — linha tracejada com efeito de "fluxo" pra sugerir
-   caminho percorrível entre os mapas, sem competir visualmente com as
-   células (ficam abaixo delas, graças ao z-10 nas células). */
-.stage-connection-line {
-  stroke: rgba(255, 255, 255, 0.25);
-  stroke-width: 3px;
-  stroke-linecap: round;
-  stroke-dasharray: 6 10;
-  animation: stage-connection-flow 1.4s linear infinite;
-}
-
-@keyframes stage-connection-flow {
-  to {
-    stroke-dashoffset: 32;
-  }
-}
-
-/* Pop + brilho quando uma fase acabou de ser desbloqueada (ver
-   isNewlyUnlocked em WelcomeScreen.js). A classe é removida sozinha ao fim
-   da animação (animationend), então não repete em re-renderizações. */
+/* Pop + brilho quando a galeria pula pra uma fase acabada de desbloquear
+   (ver renderStageGallery em WelcomeScreen.js). A classe é removida sozinha
+   ao fim da animação (animationend), então não repete em re-renderizações. */
 @keyframes stage-unlock-pop {
   0% {
     transform: scale(0.4);
@@ -777,6 +759,124 @@ button {
 
 .stage-cell-unlock {
   animation: stage-unlock-pop 900ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Galeria de fases (ver renderFaseTrackForWorld/buildFaseSlot/
+   applyFaseScrollVisuals em WelcomeScreen.js): um <div> com scroll
+   HORIZONTAL NATIVO de verdade — a própria rolagem já é a animação de
+   passagem (arrastar com o dedo/mouse/trackpad, ou a barra, já funciona
+   sozinho). scroll-snap garante que ela sempre pousa exatamente centralizada
+   numa fase. Largura de até 3 slots (ver FASE_VIEWPORT_PX no JS,
+   responsiva — expande de verdade em paisagem) — só a atual + uma prévia de
+   cada lado ficam à mostra.
+   display: flex + align-items: center (não block): centraliza a fileira
+   verticalmente dentro da altura extra do padding-block, dando espaço igual
+   em cima e embaixo pro slot atual crescer (scale 1.5, ver .fase-slot-current)
+   e pro número/estrelas/label não baterem no topo/fundo da caixa. Importante:
+   quando overflow-x não é "visible", o navegador força overflow-y a virar
+   "auto" mesmo se pedirmos "visible" (regra da spec de CSS Overflow) — ou
+   seja, SEMPRE vai cortar o que não couber verticalmente aqui dentro; a
+   única forma de não cortar nada é garantir, com padding-block generoso, que
+   nada nunca chegue a estourar a caixa. */
+.fase-gallery {
+  display: flex;
+  align-items: center;
+  /* width e padding-top/bottom são setados via JS (ver buildFaseGallery),
+     responsivos — acompanham o tamanho real do slot (ver
+     measureGalleryMetrics). max-width:100% é só a rede de segurança pra
+     nunca estourar o pai em telas realmente minúsculas. */
+  max-width: 100%;
+  margin-inline: auto;
+  min-height: 9rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.fase-gallery::-webkit-scrollbar {
+  display: none;
+}
+
+.fase-track {
+  /* Como item flex do .fase-gallery (não filho de um bloco comum), a
+     largura já nasce do tamanho do conteúdo sozinha — sem precisar do
+     truque de inline-flex. */
+  display: flex;
+  align-items: center;
+  flex: none;
+  /* gap e padding-inline são setados via JS (ver buildFaseGallery/
+     measureGalleryMetrics em WelcomeScreen.js) — responsivos, precisam
+     bater com FASE_SLOT_GAP_PX/FASE_SLOT_PITCH_PX calculados a partir do
+     tamanho real da tela: em paisagem é o GAP que cresce pra preencher a
+     largura, nunca o tamanho da arte. */
+}
+
+/* Todo slot nasce do mesmo tamanho (ver FASE_SLOT_PX) — só o scale/opacity
+   muda entre "peek" (pequeno, apagado) e "atual" (.fase-slot-current,
+   grande, opaco), nunca o conteúdo. Quem comanda scale/opacity ao vivo,
+   frame a frame do scroll, é o JS direto no inline style (ver
+   applyFaseScrollVisuals) — a transition abaixo é só um fallback (primeiro
+   paint antes do JS rodar, ou se por algum motivo o inline não for setado). */
+.fase-slot {
+  scroll-snap-align: center;
+  border-radius: 0.75rem;
+  transform: scale(0.6);
+  opacity: 0.5;
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.fase-slot-current {
+  transform: scale(1.5);
+  opacity: 1;
+  z-index: 10;
+}
+
+/* Galeria de worlds — "galeria de galeria" (ver renderWorldTrack/
+   buildWorldSlot/buildFaseGallery em WelcomeScreen.js): MESMA mecânica de
+   scroll nativo + scroll-snap da galeria de fases acima (ver .fase-gallery),
+   só no eixo vertical. Diferente da de fases, aqui é um paginador de PÁGINA
+   CHEIA — cada slot ocupa a viewport INTEIRA (que por sua vez ocupa toda a
+   largura/altura disponível de verdade, ver width/height:100% abaixo e
+   measureGalleryMetrics no JS) e só um world fica visível por vez, sem
+   prévia dos vizinhos. Sem touch-action especial: como as duas galerias
+   (esta e a .fase-gallery lá dentro) são scroll nativo de verdade nos dois
+   eixos, sem nenhum JS de drag manual, o próprio navegador já lê sozinho a
+   direção do gesto (pro lado vs pra cima/baixo) e decide pra qual delas
+   mandar o arrasto — igual qualquer carrossel dentro de página rolável por
+   aí, sem precisar reimplementar a leitura do gesto na mão. */
+.world-viewport {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-snap-type: y mandatory;
+  scroll-snap-stop: always;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.world-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.world-track {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: none;
+  width: 100%;
+}
+
+.world-slot {
+  scroll-snap-align: start;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Contador regressivo (HH:MM:SS) exibido embaixo do número de fichas quando

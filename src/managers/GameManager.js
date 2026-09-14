@@ -11,7 +11,7 @@
 // (/src/services/StorageService.js), nunca localStorage direto.
 import { EXP_PER_LEVEL } from '../constants.js';
 import { save, load, clearAll } from '../services/StorageService.js';
-import { DEFAULT_MAP_KEY } from '../game/config/maps.js';
+import { DEFAULT_MAP_KEY, FIRST_STAGE_MAP_KEY } from '../game/config/maps.js';
 import {
   UPGRADES_CATALOG,
   ABILITY_UPGRADE_IDS,
@@ -63,10 +63,10 @@ const DEFAULT_SETTINGS = {
 // SettingsScreen.js) — nenhum dos dois deve ficar preso no valor do outro.
 const PLATFORM_DEFAULT_ZOOM = { gameboy: 2, mobile: 3 };
 
-// O mapa inicial já nasce liberado; todo o resto do grid (ver
-// game/config/maps.js) precisa ser desbloqueado passando pela "gate"
-// correspondente dentro do jogo.
-const DEFAULT_UNLOCKED_MAPS = [DEFAULT_MAP_KEY];
+// O tutorial (map_0) e a primeira fase da galeria (world.id 0, fase 0) já
+// nascem liberados; toda fase seguinte (ver game/config/maps.js) precisa ser
+// desbloqueada terminando a fase anterior dentro do jogo.
+const DEFAULT_UNLOCKED_MAPS = [DEFAULT_MAP_KEY, FIRST_STAGE_MAP_KEY];
 
 // Valor "base" (nível 0) de vida e chance de drop, usado tanto no gameState
 // inicial quanto no reset — precisa bater com os defs 'life'/'dropChance'

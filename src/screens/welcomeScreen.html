@@ -36,26 +36,6 @@
 
   <main class="welcome-content relative flex flex-1 flex-col overflow-hidden">
     <section class="welcome-view relative flex flex-1 flex-col items-center justify-center gap-6 px-4" data-view="home">
-      <!-- Prévia (não-interativa) do mapa selecionado no grid abaixo, ver
-           mapPreview.js — puro DOM/CSS lendo o .tmj direto (sem Phaser, sem
-           collider), só as camadas de terreno, sem enemy/coins/diamonds/object
-           layers. Fica dentro desta <section> (que é "relative") de
-           propósito: assim o inset-0 cobre só esta aba, some quando a
-           <section> é escondida (ver switchView) e nunca vaza pra outra aba. -->
-      <div class="stage-preview-viewport pointer-events-none absolute inset-0 overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-gray-950/75 via-gray-950/60 to-gray-950/85"></div>
-      </div>
-
-      <!-- Fixo no topo-centro da área de jogo, fora do stage-grid-viewport
-           (que tem overflow-auto pro pan): se ficasse dentro, um elemento
-           absolute rola junto com o conteúdo ao arrastar o mapa. -->
-      <button
-        type="button"
-        class="zoom-reset-btn absolute top-2 left-1/2 -translate-x-1/2 z-20 rounded-full border border-white/15 bg-gray-900/80 px-3 py-1 text-[10px] font-bold text-gray-300"
-      >
-        <span class="zoom-level">100%</span>
-      </button>
-
       <!-- Fichas disponíveis pra iniciar uma fase (ver GameManager.consumeTicket)
            — canto superior direito do centro da área de jogo, logo abaixo da
            barra superior. -->
@@ -67,15 +47,24 @@
         <span class="tickets-countdown hidden whitespace-nowrap text-[7px] font-bold leading-none text-gray-400">00:00:00</span>
       </div>
 
-      <div class="stage-select relative z-10 flex min-h-0 w-full flex-1 flex-col items-center gap-4 overflow-hidden">
-        <div
-          class="stage-grid-viewport relative flex w-full flex-1 cursor-grab select-none overflow-auto [touch-action:none] [-ms-overflow-style:none] [scrollbar-width:none] active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
-        >
-          <div class="stage-grid relative m-auto grid shrink-0 p-8"></div>
+      <!-- Galeria da Welcome: "galeria de galeria" (ver refreshStageGallery em
+           WelcomeScreen.js), responsiva — preenche toda a largura/altura
+           disponível de verdade, remedida a cada resize/giro de tela (ver
+           measureGalleryMetrics/handleGalleryResize). É uma galeria VERTICAL
+           de worlds (.world-viewport/.world-track, scroll nativo +
+           scroll-snap de página cheia — só o world atual fica visível, sem
+           prévia dos vizinhos) onde o conteúdo de cada "página" NÃO é um
+           ícone, é a galeria HORIZONTAL de fases daquele world inteira
+           (.fase-gallery, mesmo scroll nativo + scroll-snap, só que no eixo
+           horizontal e mostrando até 3 por vez: a atual + uma prévia de cada
+           lado — ver buildFaseGallery/buildWorldSlot/buildFaseSlot). Sem
+           seta nenhuma: é o próprio navegador que lê a direção do gesto
+           (pro lado vs pra cima/baixo) e decide pra qual das duas mandar o
+           arrasto. -->
+      <div class="stage-select relative z-10 flex min-h-0 h-full w-full flex-1 flex-col items-center justify-center">
+        <div class="world-viewport">
+          <div class="world-track"></div>
         </div>
-        <button type="button" class="play-btn gap-2 shrink-0 mb-3 flex items-center  rounded-full bg-emerald-500 px-10 py-3 text-sm font-extrabold uppercase tracking-wide text-gray-950 shadow-lg transition-transform active:scale-95">
-          Jogar
-        </button>
       </div>
     </section>
 
