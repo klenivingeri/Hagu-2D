@@ -130,9 +130,36 @@ export const MAPS = {
     },
     ...TILESET_DEFAULTS,
   },
+  map_dungeon_1: {
+    key: 'map_dungeon_1',
+    // Masmorras têm a própria lista na aba "Masmorra" da Welcome (ver
+    // getDungeonsList() abaixo/WelcomeScreen.js) — NÃO usam "world"/"fase":
+    // não entram na galeria de progressão principal da aba "Início".
+    dungeon: true,
+    tile: {
+      column: 11,
+      row: 1
+    },
+    tilemapUrl: 'assets/tiledmap/map_dungeon_1.tmj',
+    // O .tmj só traz as layers vazias (spawn do player incluso) — o chão é
+    // sorteado a cada entrada na fase (ver createProceduralGround.js).
+    proceduralGround: true,
+    ...TILESET_DEFAULTS,
+  },
 };
 
 export const DEFAULT_MAP_KEY = 'map_0';
+
+// ==========================================
+// MASMORRAS (Welcome > aba "Masmorra")
+// ==========================================
+// Lista simples (sem world/fase, sem progressão sequencial): qualquer mapa
+// com "dungeon: true" aparece aqui, na ordem em que foi cadastrado em MAPS.
+export function getDungeonsList() {
+  return Object.entries(MAPS)
+    .filter(([, config]) => config.dungeon)
+    .map(([mapKey]) => mapKey);
+}
 
 // ==========================================
 // GALERIA DE FASES (Welcome)

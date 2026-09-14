@@ -11,7 +11,7 @@
 // (/src/services/StorageService.js), nunca localStorage direto.
 import { EXP_PER_LEVEL } from '../constants.js';
 import { save, load, clearAll } from '../services/StorageService.js';
-import { DEFAULT_MAP_KEY, FIRST_STAGE_MAP_KEY } from '../game/config/maps.js';
+import { DEFAULT_MAP_KEY, FIRST_STAGE_MAP_KEY, MAPS } from '../game/config/maps.js';
 import {
   UPGRADES_CATALOG,
   ABILITY_UPGRADE_IDS,
@@ -287,7 +287,12 @@ export function unlockMap(mapKey) {
   save('unlockedMaps', gameState.unlockedMaps);
 }
 
+// Masmorras (ver MAPS[key].dungeon em game/config/maps.js) não fazem parte
+// da progressão sequencial da campanha — não têm gate/portal que as
+// desbloqueie, então ficam sempre disponíveis (livre escolha na aba
+// "Masmorra" da Welcome), ao contrário das fases normais.
 export function isMapUnlocked(mapKey) {
+  if (MAPS[mapKey]?.dungeon) return true;
   return gameState.unlockedMaps.includes(mapKey);
 }
 

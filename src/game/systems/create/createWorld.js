@@ -1,5 +1,6 @@
 import { MAP_LAYERS, MAP_DEPTHS } from '../../../constants'
 import { getTiledProperty } from '../../commons/tiledUtils.js';
+import { generateProceduralGround } from './createProceduralGround.js';
 
 export function createWorld(scene) {
 const map = scene.make.tilemap({ key: scene.tilemapCacheKey });
@@ -41,6 +42,13 @@ const {
     const layer = map.createLayer(name, tilesets, 0, 0);
     if (layer) layers[name] = layer;
   });
+
+  // Mapas com "proceduralGround" (ver game/config/maps.js) chegam aqui com a
+  // layer "ground" vazia no .tmj — o chão em si é sorteado a cada
+  // create()/scene.restart(), então fica diferente a cada entrada na fase.
+  if (scene.mapConfig.proceduralGround) {
+    generateProceduralGround(map, layers[GROUND]);
+  }
 
   const enemyObjectLayer = map.getObjectLayer(ENEMY);
   const playerObjectLayer = map.getObjectLayer(PLAYER);

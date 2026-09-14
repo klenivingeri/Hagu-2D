@@ -412,40 +412,71 @@ button {
   }
 }
 
-/* Botões Principais */
+/* Botões Principais
+   O <button> real (.game-button) é a área de TOQUE: dobro da altura antiga,
+   esticado pra cima (top:-100%) e sem nenhuma cor/borda — invisível. Ele é
+   quem tem os listeners de pointerdown/move/up (createControls.js) e o
+   getBoundingClientRect() que decide esquerda/direita/A/B, então um toque
+   um pouco acima do botão visível já cai dentro dele e funciona.
+   .game-button-visual (div filha, ver index.html) é só estética: mesmo
+   tamanho/posição/skin que o botão tinha antes dessa mudança, ancorada no
+   fundo do .game-button (bottom:0; height:50%) — os 50% de cima são a parte
+   invisível estendida. pointer-events:none nela garante que o toque sempre
+   é resolvido pelo .game-button pai, nunca pela div. */
 .game-button {
-  flex: 1;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: -100%;
+  bottom: 0;
+  width: 50%;
   min-width: 0;
   min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  touch-action: none;
+  user-select: none;
+}
+
+#btnEsquerda, #btnA {
+  left: 0;
+}
+
+#btnDireita, #btnB {
+  right: 0;
+}
+
+.game-button-visual {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
   border: 1px solid rgb(255 255 255 / .15);
   border-radius: .75rem;
   background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%);
   color: white;
   font-weight: 800;
   font-size: 1.25rem;
-  touch-action: none;
-  user-select: none;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
   transition: transform 0.05s ease, background 0.05s ease;
 }
 
-.game-button:active, .game-button.pressed {
+.game-button:active .game-button-visual, .game-button.pressed .game-button-visual {
   transform: scale(0.97);
   background: linear-gradient(180deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.6) 100%);
   border-color: rgba(59, 130, 246, 0.6);
 }
 
-.action-btn {
+.action-btn .game-button-visual {
   background: linear-gradient(180deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.3) 100%);
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-.action-btn:active, .action-btn.pressed {
+.action-btn:active .game-button-visual, .action-btn.pressed .game-button-visual {
   background: linear-gradient(180deg, rgba(239, 68, 68, 0.6) 0%, rgba(185, 28, 28, 0.8) 100%);
 }
 
@@ -474,14 +505,14 @@ button {
   border-color: rgba(255, 255, 255, 0.35);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 20px rgba(0, 0, 0, 0.25);
 }
-#app[data-controls-theme="iphone"] .game-button {
+#app[data-controls-theme="iphone"] .game-button-visual {
   background: rgba(255, 255, 255, 0.22);
   border-color: rgba(255, 255, 255, 0.4);
   color: #fff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 6px rgba(0, 0, 0, 0.2);
 }
-#app[data-controls-theme="iphone"] .game-button:active,
-#app[data-controls-theme="iphone"] .game-button.pressed {
+#app[data-controls-theme="iphone"] .game-button:active .game-button-visual,
+#app[data-controls-theme="iphone"] .game-button.pressed .game-button-visual {
   background: rgba(255, 255, 255, 0.4);
   border-color: rgba(255, 255, 255, 0.6);
 }
@@ -500,18 +531,18 @@ button {
   border-color: rgba(0, 0, 0, 0.3);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
 }
-#app[data-controls-theme="gameboy"] .dpad-btn {
+#app[data-controls-theme="gameboy"] .dpad-btn .game-button-visual {
   background: #2b2b2b;
   color: #cbc6bb;
   border-color: rgba(0, 0, 0, 0.5);
 }
-#app[data-controls-theme="gameboy"] .action-btn {
+#app[data-controls-theme="gameboy"] .action-btn .game-button-visual {
   background: linear-gradient(180deg, #9c3a4a 0%, #6e1f2c 100%);
   color: #f4dede;
   border-color: rgba(0, 0, 0, 0.4);
 }
-#app[data-controls-theme="gameboy"] .action-btn:active,
-#app[data-controls-theme="gameboy"] .action-btn.pressed {
+#app[data-controls-theme="gameboy"] .action-btn:active .game-button-visual,
+#app[data-controls-theme="gameboy"] .action-btn.pressed .game-button-visual {
   background: linear-gradient(180deg, #6e1f2c 0%, #4d1620 100%);
 }
 #app[data-controls-theme="gameboy"] .meta-button {
@@ -529,17 +560,17 @@ button {
   border-color: rgba(0, 0, 0, 0.25);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
-#app[data-controls-theme="nintendo"] .dpad-btn {
+#app[data-controls-theme="nintendo"] .dpad-btn .game-button-visual {
   background: #3a3a3a;
   color: #d9d5e8;
   border-color: rgba(0, 0, 0, 0.4);
 }
-#app[data-controls-theme="nintendo"] #btnA {
+#app[data-controls-theme="nintendo"] #btnA .game-button-visual {
   background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
   color: #fff;
   border-color: rgba(0, 0, 0, 0.3);
 }
-#app[data-controls-theme="nintendo"] #btnB {
+#app[data-controls-theme="nintendo"] #btnB .game-button-visual {
   background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
   color: #7c2d12;
   border-color: rgba(0, 0, 0, 0.3);
@@ -560,13 +591,13 @@ button {
   background: linear-gradient(180deg, #ff4d6a 0%, #e0193c 100%);
   border-color: rgba(255, 255, 255, 0.4);
 }
-#app[data-controls-theme="switch"] .game-button {
+#app[data-controls-theme="switch"] .game-button-visual {
   background: #14181f;
   color: #fff;
   border-color: rgba(255, 255, 255, 0.5);
 }
-#app[data-controls-theme="switch"] .game-button:active,
-#app[data-controls-theme="switch"] .game-button.pressed {
+#app[data-controls-theme="switch"] .game-button:active .game-button-visual,
+#app[data-controls-theme="switch"] .game-button.pressed .game-button-visual {
   background: #262c36;
 }
 #app[data-controls-theme="switch"] .meta-button {
@@ -583,15 +614,15 @@ button {
   border-color: #ff2bd6;
   box-shadow: 0 0 14px rgba(255, 43, 214, 0.55), inset 0 0 10px rgba(255, 43, 214, 0.2);
 }
-#app[data-controls-theme="neon"] .game-button {
+#app[data-controls-theme="neon"] .game-button-visual {
   background: #0a0416;
   color: #38f7ff;
   border-color: #38f7ff;
   box-shadow: 0 0 8px rgba(56, 247, 255, 0.7), inset 0 0 6px rgba(56, 247, 255, 0.25);
   text-shadow: 0 0 6px rgba(56, 247, 255, 0.8);
 }
-#app[data-controls-theme="neon"] .game-button:active,
-#app[data-controls-theme="neon"] .game-button.pressed {
+#app[data-controls-theme="neon"] .game-button:active .game-button-visual,
+#app[data-controls-theme="neon"] .game-button.pressed .game-button-visual {
   background: #16092b;
 }
 #app[data-controls-theme="neon"] .meta-button {
@@ -1178,7 +1209,7 @@ button {
   }
 }
 
-.game-layout.zoom-3x .game-button {
+.game-layout.zoom-3x .game-button-visual {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
 }
 

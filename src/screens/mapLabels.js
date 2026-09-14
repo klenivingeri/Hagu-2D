@@ -7,6 +7,7 @@ const BIOME_LABELS = {
   desert: 'Deserto',
   ice: 'Gelo',
   fire: 'Fogo',
+  dungeon: 'Masmorra',
 };
 
 export function getStageLabel(mapKey) {

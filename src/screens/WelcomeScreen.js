@@ -27,7 +27,7 @@ import {
 } from '../managers/GameManager.js';
 import { requestRewardedAd } from '../services/AdsService.js';
 import { UPGRADES_CATALOG, ABILITY_UPGRADE_IDS, ACCESSORY_UPGRADE_IDS } from '../game/config/upgrades.js';
-import { MAPS, FIRST_STAGE_MAP_KEY, getWorldsList } from '../game/config/maps.js';
+import { MAPS, FIRST_STAGE_MAP_KEY, getWorldsList, getDungeonsList } from '../game/config/maps.js';
 import { getStageLabel } from './mapLabels.js';
 import {
   isFullscreenSupported,
@@ -548,8 +548,15 @@ let galleryResizeObserver = null;
 // Slot com a classe "world-slot-current" no momento — ver syncWorldSelectionVisuals.
 let lockedWorldSlot = null;
 
+// Track é renderizada em ORDEM INVERSA (ver renderWorldTrack): o world 0
+// fica no slot de baixo (maior scrollTop) e o último world no topo (scrollTop
+// 0), pra avançar de world precisar rolar/arrastar PRA CIMA, não pra baixo.
+function worldChildIndexForWorldIndex(index) {
+  return WORLDS.length - 1 - index;
+}
+
 function worldScrollTopForIndex(index) {
-  return index * WORLD_VIEWPORT_PX;
+  return worldChildIndexForWorldIndex(index) * WORLD_VIEWPORT_PX;
 }
 
 // Mede o espaço de verdade disponível (ver .world-viewport com width/height:
@@ -616,7 +623,7 @@ function syncWorldSelectionVisuals(index) {
   WORLDS.forEach((world, i) => {
     world.galleryEl?.classList.toggle('pointer-events-none', i !== index);
   });
-  const slot = elements.worldTrack.children[index];
+  const slot = elements.worldTrack.children[worldChildIndexForWorldIndex(index)];
   if (!slot || lockedWorldSlot === slot) return;
   lockedWorldSlot?.classList.remove('world-slot-current');
   slot.classList.add('world-slot-current');
@@ -635,8 +642,9 @@ function handleWorldGalleryScroll() {
 
 function handleWorldGalleryScrollEnd() {
   if (!elements) return;
-  const rawIndex = Math.round(elements.worldViewport.scrollTop / WORLD_VIEWPORT_PX);
-  const index = Math.max(0, Math.min(WORLDS.length - 1, rawIndex));
+  const rawChildIndex = Math.round(elements.worldViewport.scrollTop / WORLD_VIEWPORT_PX);
+  const childIndex = Math.max(0, Math.min(WORLDS.length - 1, rawChildIndex));
+  const index = WORLDS.length - 1 - childIndex;
   syncWorldSelectionVisuals(index);
   if (index === selectedWorldIndex) return;
 
@@ -654,7 +662,9 @@ function renderWorldTrack() {
   const track = elements.worldTrack;
   track.innerHTML = '';
   lockedWorldSlot = null;
-  WORLDS.forEach((world) => {
+  // Ordem inversa no DOM (ver worldChildIndexForWorldIndex): world 0 vai pro
+  // último slot (embaixo), o de maior índice vai pro primeiro (topo).
+  [...WORLDS].reverse().forEach((world) => {
     track.append(buildWorldSlot(world));
   });
   elements.worldViewport.scrollTop = worldScrollTopForIndex(selectedWorldIndex);
@@ -807,6 +817,54 @@ function handleShopBuyClick(event) {
 
   renderPlayerInfo();
   renderShop();
+}
+
+// Aba "Masmorra": lista simples (sem galeria/scroll horizontal, ver
+// getDungeonsList() em game/config/maps.js) — cada item já É o botão de
+// jogar aquela masmorra específica.
+function buildDungeonCard(mapKey) {
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.dataset.mapKey = mapKey;
+  row.className = 'dungeon-item flex w-full items-center gap-3 rounded-xl border border-white/10 bg-gray-900/60 px-3 py-2 text-left transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
+  row.disabled = !isMapUnlocked(mapKey);
+
+  const icon = buildGroundTileElement(MAPS[mapKey]?.tile, 32);
+  icon.classList.add('shrink-0', 'rounded-md', 'overflow-hidden');
+  row.append(icon);
+
+  const info = document.createElement('div');
+  info.className = 'min-w-0 flex-1';
+  info.innerHTML = `
+    <p class="truncate text-xs font-bold">${getStageLabel(mapKey)}</p>
+    <p class="truncate text-[10px] text-gray-300">${renderStageStars(getMapStars(mapKey))}</p>
+  `;
+  row.append(info);
+
+  if (!isMapUnlocked(mapKey)) {
+    const lock = document.createElement('span');
+    lock.className = 'shrink-0 text-lg leading-none';
+    lock.textContent = '🔒';
+    row.append(lock);
+  }
+
+  return row;
+}
+
+function renderDungeon() {
+  if (!elements) return;
+
+  elements.dungeonList.innerHTML = '';
+  getDungeonsList().forEach((mapKey) => {
+    elements.dungeonList.append(buildDungeonCard(mapKey));
+  });
+}
+
+function handleDungeonListClick(event) {
+  const button = event.target.closest('.dungeon-item');
+  if (!button) return;
+
+  handlePlayClick(button, onPlayCallback, button.dataset.mapKey);
 }
 
 // Habilidades (ver ABILITY_UPGRADE_IDS) têm 3 estados na aba Equip.:
@@ -1225,7 +1283,7 @@ async function handleWatchAdForTicket() {
 // — senão mostra o modal correspondente e mantém o player na Welcome. `btn` é
 // o botão do world atual que disparou o clique (ver buildFaseGallery — cada
 // world tem o seu próprio, só o do world atual fica clicável).
-async function handlePlayClick(btn, onPlay) {
+async function handlePlayClick(btn, onPlay, mapKey = getSelectedMapKey()) {
   if (!btn || btn.disabled) return;
 
   if (gameState.tickets <= 0) {
@@ -1233,7 +1291,6 @@ async function handlePlayClick(btn, onPlay) {
     return;
   }
 
-  const mapKey = getSelectedMapKey();
   btn.disabled = true;
   const reachable = await isMapReachable(mapKey);
   btn.disabled = false;
@@ -1333,6 +1390,7 @@ function switchView(view) {
   } else {
     stopCollectionCardAnimations();
   }
+  if (view === 'dungeon') renderDungeon();
   // A aba clicada não deve mais mostrar a própria bolinha (ver
   // updateTabAffordBadges) — os itens ali dentro já sinalizam individualmente.
   updateTabAffordBadges();
@@ -1384,6 +1442,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
     equipmentSubviews: [...screenRoot.querySelectorAll('.equipment-subview')],
     equipmentSubtabButtons: [...screenRoot.querySelectorAll('.equipment-subtab-btn')],
     collectionGrid: screenRoot.querySelector('.collection-grid'),
+    dungeonList: screenRoot.querySelector('.dungeon-list'),
     collectionModalRoot,
     collectionModal: collectionModalRoot,
     collectionModalClose: collectionModalRoot.querySelector('.collection-modal-close'),
@@ -1422,6 +1481,7 @@ export function ShowWelcomeScreen({ onPlay } = {}) {
   // navegador) — resincroniza o checkbox nesses casos.
   onFullscreenChange(renderSettings);
   elements.shopList.addEventListener('click', handleShopBuyClick);
+  elements.dungeonList.addEventListener('click', handleDungeonListClick);
   elements.abilityList.addEventListener('click', handleAbilityListClick);
   elements.accessoryList.addEventListener('click', handleAccessoryListClick);
   elements.equipmentSubtabButtons.forEach((button) => {
