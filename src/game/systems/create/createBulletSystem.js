@@ -617,6 +617,9 @@ function spendEnergy(player, scene) {
   player.status.currentEnergy = Math.max(0, player.status.currentEnergy - ENERGY_COST_PER_ATTACK);
   if (player.status.currentEnergy > 0 || player._reloadTimer) return;
 
+  // A barra branca acima da cabeça (ver commons/reloadBar.js) lê o progresso
+  // direto de player._reloadTimer.getProgress() a cada frame — só aparece
+  // enquanto esse timer existir.
   player._reloadTimer = scene.time.delayedCall(player.status.energyRegenMs, () => {
     player._reloadTimer = null;
     player.status.currentEnergy = player.status.maxEnergy;

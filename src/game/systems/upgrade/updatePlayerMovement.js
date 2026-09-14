@@ -1,6 +1,7 @@
 import { getEntityAnimationKey } from '../../config/entities.js';
 import { emitDustTrail } from '../../commons/dustTrail.js';
 import { updateJetpackFuelBar } from '../../commons/jetpackBar.js';
+import { updateReloadBar } from '../../commons/reloadBar.js';
 import { killPlayer } from '../create/createPlayer.js';
 import { getTiledProperty } from '../../commons/tiledUtils.js';
 
@@ -72,6 +73,7 @@ export const updatePlayerMovement = (scene) => {
   updateParachute(scene, player, { wasGrounded, wallSide, jumpHeld });
   updateJetpack(scene, player, { wasGrounded, startedJump, jumpHeld });
   updateJetpackFuelBar(player);
+  updateReloadBar(player);
 
   updateAnimation(scene, player, { startedJump, wasGrounded, wasParachuteActive, input });
 
@@ -115,7 +117,7 @@ export function updateFallTracking(scene, player, { wasGrounded, wasWallSliding,
       // Força uma nova emissão mesmo que o último rastro tenha acabado de
       // sair, para marcar visualmente o ponto do impacto.
       emitDustTrail(scene, player, 'horizontal', true, null, deathDirection);
-      killPlayer(scene, player, 'dead_jump', deathDirection);
+      killPlayer(scene, player);
       return true;
     }
     player.fallStartY = null;

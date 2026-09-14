@@ -6,7 +6,7 @@ export const PLAYER_FRAME_WIDTH = 16;
 export const PLAYER_FRAME_HEIGHT = 24;
 
 // frameRate/repeat de cada animação do player — são timings de gameplay, não
-// mudam por skin (todo skin tem os mesmos 12 estados, só troca o desenho).
+// mudam por skin (todo skin tem os mesmos 11 estados, só troca o desenho).
 const PLAYER_ANIMATION_SETTINGS = {
   idle: { frameRate: 4, repeat: 0 },
   jump: { frameRate: 10, repeat: 0 },
@@ -21,7 +21,6 @@ const PLAYER_ANIMATION_SETTINGS = {
   // Pose usada enquanto o player está encostado lateralmente em uma parede.
   stick: { frameRate: 1, repeat: -1 },
   dead: { frameRate: 10, repeat: 0 },
-  dead_jump: { frameRate: 10, repeat: 0 },
   // Antes "jump_down": pose de queda livre (sem paraquedas/jetpack).
   free_fall: { frameRate: 10, repeat: -1 },
   attack: { frameRate: 20, repeat: 0 },
@@ -41,7 +40,6 @@ export const PLAYER_SKINS = {
     attack: { url: 'sprite_weapon_sword_atk_melee', frame: 5 },
     bow: { url: 'sprite_weapon_bow_short_fire_slow', frame: 5 },
     dead: { url: 'sprite_z_die_skull', frame: 5 },
-    dead_jump: { url: 'sprite_z_die_one', frame: 10 },
     free_fall: { url: 'sprite_knock_down_one', frame: 3 },
     idle: { url: 'sprite_base_idle', frame: 3 },
     jump: { url: 'sprite_jump_hop', frame: 7 },

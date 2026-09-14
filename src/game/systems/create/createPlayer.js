@@ -5,8 +5,10 @@ import { PLAYERS_CONFIG, getEntityAnimationKey, getPlayerAnimationAssets } from 
 import { getTiledProperty } from "../../commons/tiledUtils.js";
 import { stompDamageEnemy } from "./createEnemy.js";
 import { MAP_DEPTHS, HUD_EVENTS, GAME_OVER_EVENTS, MAX_RUN_ATTEMPTS } from "../../../constants.js";
-import { emitEnemyHitBurst, emitDustTrail } from "../../commons/dustTrail.js";
+import { emitEnemyHitBurst } from "../../commons/dustTrail.js";
 import { createJetpackFuelBar } from "../../commons/jetpackBar.js";
+import { createReloadBar } from "../../commons/reloadBar.js";
+import { createWaveText } from "../../commons/waveText.js";
 import { gameState } from '../../../managers/GameManager.js';
 import { vibrateDamage, vibrateDeath } from '../../../services/HapticsService.js';
 
@@ -91,6 +93,7 @@ export function createPlayer(scene) {
   player.jetpackArmed = false;
   player.jetpackFuel = player.status.jetpackFuelMs;
   player.jetpackFuelBar = createJetpackFuelBar(scene);
+  player.reloadBar = createReloadBar(scene);
 
   player.invulnerable = false;
   player.isDead = false;
@@ -114,8 +117,7 @@ function setupWorldBoundsDeath(scene, player) {
   scene.physics.world.on('worldbounds', (body, up, down) => {
     if (body.gameObject !== player || !down || player.isDead) return;
 
-    const deathDirection = player.flipX ? -1 : 1;
-    killPlayer(scene, player, 'dead_jump', deathDirection);
+    killPlayer(scene, player);
   });
 }
 
@@ -262,13 +264,12 @@ function makePlayerInvulnerable(scene, player) {
   });
 }
 
-export function killPlayer(scene, player, animation = 'dead', deathDirection = 0) {
+export function killPlayer(scene, player) {
   if (player.isDead) return;
 
   vibrateDeath();
 
   const wasFlipped = player.flipX;
-  const feetY = player.body.bottom;
   player.isDead = true;
   player.status.life = 0;
 
@@ -281,15 +282,9 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   player.isJetpackActive = false;
   player.jetpackArmed = false;
   player.jetpackFuelBar?.setVisible(false);
-  // Os frames de dead_jump precisam ficar ancorados pelos pés. Sem isso,
-  // cada frame é desenhado pelo centro e a animação parece subir no impacto.
-  if (animation === 'dead_jump') {
-    player.setOrigin(0.5, 1);
-    player.y = feetY;
-  }
   // A morte não pode inverter o sentido que o player tinha no momento do impacto.
   player.setFlipX(wasFlipped);
-  player.anims.play(getEntityAnimationKey(player.entityKey, animation));
+  player.anims.play(getEntityAnimationKey(player.entityKey, 'dead'));
   showDeathText(scene, player);
 
   // Consome uma tentativa da fase (ver GameScene.attemptsLeft/MAX_RUN_ATTEMPTS
@@ -297,29 +292,6 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   // embaixo no delayedCall, entre respawnar de novo ou abrir o Game Over.
   scene.attemptsLeft = Math.max(0, scene.attemptsLeft - 1);
   scene.game.events.emit(HUD_EVENTS.ATTEMPTS_CHANGED, scene.attemptsLeft, MAX_RUN_ATTEMPTS);
-
-  if (animation === 'dead_jump') {
-    // Pequeno deslocamento no sentido em que o player estava andando.
-    // Usa velocidade (não tween em x) para não brigar com o corpo físico,
-    // que continua ativo e sincroniza a posição a cada passo da física.
-    const SLIDE_DURATION_MS = 360;
-    player.setVelocityX(deathDirection * 70);
-    scene.time.delayedCall(SLIDE_DURATION_MS, () => {
-      if (player.body) player.setVelocityX(0);
-    });
-
-    const dustEvent = scene.time.addEvent({
-      delay: 16,
-      repeat: Math.floor(SLIDE_DURATION_MS / 16) - 1,
-      callback: () => {
-        if (!player.body) {
-          dustEvent.remove();
-          return;
-        }
-        emitDustTrail(scene, player, 'horizontal', false, { x: player.x, y: player.body.bottom }, deathDirection);
-      },
-    });
-  }
 
   // Mantém a animação de morte visível por 2 segundos antes do respawn —
   // ou, se essa foi a última tentativa da fase, antes de abrir o Game Over
@@ -336,52 +308,10 @@ export function killPlayer(scene, player, animation = 'dead', deathDirection = 0
   });
 }
 
+// Mantém o texto visível e estável até o player ser revivido. O restart da
+// cena limpa este objeto junto com o restante da cena.
 function showDeathText(scene, player) {
-  const word = 'DEAD';
-  const spacing = 7;
-  const startX = player.x - ((word.length - 1) * spacing) / 2;
-  const startY = player.body.top - 5;
-
-  [...word].forEach((letter, index) => {
-    scene.time.delayedCall(index * 110, () => {
-      const text = scene.add.text(startX + index * spacing, startY, letter, {
-        color: '#ff3b30',
-        fontFamily: 'Arial Black, sans-serif',
-        fontSize: '12px',
-        stroke: '#1b0b0b',
-        strokeThickness: 2,
-      });
-      text.setOrigin(0.5, 1);
-      text.setDepth(MAP_DEPTHS.LIMITS + 1); // acima de todas as layers do mapa
-
-      scene.tweens.add({
-        targets: text,
-        y: startY - 18,
-        duration: 260,
-        ease: 'Sine.Out',
-        onComplete: () => {
-          scene.tweens.add({
-            targets: text,
-            y: startY,
-            duration: 260,
-            ease: 'Sine.In',
-            // Mantém o texto visível e estável até o player ser revivido.
-            // O restart da cena limpa este objeto junto com o restante da cena.
-            onComplete: () => {
-              scene.tweens.add({
-                targets: text,
-                y: startY - 10,
-                duration: 850,
-                ease: 'Sine.InOut',
-                yoyo: true,
-                repeat: -1,
-              });
-            },
-          });
-        },
-      });
-    });
-  });
+  createWaveText(scene, 'DEAD', player.x, player.body.top - 5, { color: '#ff3b30' });
 }
 
 export function preloadPlayerAssets(scene) {

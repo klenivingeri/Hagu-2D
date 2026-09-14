@@ -174,7 +174,7 @@ describe('updateFallTracking', () => {
     });
 
     expect(died).toBe(true);
-    expect(killPlayer).toHaveBeenCalledWith(scene, player, 'dead_jump', 1);
+    expect(killPlayer).toHaveBeenCalledWith(scene, player);
     expect(emitDustTrail).toHaveBeenCalled();
   });
 
